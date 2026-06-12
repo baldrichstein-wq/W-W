@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>D&D Abenteuer-Companion</title>
+    <!-- Einbindung der externen CSS-Datei -->
+    <link rel="stylesheet" href="style.css">
+    <!-- Google Fonts für den Fantasy-Look -->
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Montserrat:wght@300;400;600&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <!-- Header / Navigation -->
+    <header class="app-header">
+        <h1>D&D Campaign Companion</h1>
+        <div class="player-info">
+            <span>Charakter: <strong>Thorin Eichenschild</strong></span>
+            <span>Stufe: 5</span>
+        </div>
+    </header>
+
+    <!-- Hauptbereich der App -->
+    <div class="app-container">
+        
+        <!-- Sidebar: Charakterwerte -->
+        <aside class="sidebar">
+            <h2>Attribute</h2>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <span class="stat-label">STR</span>
+                    <span class="stat-value">16</span>
+                    <span class="stat-mod">+3</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-label">DEX</span>
+                    <span class="stat-value">12</span>
+                    <span class="stat-mod">+1</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-label">CON</span>
+                    <span class="stat-value">15</span>
+                    <span class="stat-mod">+2</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-label">INT</span>
+                    <span class="stat-value">10</span>
+                    <span class="stat-mod">0</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-label">WIS</span>
+                    <span class="stat-value">14</span>
+                    <span class="stat-mod">+2</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-label">CHA</span>
+                    <span class="stat-value">8</span>
+                    <span class="stat-mod">-1</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Hauptinhalt: Würfel & Log -->
+        <main class="main-content">
+            <!-- Würfel-Bereich -->
+            <section class="dice-section">
+                <h2>Würfel-Zentrale</h2>
+                <div class="dice-buttons">
+                    <button class="btn-dice">d4</button>
+                    <button class="btn-dice">d6</button>
+                    <button class="btn-dice">d8</button>
+                    <button class="btn-dice">d10</button>
+                    <button class="btn-dice">d12</button>
+                    <button class="btn-dice btn-primary">d20</button>
+                    <button class="btn-dice">d100</button>
+                </div>
+                <div class="dice-result">
+                    <span>Ergebnis:</span>
+                    <div id="result-display">--</div>
+                </div>
+            </section>
+
+            <!-- Quest / Kampagnen-Log -->
+            <section class="log-section">
+                <h2>Abenteuer-Logbuch</h2>
+                <div class="log-container">
+                    <p class="log-entry"><em>[12:34]</em> Du hast die Taverne "Zum tänzelnden Pony" betreten.</p>
+                    <p class="log-entry"><em>[12:40]</em> Wahrnehmungswurf (d20): 14 + 2 (WIS) = 16. Du bemerkst einen finsteren Fremden in der Ecke.</p>
+                </div>
+            </section>
+        </main>
+
+    </div>
+
+</body>
+</html>
