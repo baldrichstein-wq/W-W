@@ -37,45 +37,108 @@ class Item {
 
 // --- CHARAKTER-KLASSE ---
 class Spieler {
-    constructor(name, klasse) {
+    constructor(name, rasse, klasse) {
         this.name = name;
+        this.rasse = rasse;
         this.klasse = klasse;
         this.level = 1;
         this.xp = 0;
         this.xp_needed = 20;
-        this.traenke = 2;
+        this.traenke = 0;
+        //this.waehrung = 0;
         
         // Standard-Boni
-        this.atk_bonus = 3;   // Für den Angriffswurf
-        this.def_bonus = 0;   // Zusätzlicher Rüstungsbonus
+        this.grund_atk = 3;   // Für den Angriffswurf
+        this.grund_def = 5;   // mindest Rüstungswert
+        this.grund_hp = 25;   // mindest leben
         
-        this.waffe = new Item("Altes Kurzschwert", "Waffe", 6);
-        this.ausgeruestete_ruestung = new Item("Lederkleidung", "Ruestung", 11);
-        this.schild = null;   // Standardmäßig kein Schild ausgerüstet
+        if (rasse === "Ork") {
+            this.rasse_hp = 12;
+            this.rasse_atk = 3;
+            this.rasse_def = 7;
+          //  this.rasse_waehrung = ;
+        } else if (rasse === "Goblin") {
+            this.rasse_hp = 5;
+            this.rasse_atk = -1;
+            this.rasse_def = 4;
+        } else if (rasse === "zwerg") {
+            this.rasse_hp = 15;
+            this.rasse_atk = 2;
+            this.rasse_def =5 ;
+        } else if (rasse === "Mensch") {
+            this.rasse_hp = 10;
+            this.rasse_atk = 1;
+            this.rasse_def = 2;
+        } else if (rasse === "elf") {
+            this.rasse_hp = 7;
+            this.rasse_atk = 1;
+            this.rasse_def = 1;
+        } 
+
+        this.ausgeruestete_waffe = null("", "Waffe", );
+        this.ausgeruestete_ruestung = null("", "Ruestung", );
+        this.ausgeruestete_schild = null;   // Standardmäßig kein Schild ausgerüstet
         
+
         if (klasse === "Krieger") {
-            this.max_hp = 35;
-            this.atk_bonus = 3;
-            this.def_bonus = 2;
+            this.max_hp = this.grund_hp + this.rasse_hp +10;
+            this.max_atk = this.grund_atk + this.rasse_atk +3;
+            this.max_def = this.grund_def + this.rasse_def +7;
             this.ausgeruestete_ruestung = new Item("Kettenhemd", "Ruestung", 14);
-            this.schild = new Item("Holzschild", "Schild", 2);
+            this.ausgeruestete_waffe = new item()
+            this.ausgeruestete_schild = new Item("Holzschild", "Schild", 2);
         } else if (klasse === "Magier") {
-            this.max_hp = 22;
-            this.atk_bonus = 5;
-            this.waffe = new Item("Zauberstab", "Waffe", 8);
-        } else if (klasse  === "Schurke") 
-            this.max_hp = 28;
-            this.atk_bonus = 4;
-            this.def_bonus = 1;
-        } else if (klasse === "heiler")
-            this.hp = this.max_hp;
-            this.inventar = [];
-        } else if (klasse === "Verteitiger") 
-            this.max_hp =40;
-        } else if (klasse === "Tueftler") 
-            this.max_hp =20;
-        ) else if (klasse === "Alchemist")
-            this.max_hp =25}  
+            this.max_hp = this.grund_hp + this.rasse_hp +3;
+            this.max_atk = this.grund_atk + this.rasse_atk +4;
+            this.max_def = this.grund_def + this.rasse_def +1;
+            this.ausgeruestete_ruestung = new item()
+            this.ausgeruestete_waffe = new Item("Zauberstab", "Waffe", 8);
+            this.ausgeruestete_schild = new item()
+        } else if (klasse  === "Schurke") {
+            this.max_hp = this.grund_hp + this.rasse_hp +2;
+            this.max_atk = this.grund_atk +this.rasse_atk +5;
+            this.max_def = this.grund_def + this.rasse_def +0;
+            this.ausgeruestete_ruestung = new item()
+            this.ausgeruestete_waffe = new item()
+            this.ausgeruestete_schild = new item()
+        } else if (klasse === "heiler") {
+            this.max_hp = this.grund_hp + this.rasse_hp +4;
+            this.max_atk = this.grund_atk + this.rasse_atk +0;
+            this.max_def = this.grund_def + this.rasse_def +1;
+            this.ausgeruestete_ruestung = new item()
+            this.ausgeruestete_waffe = new item()
+            this.ausgeruestete_schild = new()
+        } else if (klasse === "Verteitiger") {
+            this.max_hp = this.grund_hp + this.rasse_hp + 15;
+            this.max_atk = this.grund_atk + this.rasse_atk +0;
+            this.max_def = this.grund_def + this.rasse_def +5;
+            this.ausgeruestete_ruestung = new item()
+            this.ausgeruestete_waffe = new item()
+            this.ausgeruestete_schild = new item()
+        } else if (klasse === "Tueftler") {
+            this.max_hp = this.grund_hp + this.rasse_hp +8;
+            this.max_atk = this.grund_atk + this.rasse_atk +3;
+            this.max_def = this.grund_def + this.rasse_def +3;
+            this.ausgeruestete_ruestung = new item()
+            this.ausgeruestete_waffe = new item()
+            this.ausgeruestete_schild = new item()
+        } else if (klasse === "Alchemist") {
+            this.max_hp = this.grund_hp + this.rasse_hp +8;
+            this.max_atk = this.grund_atk + this.rasse_atk +2;
+            this.max_def = this.grund_def + this.rasse_def +3;
+            this.ausgeruestete_ruestung = new item()
+            this.ausgeruestete_waffe = new item()
+            this.ausgeruestete_schild = new item()
+        }  else if (klasse === "Barde") {
+            this.max_hp = this.grund_hp + this.rasse_hp +5;
+            this.max_atk = this.grund_atk + this.rasse_atk +2;
+            this.max_def = this.grund_def + this.rasse_def +2;
+            this.ausgeruestete_ruestung = new item()
+            this.ausgeruestete_waffe = new item()
+            this.ausgeruestete_schild = new item()
+        } 
+    }
+        
 
     ruestung_klasse() {
         const schild_wert = this.schild ? this.schild.wert : 0;
