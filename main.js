@@ -63,15 +63,19 @@ class Spieler {
             this.max_hp = 22;
             this.atk_bonus = 5;
             this.waffe = new Item("Zauberstab", "Waffe", 8);
-        } else { // Schurke
+        } else if (klasse  === "Schurke") 
             this.max_hp = 28;
             this.atk_bonus = 4;
             this.def_bonus = 1;
-        }
-        
-        this.hp = this.max_hp;
-        this.inventar = [];
-    }
+        } else if (klasse === "heiler")
+            this.hp = this.max_hp;
+            this.inventar = [];
+        } else if (klasse === "Verteitiger") 
+            this.max_hp =40;
+        } else if (klasse === "Tueftler") 
+            this.max_hp =20;
+        ) else if (klasse === "Alchemist")
+            this.max_hp =25}  
 
     ruestung_klasse() {
         const schild_wert = this.schild ? this.schild.wert : 0;
