@@ -57,92 +57,87 @@ class Spieler {
             this.rasse_atk = 3;
             this.rasse_def = 7;
           //  this.rasse_waehrung = ;
-        } else if (rasse === "Goblin") {
+        } else if (rasse === "Goblin" || rasse === "goblin") {
             this.rasse_hp = 5;
             this.rasse_atk = -1;
             this.rasse_def = 4;
-        } else if (rasse === "zwerg") {
+        } else if (rasse === "Zwerg" || rasse === "zwerg") {
             this.rasse_hp = 15;
             this.rasse_atk = 2;
             this.rasse_def =5 ;
-        } else if (rasse === "Mensch") {
+        } else if (rasse === "Mensch" || rasse === "mensch") {
             this.rasse_hp = 10;
             this.rasse_atk = 1;
             this.rasse_def = 2;
-        } else if (rasse === "elf") {
+        } else if (rasse === "Elf" || rasse === "elf") {
             this.rasse_hp = 7;
             this.rasse_atk = 1;
             this.rasse_def = 1;
-        } 
+        }
 
-        this.ausgeruestete_waffe = null("", "Waffe", );
-        this.ausgeruestete_ruestung = null("", "Ruestung", );
+        this.ausgeruestete_waffe = null;
+        this.ausgeruestete_ruestung = null;
         this.ausgeruestete_schild = null;   // Standardmäßig kein Schild ausgerüstet
         
 
         if (klasse === "Krieger") {
             this.max_hp = this.grund_hp + this.rasse_hp +10;
-            this.max_atk = this.grund_atk + this.rasse_atk +3;
-            this.max_def = this.grund_def + this.rasse_def +7;
+            this.atk_bonus = this.grund_atk + this.rasse_atk +3;
+            this.def_bonus = this.grund_def + this.rasse_def +7;
             this.ausgeruestete_ruestung = new Item("Kettenhemd", "Ruestung", 14);
-            this.ausgeruestete_waffe = new item()
+            this.ausgeruestete_waffe = new Item("Eisenschwert", "Waffe", 6);
             this.ausgeruestete_schild = new Item("Holzschild", "Schild", 2);
         } else if (klasse === "Magier") {
             this.max_hp = this.grund_hp + this.rasse_hp +3;
-            this.max_atk = this.grund_atk + this.rasse_atk +4;
-            this.max_def = this.grund_def + this.rasse_def +1;
-            this.ausgeruestete_ruestung = new item()
+            this.atk_bonus = this.grund_atk + this.rasse_atk +4;
+            this.def_bonus = this.grund_def + this.rasse_def +1;
+            this.ausgeruestete_ruestung = new Item("Stoffrobe", "Ruestung", 10);
             this.ausgeruestete_waffe = new Item("Zauberstab", "Waffe", 8);
-            this.ausgeruestete_schild = new item()
         } else if (klasse  === "Schurke") {
             this.max_hp = this.grund_hp + this.rasse_hp +2;
-            this.max_atk = this.grund_atk +this.rasse_atk +5;
-            this.max_def = this.grund_def + this.rasse_def +0;
-            this.ausgeruestete_ruestung = new item()
-            this.ausgeruestete_waffe = new item()
-            this.ausgeruestete_schild = new item()
+            this.atk_bonus = this.grund_atk +this.rasse_atk +5;
+            this.def_bonus = this.grund_def + this.rasse_def +0;
+            this.ausgeruestete_ruestung = new Item("Lederrüstung", "Ruestung", 12);
+            this.ausgeruestete_waffe = new Item("Dolch", "Waffe", 4);
         } else if (klasse === "heiler") {
             this.max_hp = this.grund_hp + this.rasse_hp +4;
-            this.max_atk = this.grund_atk + this.rasse_atk +0;
-            this.max_def = this.grund_def + this.rasse_def +1;
-            this.ausgeruestete_ruestung = new item()
-            this.ausgeruestete_waffe = new item()
-            this.ausgeruestete_schild = new()
+            this.atk_bonus = this.grund_atk + this.rasse_atk +0;
+            this.def_bonus = this.grund_def + this.rasse_def +1;
+            this.ausgeruestete_ruestung = new Item("Stoffrobe", "Ruestung", 10);
+            this.ausgeruestete_waffe = new Item("Stab", "Waffe", 3);
         } else if (klasse === "Verteitiger") {
             this.max_hp = this.grund_hp + this.rasse_hp + 15;
-            this.max_atk = this.grund_atk + this.rasse_atk +0;
-            this.max_def = this.grund_def + this.rasse_def +5;
-            this.ausgeruestete_ruestung = new item()
-            this.ausgeruestete_waffe = new item()
-            this.ausgeruestete_schild = new item()
+            this.atk_bonus = this.grund_atk + this.rasse_atk +0;
+            this.def_bonus = this.grund_def + this.rasse_def +5;
+            this.ausgeruestete_ruestung = new Item("Plattenpanzer", "Ruestung", 16);
+            this.ausgeruestete_waffe = new Item("Keule", "Waffe", 4);
         } else if (klasse === "Tueftler") {
             this.max_hp = this.grund_hp + this.rasse_hp +8;
-            this.max_atk = this.grund_atk + this.rasse_atk +3;
-            this.max_def = this.grund_def + this.rasse_def +3;
-            this.ausgeruestete_ruestung = new item()
-            this.ausgeruestete_waffe = new item()
-            this.ausgeruestete_schild = new item()
+            this.atk_bonus = this.grund_atk + this.rasse_atk +3;
+            this.def_bonus = this.grund_def + this.rasse_def +3;
+            this.ausgeruestete_ruestung = new Item("Lederrüstung", "Ruestung", 12);
+            this.ausgeruestete_waffe = new Item("Werkzeugschlüssel", "Waffe", 5);
         } else if (klasse === "Alchemist") {
             this.max_hp = this.grund_hp + this.rasse_hp +8;
-            this.max_atk = this.grund_atk + this.rasse_atk +2;
-            this.max_def = this.grund_def + this.rasse_def +3;
-            this.ausgeruestete_ruestung = new item()
-            this.ausgeruestete_waffe = new item()
-            this.ausgeruestete_schild = new item()
+            this.atk_bonus = this.grund_atk + this.rasse_atk +2;
+            this.def_bonus = this.grund_def + this.rasse_def +3;
+            this.ausgeruestete_ruestung = new Item("Lederschürze", "Ruestung", 11);
+            this.ausgeruestete_waffe = new Item("Wurfbombe", "Waffe", 7);
         }  else if (klasse === "Barde") {
             this.max_hp = this.grund_hp + this.rasse_hp +5;
-            this.max_atk = this.grund_atk + this.rasse_atk +2;
-            this.max_def = this.grund_def + this.rasse_def +2;
-            this.ausgeruestete_ruestung = new item()
-            this.ausgeruestete_waffe = new item()
-            this.ausgeruestete_schild = new item()
-        } 
+            this.atk_bonus = this.grund_atk + this.rasse_atk +2;
+            this.def_bonus = this.grund_def + this.rasse_def +2;
+            this.ausgeruestete_ruestung = new Item("Seidengewand", "Ruestung", 10);
+            this.ausgeruestete_waffe = new Item("Laute", "Waffe", 4);
+        }
+        this.hp = this.max_hp;
     }
         
 
     ruestung_klasse() {
-        const schild_wert = this.schild ? this.schild.wert : 0;
-        return this.ausgeruestete_ruestung.wert + schild_wert + this.def_bonus;
+        const ruestung_wert = this.ausgeruestete_ruestung ? this.ausgeruestete_ruestung.wert : 0;
+        const schild_wert = this.ausgeruestete_schild ? this.ausgeruestete_schild.wert : 0;
+        return ruestung_wert + schild_wert + this.def_bonus;
     }
 
     check_levelup() {
@@ -202,16 +197,16 @@ async function spielerZug(spieler, monster_name, monster_hp) {
             if (!isNaN(idx) && idx >= 0 && idx < spieler.inventar.length) {
                 const item = spieler.inventar.splice(idx, 1)[0];
                 if (item.typ === "Waffe") {
-                    spieler.inventar.push(spieler.waffe);
-                    spieler.waffe = item;
+                    if (spieler.ausgeruestete_waffe) spieler.inventar.push(spieler.ausgeruestete_waffe);
+                    spieler.ausgeruestete_waffe = item;
                 } else if (item.typ === "Ruestung") {
-                    spieler.inventar.push(spieler.ausgeruestete_ruestung);
+                    if (spieler.ausgeruestete_ruestung) spieler.inventar.push(spieler.ausgeruestete_ruestung);
                     spieler.ausgeruestete_ruestung = item;
                 } else if (item.typ === "Schild") {
-                    if (spieler.schild) {
-                        spieler.inventar.push(spieler.schild);
+                    if (spieler.ausgeruestete_schild) {
+                        spieler.inventar.push(spieler.ausgeruestete_schild);
                     }
-                    spieler.schild = item;
+                    spieler.ausgeruestete_schild = item;
                 }
                 await printSlow(`🛡️ Gegenstand ${item.name} ausgerüstet!`);
                 return ["ausruesten", 0];
@@ -234,7 +229,8 @@ async function teamKampf(helden, monster_name, monster_hp, monster_atk, monster_
             
             if (aktion === "angriff") {
                 if (wert >= monster_rk) {
-                    const schaden = randomRange(1, held.waffe.wert) + held.level;
+                    const waffen_schaden = held.ausgeruestete_waffe ? held.ausgeruestete_waffe.wert : 2;
+                    const schaden = randomRange(1, waffen_schaden) + held.level;
                     monster_hp -= schaden;
                     await printSlow(`💥 Treffer! ${held.name} fügt dem ${monster_name} ${schaden} Schaden zu.`);
                 } else {
@@ -316,19 +312,23 @@ async function spielStarten() {
     
     // Charaktererstellung Spieler 1
     const name1 = await question("Spieler 1 - Name deines Helden: ");
+    const rasse1 = await question("Rasse (Mensch, Ork, Zwerg, Elf, Goblin): ");
     console.log("Klassen: 1. Krieger | 2. Magier | 3. Schurke");
     const cl1 = await question("Wahl: ");
     const k1 = cl1 === "1" ? "Krieger" : cl1 === "2" ? "Magier" : "Schurke";
-    const p1 = new Spieler(name1, k1);
+    const p1 = new Spieler(name1, rasse1, k1);
+    p1.traenke = 2;
     
     console.log("-".repeat(30));
     
     // Charaktererstellung Spieler 2
     const name2 = await question("Spieler 2 - Name deines Helden: ");
+    const rasse2 = await question("Rasse (Mensch, Ork, Zwerg, Elf, Goblin): ");
     console.log("Klassen: 1. Krieger | 2. Magier | 3. Schurke");
     const cl2 = await question("Wahl: ");
     const k2 = cl2 === "1" ? "Krieger" : cl2 === "2" ? "Magier" : "Schurke";
-    const p2 = new Spieler(name2, k2);
+    const p2 = new Spieler(name2, rasse2, k2);
+    p2.traenke = 2;
     
     const helden = [p1, p2];
     await printSlow("\nEure Gruppe ist formiert! Das Abenteuer beginnt...");
