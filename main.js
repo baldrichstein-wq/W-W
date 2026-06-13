@@ -45,31 +45,39 @@ class Spieler {
         this.xp = 0;
         this.xp_needed = 20;
         this.traenke = 0;
-        //this.waehrung = 0;
+        this.inventar = [];
+        this.gold = 15; // Startgold
         
         // Standard-Boni
         this.grund_atk = 3;   // Für den Angriffswurf
         this.grund_def = 5;   // mindest Rüstungswert
-        this.grund_hp = 25;   // mindest leben
+        this.grund_hp = 25;   // Basis-Leben
         
-        if (rasse === "Ork") {
+        const rasseLower = rasse.toLowerCase().trim();
+        const klasseLower = klasse.toLowerCase().trim();
+
+        // Initialisierung der Boni, um NaN bei unbekannten Rassen zu verhindern
+        this.rasse_hp = 0;
+        this.rasse_atk = 0;
+        this.rasse_def = 0;
+
+        if (rasseLower === "ork") {
             this.rasse_hp = 12;
             this.rasse_atk = 3;
             this.rasse_def = 7;
-          //  this.rasse_waehrung = ;
-        } else if (rasse === "Goblin" || rasse === "goblin") {
+        } else if (rasseLower === "goblin") {
             this.rasse_hp = 5;
             this.rasse_atk = -1;
             this.rasse_def = 4;
-        } else if (rasse === "Zwerg" || rasse === "zwerg") {
+        } else if (rasseLower === "zwerg") {
             this.rasse_hp = 15;
             this.rasse_atk = 2;
-            this.rasse_def =5 ;
-        } else if (rasse === "Mensch" || rasse === "mensch") {
+            this.rasse_def = 5;
+        } else if (rasseLower === "mensch") {
             this.rasse_hp = 10;
             this.rasse_atk = 1;
             this.rasse_def = 2;
-        } else if (rasse === "Elf" || rasse === "elf") {
+        } else if (rasseLower === "elf") {
             this.rasse_hp = 7;
             this.rasse_atk = 1;
             this.rasse_def = 1;
@@ -79,60 +87,63 @@ class Spieler {
         this.ausgeruestete_ruestung = null;
         this.ausgeruestete_schild = null;   // Standardmäßig kein Schild ausgerüstet
         
-
-        if (klasse === "Krieger") {
+        if (klasseLower === "krieger") {
             this.max_hp = this.grund_hp + this.rasse_hp +10;
             this.atk_bonus = this.grund_atk + this.rasse_atk +3;
             this.def_bonus = this.grund_def + this.rasse_def +7;
             this.ausgeruestete_ruestung = new Item("Kettenhemd", "Ruestung", 14);
             this.ausgeruestete_waffe = new Item("Eisenschwert", "Waffe", 6);
             this.ausgeruestete_schild = new Item("Holzschild", "Schild", 2);
-        } else if (klasse === "Magier") {
+        } else if (klasseLower === "magier") {
             this.max_hp = this.grund_hp + this.rasse_hp +3;
             this.atk_bonus = this.grund_atk + this.rasse_atk +4;
             this.def_bonus = this.grund_def + this.rasse_def +1;
             this.ausgeruestete_ruestung = new Item("Stoffrobe", "Ruestung", 10);
             this.ausgeruestete_waffe = new Item("Zauberstab", "Waffe", 8);
-        } else if (klasse  === "Schurke") {
+        } else if (klasseLower === "schurke") {
             this.max_hp = this.grund_hp + this.rasse_hp +2;
             this.atk_bonus = this.grund_atk +this.rasse_atk +5;
             this.def_bonus = this.grund_def + this.rasse_def +0;
             this.ausgeruestete_ruestung = new Item("Lederrüstung", "Ruestung", 12);
             this.ausgeruestete_waffe = new Item("Dolch", "Waffe", 4);
-        } else if (klasse === "heiler") {
+        } else if (klasseLower === "heiler") {
             this.max_hp = this.grund_hp + this.rasse_hp +4;
             this.atk_bonus = this.grund_atk + this.rasse_atk +0;
             this.def_bonus = this.grund_def + this.rasse_def +1;
             this.ausgeruestete_ruestung = new Item("Stoffrobe", "Ruestung", 10);
             this.ausgeruestete_waffe = new Item("Stab", "Waffe", 3);
-        } else if (klasse === "Verteitiger") {
+        } else if (klasseLower === "verteidiger") {
             this.max_hp = this.grund_hp + this.rasse_hp + 15;
             this.atk_bonus = this.grund_atk + this.rasse_atk +0;
             this.def_bonus = this.grund_def + this.rasse_def +5;
             this.ausgeruestete_ruestung = new Item("Plattenpanzer", "Ruestung", 16);
             this.ausgeruestete_waffe = new Item("Keule", "Waffe", 4);
-        } else if (klasse === "Tueftler") {
+        } else if (klasseLower === "tueftler") {
             this.max_hp = this.grund_hp + this.rasse_hp +8;
             this.atk_bonus = this.grund_atk + this.rasse_atk +3;
             this.def_bonus = this.grund_def + this.rasse_def +3;
             this.ausgeruestete_ruestung = new Item("Lederrüstung", "Ruestung", 12);
             this.ausgeruestete_waffe = new Item("Werkzeugschlüssel", "Waffe", 5);
-        } else if (klasse === "Alchemist") {
+        } else if (klasseLower === "alchemist") {
             this.max_hp = this.grund_hp + this.rasse_hp +8;
             this.atk_bonus = this.grund_atk + this.rasse_atk +2;
             this.def_bonus = this.grund_def + this.rasse_def +3;
             this.ausgeruestete_ruestung = new Item("Lederschürze", "Ruestung", 11);
             this.ausgeruestete_waffe = new Item("Wurfbombe", "Waffe", 7);
-        }  else if (klasse === "Barde") {
+        } else if (klasseLower === "barde") {
             this.max_hp = this.grund_hp + this.rasse_hp +5;
             this.atk_bonus = this.grund_atk + this.rasse_atk +2;
             this.def_bonus = this.grund_def + this.rasse_def +2;
             this.ausgeruestete_ruestung = new Item("Seidengewand", "Ruestung", 10);
             this.ausgeruestete_waffe = new Item("Laute", "Waffe", 4);
+        } else {
+            // Fallback
+            this.max_hp = this.grund_hp + this.rasse_hp;
+            this.atk_bonus = this.grund_atk + this.rasse_atk;
+            this.def_bonus = this.grund_def + this.rasse_def;
         }
         this.hp = this.max_hp;
     }
-        
 
     ruestung_klasse() {
         const ruestung_wert = this.ausgeruestete_ruestung ? this.ausgeruestete_ruestung.wert : 0;
@@ -153,7 +164,7 @@ class Spieler {
     }
 
     zeige_status() {
-        console.log(`-> ${this.name} (${this.klasse}) | HP: ${this.hp}/${this.max_hp} | RK: ${this.ruestung_klasse()} | Tränke: ${this.traenke}`);
+        console.log(`-> ${this.name} (${this.klasse}) | HP: ${this.hp}/${this.max_hp} | RK: ${this.ruestung_klasse()} | Tränke: ${this.traenke} | Gold: ${this.gold}`);
     }
 }
 
@@ -216,7 +227,7 @@ async function spielerZug(spieler, monster_name, monster_hp) {
 }
 
 // --- GEMEINSAMES KAMPFSYSTEM ---
-async function teamKampf(helden, monster_name, monster_hp, monster_atk, monster_rk, monster_xp) {
+async function teamKampf(helden, monster_name, monster_hp, monster_atk, monster_rk, monster_xp, monster_gold) {
     await printSlow(`\n⚔️ Ein mächtiger ${monster_name} (HP: ${monster_hp} | RK: ${monster_rk}) blockiert den Weg!`);
     
     while (monster_hp > 0 && helden.some(h => h.hp > 0)) {
@@ -251,7 +262,7 @@ async function teamKampf(helden, monster_name, monster_hp, monster_atk, monster_
             
             if (monster_wurf >= ziel.ruestung_klasse()) {
                 const schaden = randomRange(5, 12);
-                ziel.hp -= schaden;
+                ziel.hp = Math.max(0, ziel.hp - schaden);
                 await printSlow(`🩸 ${ziel.name} wird getroffen und verliert ${schaden} HP!`);
                 if (ziel.hp <= 0) {
                     await printSlow(`💀 ${ziel.name} ist bewusstlos zu Boden gegangen!`);
@@ -264,14 +275,16 @@ async function teamKampf(helden, monster_name, monster_hp, monster_atk, monster_
                 
     // Kampf-Auswertung
     if (helden.some(h => h.hp > 0)) {
-        await printSlow(`\n🎉 Sieg über den ${monster_name}! Jeder Held erhält ${monster_xp} XP.`);
+        await printSlow(`\n🎉 Sieg über den ${monster_name}! Jeder Held erhält ${monster_xp} XP und ${monster_gold} Gold.`);
         for (const held of helden) {
             if (held.hp > 0) {
                 held.xp += monster_xp;
+                held.gold += monster_gold;
                 held.check_levelup();
             } else {
                 held.hp = 1; // Gefallene Helden stehen mit 1 HP wieder auf
-                await printSlow(`🩹 ${held.name} wurde nach dem Kampf mit 1 HP wiederbelebt.`);
+                held.gold += monster_gold;
+                await printSlow(`🩹 ${held.name} wurde nach dem Kampf mit 1 HP wiederbelebt und erhält Beute.`);
             }
         }
         return true;
@@ -304,30 +317,87 @@ async function schatzFinden(helden) {
     }
 }
 
+async function shopBesuch(helden) {
+    await printSlow("\n🏪 Ihr findet einen reisenden Händler am Wegesrand.");
+    
+    for (const held of helden) {
+        let shopping = true;
+        while (shopping) {
+            console.log(`\n--- Händler: ${held.name} (Gold: ${held.gold}) ---`);
+            console.log("1. Heiltrank kaufen (10 Gold)");
+            console.log("2. Stahlschwert kaufen (25 Gold, +8 Schaden)");
+            console.log("3. Schuppenpanzer kaufen (25 Gold, RK 15)");
+            console.log("4. Shop verlassen");
+            
+            const wahl = await question("Was möchtest du tun? (1/2/3/4): ");
+            
+            if (wahl === "1") {
+                if (held.gold >= 10) {
+                    held.gold -= 10;
+                    held.traenke += 1;
+                    await printSlow(`🧪 ${held.name} kauft einen Heiltrank.`);
+                } else {
+                    await printSlow("❌ Nicht genug Gold!");
+                }
+            } else if (wahl === "2") {
+                if (held.gold >= 25) {
+                    held.gold -= 25;
+                    held.inventar.push(new Item("Stahlschwert", "Waffe", 8));
+                    await printSlow(`⚔️ ${held.name} kauft ein Stahlschwert (im Inventar).`);
+                } else {
+                    await printSlow("❌ Nicht genug Gold!");
+                }
+            } else if (wahl === "3") {
+                if (held.gold >= 25) {
+                    held.gold -= 25;
+                    held.inventar.push(new Item("Schuppenpanzer", "Ruestung", 15));
+                    await printSlow(`🛡️ ${held.name} kauft einen Schuppenpanzer (im Inventar).`);
+                } else {
+                    await printSlow("❌ Nicht genug Gold!");
+                }
+            } else {
+                shopping = false;
+            }
+        }
+    }
+}
+
 // --- ENGINE ---
 async function spielStarten() {
     console.log("=".repeat(50));
     console.log("   DUNGEONS & JAVASCRIPT: KOOP-EDITION (2 SPIELER)");
     console.log("=".repeat(50));
     
+    const klassenListe = [
+        "Krieger", "Magier", "Schurke", "Heiler", 
+        "Verteidiger", "Tueftler", "Alchemist", "Barde"
+    ];
+
+    async function charakterErstellen(spielerNummer) {
+        const name = await question(`Spieler ${spielerNummer} - Name deines Helden: `);
+        const rasse = await question("Rasse (Mensch, Ork, Zwerg, Elf, Goblin): ");
+        
+        console.log("\nVerfügbare Klassen:");
+        klassenListe.forEach((k, i) => process.stdout.write(`${i + 1}. ${k} | `));
+        console.log("\n");
+        
+        const wahl = await question("Wahl (Nummer): ");
+        const index = parseInt(wahl) - 1;
+        const klasse = (index >= 0 && index < klassenListe.length) 
+            ? klassenListe[index] 
+            : "Schurke";
+            
+        return new Spieler(name, rasse, klasse);
+    }
+
     // Charaktererstellung Spieler 1
-    const name1 = await question("Spieler 1 - Name deines Helden: ");
-    const rasse1 = await question("Rasse (Mensch, Ork, Zwerg, Elf, Goblin): ");
-    console.log("Klassen: 1. Krieger | 2. Magier | 3. Schurke");
-    const cl1 = await question("Wahl: ");
-    const k1 = cl1 === "1" ? "Krieger" : cl1 === "2" ? "Magier" : "Schurke";
-    const p1 = new Spieler(name1, rasse1, k1);
+    const p1 = await charakterErstellen(1);
     p1.traenke = 2;
     
     console.log("-".repeat(30));
     
     // Charaktererstellung Spieler 2
-    const name2 = await question("Spieler 2 - Name deines Helden: ");
-    const rasse2 = await question("Rasse (Mensch, Ork, Zwerg, Elf, Goblin): ");
-    console.log("Klassen: 1. Krieger | 2. Magier | 3. Schurke");
-    const cl2 = await question("Wahl: ");
-    const k2 = cl2 === "1" ? "Krieger" : cl2 === "2" ? "Magier" : "Schurke";
-    const p2 = new Spieler(name2, rasse2, k2);
+    const p2 = await charakterErstellen(2);
     p2.traenke = 2;
     
     const helden = [p1, p2];
@@ -349,10 +419,13 @@ async function spielStarten() {
     p2.zeige_status();
     await question("\nDrückt Enter, um den nächsten Raum zu betreten...");
     
-    if (!await teamKampf(helden, "Höhlentroll", 35, 3, 12, 15)) {
+    if (!await teamKampf(helden, "Höhlentroll", 35, 3, 12, 15, 30)) {
         rl.close();
         return;
     }
+
+    // Shop-Besuch nach dem ersten Kampf
+    await shopBesuch(helden);
 
     // Station 3: Der Bosskampf
     console.log("\n=== STATUS ===");
@@ -361,7 +434,7 @@ async function spielStarten() {
     await printSlow("\nIhr erreicht das Herz des Dungeons. Der Boden bebt...");
     await question("Drückt Enter, um dem Endboss gegenüberzutreten...");
     
-    if (await teamKampf(helden, "Zwillings-Drache (BOSS)", 65, 5, 14, 40)) {
+    if (await teamKampf(helden, "Zwillings-Drache (BOSS)", 65, 5, 14, 40, 100)) {
         console.log("\n" + "★".repeat(50));
         await printSlow("🏆 SIEG! Ihr habt die Bestie gemeinsam bezwungen!");
         await printSlow(`${p1.name} und ${p2.name} kehren als gefeierte Helden in die Taverne zurück!`);
