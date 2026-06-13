@@ -9,5 +9,6 @@ export default class Monster {
         this.gold = gold;
         this.klasse = null;
         this.resistenzen = resistenzen; // { ElementTyp: Multiplikator }
+        this.lastDmg = 0;
     }
 }

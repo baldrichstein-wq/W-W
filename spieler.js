@@ -267,6 +267,7 @@ export default class Spieler {
         
         // Korrektur des Typo und Initialisierung der AP
         this.grund_ap = 30; // Erhöht auf 30 (vorher 20)
+        this.max_sp = 100; // Sicherstellen, dass Ultimates 100 benötigen
         this.max_ap = this.grund_ap + this.rasse_ap;
         this.grund_cha += this.rasse_cha;
         this.hp = this.max_hp;

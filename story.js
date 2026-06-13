@@ -74,6 +74,12 @@ function verbraucheMaterialien(spieler, materialien) {
     });
 }
 
+const QUEST_POOL = [
+    { id: 1, title: "Jagdfieber", desc: "Besiege 10 Kreaturen im Wald.", reward: { gold: 30, xp: 20 } },
+    { id: 2, title: "Ersatzteile", desc: "Bringe dem Schmied 3 Mechanischeteile.", reward: { gold: 20, xp: 15 } },
+    { id: 3, title: "Königsmörder", desc: "Besiege den Skelett-König in den Ruinen.", reward: { gold: 100, xp: 50 } }
+];
+
 function materialNachKlasse(held) {
     const isTueftler = held.klasse.toLowerCase() === "tueftler";
     const pool = isTueftler 
@@ -110,6 +116,41 @@ async function zerlegenMenue(held) {
                     held.inventar.push(new Item(mat, "Material", 0));
                 }
                 await printSlow(`🔨 ${held.name} zerlegt ${item.name} und gewinnt ${menge}x ${mat}!`);
+            }
+        }
+    }
+}
+
+async function schwarzeTafel(helden) {
+    await printSlow("\n📜 Ihr tretet an die verwitterte Schwarze Tafel am Eingang heran. Mehrere Aushänge flattern im Wind.");
+    
+    let amBrett = true;
+    while (amBrett) {
+        console.log("\n--- 📜 DIE SCHWARZE TAFEL ---");
+        QUEST_POOL.forEach((q, i) => {
+            const istAngenommen = helden.some(h => h.activeQuests.some(aq => aq.id === q.id));
+            console.log(`${i + 1}. ${q.title} ${istAngenommen ? "[AKTIV]" : ""}`);
+            console.log(`   - ${q.desc} (Belohnung: ${q.reward.gold} Gold, ${q.reward.xp} XP)`);
+        });
+        console.log("0. Tafel verlassen");
+
+        const wahl = await question("\nWelchen Auftrag wollt ihr annehmen? ");
+        if (wahl === "0") {
+            amBrett = false;
+        } else {
+            const idx = parseInt(wahl) - 1;
+            if (idx >= 0 && idx < QUEST_POOL.length) {
+                const q = QUEST_POOL[idx];
+                const bereitsAngenommen = helden.some(h => h.activeQuests.some(aq => aq.id === q.id));
+                
+                if (bereitsAngenommen) {
+                    await printSlow("❌ Diesen Auftrag verfolgt ihr bereits.");
+                } else {
+                    helden.forEach(h => h.activeQuests.push({...q, progress: 0}));
+                    await printSlow(`✅ Ihr habt den Auftrag angenommen: <span class="rare-item">${q.title}</span>!`);
+                }
+            } else {
+                console.log("Ungültige Wahl.");
             }
         }
     }
@@ -396,13 +437,7 @@ async function schatzFinden(helden) {
     }
 }
 
-async function shopBesuch(helden, istEingang = false) {
-    // Das aktuelle Bild vom Panel speichern und zum Händler wechseln
-    const logPanel = document.getElementById('log-panel');
-    const altesBild = logPanel ? logPanel.style.backgroundImage : "";
-    const händlerBild = istEingang ? "Dungon-Haendler1.png" : "Dungon-Haendler2.png";
-    if (logPanel) logPanel.style.backgroundImage = `url('img/${händlerBild}')`;
-
+async function shopBesuch(helden) {
     await printSlow("\n🏪 Ihr findet einen reisenden Händler im Dungeon.");
     
     // Glückswurf für seltene Artefakte (einmal pro Shop-Besuch)
@@ -530,25 +565,12 @@ async function shopBesuch(helden, istEingang = false) {
             }
         }
     }
-
-    // Hintergrund im Panel wieder zurücksetzen
-    if (logPanel) logPanel.style.backgroundImage = altesBild;
 }
 
 async function tavernenBesuch(helden) {
-    // Das aktuelle Bild vom Panel speichern und auf Taverne wechseln
-    const logPanel = document.getElementById('log-panel');
-    const altesBild = logPanel ? logPanel.style.backgroundImage : "";
-    if (logPanel) logPanel.style.backgroundImage = "url('img/Dungon-Taverne.png')";
-
     await printSlow("\n🍺 Ihr betretet die gemütliche Taverne 'Zum tanzenden JS-Bug'.");
     await printSlow("Die Gruppe ruht sich aus und regeneriert 10 HP.");
     helden.forEach(h => h.hp = Math.min(h.max_hp, h.hp + 10));
-
-    await question("\nDer Kamin knistert gemütlich. Drückt Enter, um die Taverne wieder zu verlassen...");
-    
-    // Hintergrund im Panel wieder zurücksetzen
-    if (logPanel) logPanel.style.backgroundImage = altesBild;
 }
 
-export { schatzFinden, shopBesuch, tavernenBesuch, bossLootGeben, faehigkeitWaehlen, synergienPruefen, craftingMenue };
+export { schatzFinden, shopBesuch, tavernenBesuch, bossLootGeben, faehigkeitWaehlen, synergienPruefen, craftingMenue, schwarzeTafel };
