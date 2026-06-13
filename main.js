@@ -188,8 +188,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // --- ENGINE ---
 async function spielStarten() {
-    // Hintergrundbild für die Charaktererstellung und den Dungeon-Vorhof setzen
-    document.body.style.backgroundImage = "url('img/Dungon-Eingang.png')";
+    // Hintergrundbild im Story-Feld setzen
+    const logPanel = document.getElementById('log-panel');
+    if (logPanel) logPanel.style.backgroundImage = "url('img/Dungon-Eingang.png')";
 
     console.log("=".repeat(50));
     console.log("   DUNGEONS");
@@ -307,7 +308,7 @@ async function spielStarten() {
     for (let ebene = 1; ebene <= 8; ebene++) {
         // Hintergrundbild setzen
         if (ebeneBilder[ebene]) {
-            document.body.style.backgroundImage = `url('img/${ebeneBilder[ebene]}')`;
+            if (logPanel) logPanel.style.backgroundImage = `url('img/${ebeneBilder[ebene]}')`;
         }
 
         if (ebene === 1) {

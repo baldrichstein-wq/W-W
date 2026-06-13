@@ -1,5 +1,6 @@
 // Brücke zwischen Konsole und Browser-UI
-const logPanel = document.getElementById('game-log');
+const logContainer = document.getElementById('log-panel');
+const logContent = document.getElementById('game-log');
 const inputQuery = document.getElementById('input-query');
 const userInput = document.getElementById('user-input');
 const submitBtn = document.getElementById('submit-btn');
@@ -11,8 +12,8 @@ console.log = (...args) => {
     const p = document.createElement('p');
     p.innerHTML = args.join(' ');
     p.classList.add('log-entry');
-    logPanel.appendChild(p);
-    logPanel.scrollTop = logPanel.scrollHeight;
+    logContent.appendChild(p);
+    logContainer.scrollTop = logContainer.scrollHeight;
 };
 
 export async function printSlow(text) {
