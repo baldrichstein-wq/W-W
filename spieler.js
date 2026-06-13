@@ -1,6 +1,6 @@
-const Item = require('./item');
+import Item from './item.js';
 
-class Spieler {
+export default class Spieler {
     constructor(name, rasse, klasse) {
         this.name = name;
         this.rasse = rasse;
@@ -10,6 +10,7 @@ class Spieler {
         this.xp_needed = 20;
         this.traenke = 0;
         this.inventar = [];
+        this.isCriticalHpSoundPlayed = false; // Flag für kritische HP-Soundwiedergabe
         this.gold = 15; // Startgold
         this.ap = 0; // Aktionspunkte
         this.max_ap = 0; // Maximale Aktionspunkte
@@ -300,5 +301,3 @@ class Spieler {
         console.log(`-> ${this.name} (${this.klasse}) | HP: ${this.hp}/${this.max_hp} | AP: ${this.ap}/${this.max_ap} | RK: ${this.ruestung_klasse()} | Tränke: ${this.traenke} | Gold: ${this.gold}`);
     }
 }
-
-module.exports = Spieler;

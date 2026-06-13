@@ -1,4 +1,4 @@
-class Monster {
+export default class Monster {
     constructor(name, hp, atk, rk, xp, gold) {
         this.name = name;
         this.hp = hp;
@@ -9,5 +9,3 @@ class Monster {
         this.gold = gold;
     }
 }
-
-module.exports = Monster;

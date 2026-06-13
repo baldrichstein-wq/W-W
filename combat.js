@@ -1,4 +1,4 @@
-const { question, randomRange, printSlow, wuerfelD20 } = require('./utils');
+import { question, randomRange, printSlow, wuerfelD20 } from './utils.js';
 
 async function spielerZug(spieler, monster_name, monster_hp, helden) {
     if (spieler.isKI) {
@@ -180,7 +180,7 @@ async function spielerZug(spieler, monster_name, monster_hp, helden) {
     }
 }
 
-async function teamKampf(helden, monster) {
+export async function teamKampf(helden, monster) {
     await printSlow(`\n⚔️ Ein mächtiger ${monster.name} (HP: ${monster.hp} | RK: ${monster.rk}) blockiert den Weg!`);
 
     let monsterStatus = { schlaf: 0, verwirrt: 0 };
@@ -317,5 +317,3 @@ async function teamKampf(helden, monster) {
     await printSlow("\n💀 Eure gesamte Gruppe wurde ausgelöscht... GAME OVER.");
     return false;
 }
-
-module.exports = { teamKampf };

@@ -1,5 +1,5 @@
-const Item = require('./item');
-const { printSlow, question, wuerfelD20, randomRange } = require('./utils');
+import Item from './item.js';
+import { printSlow, question, wuerfelD20, randomRange } from './utils.js';
 
 const SHOP_WAREN = {
     "1": { label: "Heiltrank kaufen (5 Gold)", cost: 5, type: "traenke" },
@@ -136,8 +136,4 @@ async function tavernenBesuch(helden) {
     helden.forEach(h => h.hp = Math.min(h.max_hp, h.hp + 10));
 }
 
-module.exports = {
-    schatzFinden,
-    shopBesuch,
-    tavernenBesuch
-};
+export { schatzFinden, shopBesuch, tavernenBesuch };
