@@ -18,14 +18,14 @@ class Spieler {
         this.grund_atk = 3;   // Für den Angriffswurf
         this.grund_def = 5;   // mindest Rüstungswert
         this.grund_hp = 25;   // Basis-Leben
-        this.gund_ap = 0;
+        this.grund_ap = 0;
         this.grund_mp = 0;
         this.grund_sp = 0; // Stamina Points (nicht mehr verwendet, aber hier zur Vollständigkeit)
         this.grund_ini = 0;
         this.grund_atk_gesch = 0;
         this.grund_cha = 0;
         this.grund_int = 0;
-        this.gund_stelf = 0;
+        this.grund_stealth = 0;
         this.grund_will = 0;
 
         const rasseLower = rasse.toLowerCase().trim();
@@ -42,7 +42,7 @@ class Spieler {
         this.rasse_gesch = 0;
         this.rasse_cha = 0;
         this.rasse_int = 0;
-        this.rasse_stelf = 0;
+        this.rasse_stealth = 0;
         this.rasse_will = 0;
 
         if (rasseLower === "ork") {
@@ -56,7 +56,7 @@ class Spieler {
             this.rasse_gesch = 0;
             this.rasse_cha = 0;
             this.rasse_int = 0;
-            this.rasse_stelf = 0;
+            this.rasse_stealth = 0;
             this.rasse_will = 0;
         } else if (rasseLower === "goblin") {
             this.rasse_hp = 5;
@@ -69,7 +69,7 @@ class Spieler {
             this.rasse_gesch = 0;
             this.rasse_cha = 0;
             this.rasse_int = 0;
-            this.rasse_stelf = 0;
+            this.rasse_stealth = 0;
             this.rasse_will = 0;
         } else if (rasseLower === "zwerg") {
             this.rasse_hp = 15;
@@ -82,7 +82,7 @@ class Spieler {
             this.rasse_gesch = 0;
             this.rasse_cha = 0;
             this.rasse_int = 0;
-            this.rasse_stelf = 0;
+            this.rasse_stealth = 0;
             this.rasse_will = 0;
         } else if (rasseLower === "mensch") {
             this.rasse_hp = 10;
@@ -95,7 +95,7 @@ class Spieler {
             this.rasse_gesch = 0;
             this.rasse_cha = 0;
             this.rasse_int = 0;
-            this.rasse_stelf = 0;
+            this.rasse_stealth = 0;
             this.rasse_will = 0;
         } else if (rasseLower === "elf") {
             this.rasse_hp = 7;
@@ -108,13 +108,14 @@ class Spieler {
             this.rasse_gesch = 0;
             this.rasse_cha = 0;
             this.rasse_int = 0;
-            this.rasse_stelf = 0;
+            this.rasse_stealth = 0;
             this.rasse_will = 0;
         }
 
         this.ausgeruestete_waffe = null;
         this.ausgeruestete_ruestung = null;
         this.ausgeruestete_schild = null;   // Standardmäßig kein Schild ausgerüstet
+        this.abilities = [];
 
         
         if (klasseLower === "krieger") {
@@ -124,72 +125,89 @@ class Spieler {
             this.ausgeruestete_ruestung = new Item("Kettenhemd", "Ruestung", 14);
             this.ausgeruestete_waffe = new Item("Eisenschwert", "Waffe", 6);
             this.ausgeruestete_schild = new Item("Holzschild", "Schild", 2);
-            this.ability = { name: "Mächtiger Hieb", ap_kosten: 10, schaden: 15 }; //trifft 1 gegner
-            this.ability = { name: "Seitlicher Hieb", ap_kosten: 15, schaden: 15 }; //trift mehrere gegner
-            this.ability = { name: "Wutrauch", ap_kosten: 20, schaden: +5 }; // erhöt atk des anwenders
+            this.abilities = [
+                { name: "Mächtiger Hieb", ap_kosten: 10, schaden: 15 },
+                { name: "Seitlicher Hieb", ap_kosten: 15, schaden: 15 },
+                { name: "Wutrauch", ap_kosten: 20, atk_buff: 5 }
+            ];
         } else if (klasseLower === "magier") {
             this.max_hp = this.grund_hp + this.rasse_hp +3;
             this.atk_bonus = this.grund_atk + this.rasse_atk +4;
             this.def_bonus = this.grund_def + this.rasse_def +1;
             this.ausgeruestete_ruestung = new Item("Stoffrobe", "Ruestung", 10);
             this.ausgeruestete_waffe = new Item("Zauberstab", "Waffe", 8);
-            this.ability = { name: "Feuerball", ap_kosten: 20, schaden: 20 }; // 1.wirkungszeit,macht feuerschaden
-            this.ability = { name: "Windschnitt", ap_kosten: 12, schaden: 10 }; // 1.wirkungszeit,macht windschaden
-            this.ability = { name: "Erlösung", ap_kosten: 2, schaden: 0 }; // 0.wirkungszeit,töte gegener wenn gegner hpkleiner5 ist
+            this.abilities = [
+                { name: "Feuerball", ap_kosten: 20, schaden: 20 },
+                { name: "Windschnitt", ap_kosten: 12, schaden: 10 },
+                { name: "Erlösung", ap_kosten: 2, execute_threshold: 5 }
+            ];
         } else if (klasseLower === "schurke") {
             this.max_hp = this.grund_hp + this.rasse_hp + 2;
             this.atk_bonus = this.grund_atk +this.rasse_atk +5;
             this.def_bonus = this.grund_def + this.rasse_def +0;
             this.ausgeruestete_ruestung = new Item("Lederrüstung", "Ruestung", 12);
             this.ausgeruestete_waffe = new Item("Dolch", "Waffe", 4);
-            this.ability = { name: "Meucheln", ap_kosten: 12, schaden: 18 };// doppelter scheden wenn bei anwendung nicht gesehen
-            this.ability = { name: "Hinterhalt", ap_kosten: 6, schaden: 5 }; // doppelter scheden wenn bei anwendung nicht gesehen
-            this.ability = { name: "Tarnen", ap_kosten: 10, stelf: +6 }; // anwenter wirt nicht gesehen
-        } else if (klasseLower === "verteitiger") {
-            this.max_hp = this.grund_hp + this.rasse_hp +3;
-            this.atk_bonus = this.grund_atk + this.rasse_atk +4;
-            this.def_bonus = this.grund_def + this.rasse_def +1;
-            this.ausgeruestete_ruestung = new Item("Stoffrobe", "Ruestung", 10);
-            this.ausgeruestete_waffe = new Item("Zauberstab", "Waffe", 8);
-            this.ability = { name: "Schildstoß", ap_kosten: 8, schaden: 10 }; // schaden basierent auf verteitiger def
-            this.ability = { name: "Verspotten" ap_kosten: 12, stelf: -5}, // gegener briorisiert anwender
-            this.ability = { name: "Blokenen" ap_kosten: 14, erlidener_schaden: -5}; // anwender bekommt weniger schaden
+            this.abilities = [
+                { name: "Meucheln", ap_kosten: 12, schaden: 18 },
+                { name: "Hinterhalt", ap_kosten: 6, schaden: 5 },
+                { name: "Tarnen", ap_kosten: 10, stealth_buff: 6 }
+            ];
+        } else if (klasseLower === "verteidiger") {
+            this.max_hp = this.grund_hp + this.rasse_hp + 15;
+            this.atk_bonus = this.grund_atk + this.rasse_atk + 0;
+            this.def_bonus = this.grund_def + this.rasse_def + 5;
+            this.ausgeruestete_ruestung = new Item("Plattenpanzer", "Ruestung", 16);
+            this.ausgeruestete_waffe = new Item("Keule", "Waffe", 4);
+            this.ausgeruestete_schild = new Item("Turmschild", "Schild", 4);
+            this.abilities = [
+                { name: "Schildstoß", ap_kosten: 8, schaden: 10 },
+                { name: "Verspotten", ap_kosten: 12, stealth_debuff: -5 },
+                { name: "Blocken", ap_kosten: 14, schaden_reduktion: 5 }
+            ];
         } else if (klasseLower === "heiler") {
-            this.max_hp = this.grund_hp + this.rasse_hp +3;
-            this.atk_bonus = this.grund_atk + this.rasse_atk +4;
+            this.max_hp = this.grund_hp + this.rasse_hp + 4;
+            this.atk_bonus = this.grund_atk + this.rasse_atk + 0;
             this.def_bonus = this.grund_def + this.rasse_def +1;
             this.ausgeruestete_ruestung = new Item("Stoffrobe", "Ruestung", 10);
-            this.ausgeruestete_waffe = new Item("Zauberstab", "Waffe", 8);
-            this.ability = { name: "Lichtsegen", ap_kosten: 15, heilung: 20 }; //anwender heilt sich oder ein ziel
-            this.ability = { name: "Wiedergeburt", ap_kosten: 30, belebt: 1 }; //anwender blebt ziel wieder
-            this.ability = { name: "Lichtstrahl", ap_kosten: 5, schaden: 8}; //gegen untote dobelter schaden
+            this.ausgeruestete_waffe = new Item("Heilerstab", "Waffe", 3);
+            this.abilities = [
+                { name: "Lichtsegen", ap_kosten: 15, heilung: 20 },
+                { name: "Wiedergeburt", ap_kosten: 30, belebt: 1 },
+                { name: "Lichtstrahl", ap_kosten: 5, schaden: 8 }
+            ];
         } else if (klasseLower === "barde") {
-            this.max_hp = this.grund_hp + this.rasse_hp +3;
-            this.atk_bonus = this.grund_atk + this.rasse_atk +4;
+            this.max_hp = this.grund_hp + this.rasse_hp + 5;
+            this.atk_bonus = this.grund_atk + this.rasse_atk + 2;
             this.def_bonus = this.grund_def + this.rasse_def +1;
             this.ausgeruestete_ruestung = new Item("Stoffrobe", "Ruestung", 10);
-            this.ausgeruestete_waffe = new Item("Zauberstab", "Waffe", 8);
-            this.ability = { name: "Inspirierendes Lied", ap_kosten: 10, heilung: 10, schaden: 5 };
-            this.ability = { name: "Schlaflied", ap_kosten: 20, schlafen: 1 }; //anwender läst ein ziel eine runde lang einschlaffen
-            this.ability = { name: "Songversuch", ap_kosten 15, verwirt :1 }; //anwender verwirt ein ziel eine runde lang,wenn alkohol intus +1 zeit und ziel
+            this.ausgeruestete_waffe = new Item("Laute", "Waffe", 4);
+            this.abilities = [
+                { name: "Inspirierendes Lied", ap_kosten: 10, heilung: 10, bonus_schaden: 5 },
+                { name: "Schlaflied", ap_kosten: 20, schlaf_dauer: 1 },
+                { name: "Songversuch", ap_kosten: 15, verwirrt: 1 }
+            ];
         } else if (klasseLower === "tueftler") {
-            this.max_hp = this.grund_hp + this.rasse_hp +3;
-            this.atk_bonus = this.grund_atk + this.rasse_atk +4;
-            this.def_bonus = this.grund_def + this.rasse_def +1;
-            this.ausgeruestete_ruestung = new Item("Stoffrobe", "Ruestung", 10);
-            this.ausgeruestete_waffe = new Item("Zauberstab", "Waffe", 8);
-            this.ability = { name: "Sprengfalle", material_koster: 1 sprengfalle, schaden: 20 }; //wenn sprengfalle in tasche nutzt sie,sonst baut 1.runde
-            this.ability = { name: "Geschütz", material_kosten: 1 geschütz, schaden: 10, leben 10 }; //wenn geschütz in tsche nutzt es,sonst baut 1.runde
-            this.ability = { name: "Netzkanone", material_kosten: 1 netz, fängt: 1 }; // wenn netz in tasche nutze es,sonst baut 1.runde
+            this.max_hp = this.grund_hp + this.rasse_hp + 8;
+            this.atk_bonus = this.grund_atk + this.rasse_atk + 3;
+            this.def_bonus = this.grund_def + this.rasse_def + 3;
+            this.ausgeruestete_ruestung = new Item("Lederrüstung", "Ruestung", 12);
+            this.ausgeruestete_waffe = new Item("Schraubenschlüssel", "Waffe", 5);
+            this.abilities = [
+                { name: "Sprengfalle", material_kosten: "Sprengfalle", schaden: 20 },
+                { name: "Geschütz", material_kosten: "Geschütz", schaden: 10, leben: 10 },
+                { name: "Netzkanone", material_kosten: "Netz", faengt: 1 }
+            ];
         } else if (klasseLower === "alchemist") {
-            this.max_hp = this.grund_hp + this.rasse_hp +3;
-            this.atk_bonus = this.grund_atk + this.rasse_atk +4;
-            this.def_bonus = this.grund_def + this.rasse_def +1;
-            this.ausgeruestete_ruestung = new Item("Stoffrobe", "Ruestung", 10);
-            this.ausgeruestete_waffe = new Item("Zauberstab", "Waffe", 8);
-            this.ability = { name: "Säureflasche", material_kosten: 1 säuretrank, schaden: 20 }; //nur nutzbar wenn säuretrank in tasche,schaden über zeit
-            this.ability = { name: "Giftflasche", material_kosten: 1 gifttrank, schaden: 10}; //nur nutzbar wenn gifttrank in tasche,schaden über zeit
-            this.ability = { name: "Heilflasche" material_kosten: 1 heiltrank, leben: 10}: //nur nutzbar wenn  heiltrank in tasche,heit ziel
+            this.max_hp = this.grund_hp + this.rasse_hp + 8;
+            this.atk_bonus = this.grund_atk + this.rasse_atk + 2;
+            this.def_bonus = this.grund_def + this.rasse_def + 3;
+            this.ausgeruestete_ruestung = new Item("Lederschürze", "Ruestung", 11);
+            this.ausgeruestete_waffe = new Item("Wurfbombe", "Waffe", 7);
+            this.abilities = [
+                { name: "Säureflasche", material_kosten: "Säuretrank", schaden: 20 },
+                { name: "Giftflasche", material_kosten: "Gifttrank", schaden: 10 },
+                { name: "Heilflasche", material_kosten: "Heiltrank", leben: 10 }
+            ];
         } 
         else {
             this.max_hp = this.grund_hp + this.rasse_hp;
@@ -208,6 +226,61 @@ class Spieler {
         const ruestung_wert = this.ausgeruestete_ruestung ? this.ausgeruestete_ruestung.wert : 0;
         const schild_wert = this.ausgeruestete_schild ? this.ausgeruestete_schild.wert : 0;
         return ruestung_wert + schild_wert + this.def_bonus;
+    }
+
+    ausruesten(index) {
+        if (index < 0 || index >= this.inventar.length) return null;
+
+        const item = this.inventar[index];
+        let slotProperty = "";
+
+        if (item.typ === "Waffe") slotProperty = "ausgeruestete_waffe";
+        else if (item.typ === "Ruestung") slotProperty = "ausgeruestete_ruestung";
+        else if (item.typ === "Schild") slotProperty = "ausgeruestete_schild";
+        else return null; // Gegenstandstyp nicht ausrüstbar (z.B. Trank oder Goldwert)
+
+        // Gegenstand aus Inventar entfernen
+        this.inventar.splice(index, 1);
+
+        // Aktuell ausgerüsteten Gegenstand zurück ins Inventar legen
+        if (this[slotProperty]) {
+            this.inventar.push(this[slotProperty]);
+        }
+
+        // Neuen Gegenstand anlegen
+        this[slotProperty] = item;
+        return item.name;
+    }
+
+    kiAutomatischAusruesten() {
+        if (!this.isKI) return;
+
+        const typen = ["Waffe", "Ruestung", "Schild"];
+        
+        for (const typ of typen) {
+            // Finde alle Items dieses Typs im Inventar
+            const passendeItems = this.inventar
+                .map((item, index) => ({ item, index }))
+                .filter(obj => obj.item.typ === typ);
+
+            if (passendeItems.length === 0) continue;
+
+            // Sortiere nach Wert (absteigend), um das beste Item zuerst zu prüfen
+            passendeItems.sort((a, b) => b.item.wert - a.item.wert);
+            const bestesItemObj = passendeItems[0];
+            let aktuellerWert = 0;
+
+            if (typ === "Waffe" && this.ausgeruestete_waffe) aktuellerWert = this.ausgeruestete_waffe.wert;
+            else if (typ === "Ruestung" && this.ausgeruestete_ruestung) aktuellerWert = this.ausgeruestete_ruestung.wert;
+            else if (typ === "Schild" && this.ausgeruestete_schild) aktuellerWert = this.ausgeruestete_schild.wert;
+
+            if (bestesItemObj.item.wert > aktuellerWert) {
+                const name = this.ausruesten(bestesItemObj.index);
+                console.log(`🤖 ${this.name} (KI) rüstet automatisch aus: ${name} (Stärke: ${bestesItemObj.item.wert})`);
+                // Rekursiver Aufruf, da sich die Inventar-Indizes nach ausruesten() verschieben
+                return this.kiAutomatischAusruesten(); 
+            }
+        }
     }
 
     check_levelup() {
