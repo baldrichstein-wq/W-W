@@ -11,6 +11,7 @@ export default class Spieler {
         this.traenke = 0;
         this.inventar = [];
         this.isCriticalHpSoundPlayed = false; // Flag für kritische HP-Soundwiedergabe
+        this.isKI = false;
         this.gold = 30; // Startgold
         this.ap = 0; // Aktionspunkte
         this.max_ap = 0; // Maximale Aktionspunkte

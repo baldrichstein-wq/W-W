@@ -1,15 +1,12 @@
 // Brücke zwischen Konsole und Browser-UI
-const logContainer = document.getElementById('log-panel');
-const logContent = document.getElementById('game-log');
-const inputQuery = document.getElementById('input-query');
-const userInput = document.getElementById('user-input');
-const submitBtn = document.getElementById('submit-btn');
-const criticalHpSound = document.getElementById('critical-hp-sound');
-
 // Umleitung von console.log in das Game Log Panel
 const originalLog = console.log;
 console.log = (...args) => {
     originalLog(...args);
+    const logContent = document.getElementById('game-log');
+    const logContainer = document.getElementById('log-panel');
+    if (!logContent || !logContainer) return;
+
     const p = document.createElement('p');
     p.innerHTML = args.join(' ');
     p.classList.add('log-entry');
@@ -23,6 +20,10 @@ export async function printSlow(text) {
 }
 
 export function question(text) {
+    const inputQuery = document.getElementById('input-query');
+    const userInput = document.getElementById('user-input');
+    const submitBtn = document.getElementById('submit-btn');
+
     return new Promise((resolve) => {
         inputQuery.textContent = text;
         userInput.disabled = false;
@@ -57,6 +58,8 @@ export function wuerfelD20() {
 }
 
 export function updateUI(helden, monster = null, monsterStatus = null) {
+    const criticalHpSound = document.getElementById('critical-hp-sound');
+
     helden.forEach((h, i) => {
         const card = document.getElementById(`player${i+1}-card`);
         const statusDiv = document.getElementById(`p${i+1}-status`);
@@ -85,7 +88,7 @@ export function updateUI(helden, monster = null, monsterStatus = null) {
             const apPercent = Math.max(0, Math.min(100, (h.ap / h.max_ap) * 100));
             const spPercent = Math.max(0, Math.min(100, (h.sp / h.max_sp) * 100));
 
-            if (hpPercent < 20 && h.hp > 0) {
+            if (hpPercent < 20 && h.hp > 0 && h.hp !== null) {
                 card.classList.add('critical-hp');
                 if (!h.isCriticalHpSoundPlayed) {
                     if (criticalHpSound) {
@@ -95,23 +98,27 @@ export function updateUI(helden, monster = null, monsterStatus = null) {
                     h.isCriticalHpSoundPlayed = true;
                 }
             } else {
-                card.classList.remove('critical-hp');
+                if (hpPercent >= 20 || h.hp <= 0) card.classList.remove('critical-hp');
                 h.isCriticalHpSoundPlayed = false;
             }
+
+            const hpVal = h.hp || 0;
+            const apVal = h.ap || 0;
+            const spVal = h.sp || 0;
 
             statusDiv.innerHTML = `
                 <strong>${h.name}</strong> (${h.klasse})<br>
                 💰 Gold: ${h.gold}<br>
                 <div class="bar-container">
-                    <small>❤️ HP: ${h.hp}/${h.max_hp}</small>
+                    <small>❤️ HP: ${hpVal}/${h.max_hp}</small>
                     <div class="progress-bar"><div class="progress-fill hp-fill" style="width: ${hpPercent}%"></div></div>
                 </div>
                 <div class="bar-container">
-                    <small>✨ AP: ${h.ap}/${h.max_ap}</small>
+                    <small>✨ AP: ${apVal}/${h.max_ap}</small>
                     <div class="progress-bar"><div class="progress-fill ap-fill" style="width: ${apPercent}%"></div></div>
                 </div>
                 <div class="bar-container">
-                    <small>⚡ SP (Ultimate): ${h.sp}/${h.max_sp}</small>
+                    <small>⚡ SP (Ultimate): ${spVal}/${h.max_sp}</small>
                     <div class="progress-bar"><div class="progress-fill sp-fill" style="width: ${spPercent}%"></div></div>
                 </div>
                 🛡️ RK: ${h.ruestung_klasse()}<br>
@@ -130,15 +137,15 @@ export function updateUI(helden, monster = null, monsterStatus = null) {
     const monsterStatsDiv = document.getElementById('monster-stats-ui');
     const monsterNameDiv = document.getElementById('monster-name-ui');
 
-    if (monsterUi && monster && monster.hp > 0) {
+    if (monsterUi && monster && monster.hp > 0 && monsterNameDiv && monsterStatsDiv) {
         monsterUi.style.display = 'block';
         monsterNameDiv.textContent = `👾 ${monster.name}`;
-        const monsterHpPercent = Math.max(0, Math.min(100, (monster.hp / monster.max_hp) * 100));
+        const monsterHpPercent = monster.max_hp > 0 ? Math.max(0, Math.min(100, (monster.hp / monster.max_hp) * 100)) : 0;
         const damageText = monster.lastDmg > 0 ? `<span class="effect-lifesteal"> (-${monster.lastDmg})</span>` : "";
 
         monsterStatsDiv.innerHTML = `
             <div class="bar-container">
-                <small>❤️ HP: ${monster.hp}/${monster.max_hp}${damageText}</small>
+                <small>❤️ HP: ${Math.max(0, monster.hp)}/${monster.max_hp}${damageText}</small>
                 <div class="progress-bar"><div class="progress-fill hp-fill" style="width: ${monsterHpPercent}%"></div></div>
             </div>
         `;

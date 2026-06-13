@@ -1,4 +1,4 @@
-import { question, randomRange, printSlow, wuerfelD20, updateUI } from './utils.js';
+import { question, randomRange, printSlow, wuerfelD20 } from './utils.js';
 import * as Story from './story.js';
 
 async function spielerZug(spieler, monster_name, monster_hp, helden) {
@@ -37,18 +37,10 @@ async function spielerZug(spieler, monster_name, monster_hp, helden) {
         const wurf = wuerfelD20();
         const gesamt_angriff = wurf + spieler.atk_bonus;
 
-        // 1.5 Priorität: Ultimate nutzen, wenn bereit
-        const ultimate = spieler.abilities.find(a => a.isUltimate && spieler.sp >= a.sp_kosten);
-        if (ultimate) {
-            spieler.sp -= ultimate.sp_kosten;
-            return ["fähigkeit", { ability: ultimate, targetHeld: null }];
-        }
-
         // KI nutzt zufällig eine Schadensfähigkeit, wenn genug AP da ist
-        const fähigkeit = spieler.abilities.find(a => a.schaden && !a.isUltimate && spieler.ap >= a.ap_kosten);
-
+        const fähigkeit = spieler.abilities.find(a => a.schaden && (a.ap_kosten !== undefined) && spieler.ap >= a.ap_kosten);
         if (fähigkeit && Math.random() > 0.6) {
-            if (fähigkeit.ap_kosten) spieler.ap -= fähigkeit.ap_kosten;
+            spieler.ap -= fähigkeit.ap_kosten;
             return ["fähigkeit", { ability: fähigkeit, targetHeld: null }];
         }
 
@@ -57,14 +49,13 @@ async function spielerZug(spieler, monster_name, monster_hp, helden) {
     }
 
     while (true) {
-        console.log(`\n🎮 [ZUG VON ${spieler.name.toUpperCase()}] HP: ${spieler.hp}/${spieler.max_hp} | AP: ${spieler.ap}/${spieler.max_ap} | SP: ${spieler.sp}%`);
+        console.log(`\n🎮 [ZUG VON ${spieler.name.toUpperCase()}] HP: ${spieler.hp}/${spieler.max_hp} | AP: ${spieler.ap}/${spieler.max_ap}`);
         console.log("1. Angreifen");
         console.log("2. Heiltrank nutzen");
         console.log("3. Ausrüstung wechseln");
         if (helden.length > 1) console.log("4. Verbündeten heilen");
         console.log("5. Fähigkeit einsetzen");
-        console.log("6. ULTIMATIVE FÄHIGKEIT");
-        const wahl = await question(`Was tust du? (1-6): `);
+        const wahl = await question(`Was tust du? (1-5): `);
         
         if (wahl === "1") {
             const wurf = wuerfelD20();
@@ -109,16 +100,16 @@ async function spielerZug(spieler, monster_name, monster_hp, helden) {
                 continue;
             }
             console.log("\n--- Verfügbare Fähigkeiten ---");
-            const normaleAbilities = spieler.abilities.filter(a => !a.isUltimate);
-            normaleAbilities.forEach((ab, i) => {
-                console.log(`${i + 1}. ${ab.name} (AP: ${ab.ap_kosten || 0})`);
+            spieler.abilities.forEach((ab, i) => {
+                console.log(`${i + 1}. ${ab.name} (AP: ${ab.ap_kosten})`);
             });
             const ab_wahl = await question("Wahl (0 für zurück): ");
             const idx = parseInt(ab_wahl) - 1;
 
-            if (!isNaN(idx) && idx >= 0 && idx < normaleAbilities.length) {
-                const ability = normaleAbilities[idx];
-                if (ability.ap_kosten && spieler.ap < ability.ap_kosten) {
+            if (!isNaN(idx) && idx >= 0 && idx < spieler.abilities.length) {
+                const ability = spieler.abilities[idx];
+                const kosten = ability.ap_kosten || 0;
+                if (spieler.ap < kosten) {
                     await printSlow("❌ Nicht genug Aktionspunkte (AP)!");
                     continue;
                 }
@@ -147,40 +138,9 @@ async function spielerZug(spieler, monster_name, monster_hp, helden) {
                     if (!targetHeld) continue;
                 }
 
-                spieler.ap -= ability.ap_kosten;
+                spieler.ap -= kosten;
                 return ["fähigkeit", { ability, targetHeld }];
             }
-        } else if (wahl === "6") {
-            const ultimate = spieler.abilities.find(a => a.isUltimate);
-            if (!ultimate) {
-                await printSlow("❌ Du besitzt noch keine ultimative Fähigkeit!");
-                continue;
-            }
-
-            if (spieler.sp < ultimate.sp_kosten) {
-                await printSlow(`❌ Deine ultimative Kraft ist noch nicht bereit! (${spieler.sp}/${ultimate.sp_kosten} SP)`);
-                continue;
-            }
-
-            let targetHeld = null;
-            // Falls die Ultimate heilt oder belebt, Ziel abfragen
-            if (ultimate.heilung || ultimate.belebt) {
-                const ziele = ultimate.belebt ? helden.filter(h => h.hp <= 0) : helden.filter(h => h.hp > 0);
-                if (ziele.length === 0) {
-                    await printSlow("Kein gültiges Ziel verfügbar!");
-                    continue;
-                }
-                console.log("\nZiel wählen:");
-                ziele.forEach((z, i) => console.log(`${i + 1}. ${z.name}`));
-                const z_wahl = await question("Wahl: ");
-                const z_idx = parseInt(z_wahl) - 1;
-                targetHeld = ziele[z_idx];
-                if (!targetHeld) continue;
-            }
-
-            // Kosten abziehen und Aktion zurückgeben
-            spieler.sp -= ultimate.sp_kosten;
-            return ["fähigkeit", { ability: ultimate, targetHeld }];
         }
         else if (wahl === "4" && helden.length > 1) {
             const verbuendete = helden.filter(h => h !== spieler && h.hp > 0);
@@ -225,9 +185,8 @@ async function spielerZug(spieler, monster_name, monster_hp, helden) {
 export async function teamKampf(helden, monster) {
     await printSlow(`\n⚔️ Ein mächtiger ${monster.name} (HP: ${monster.hp} | RK: ${monster.rk}) blockiert den Weg!`);
 
-    let monsterStatus = { schlaf: 0, verwirrt: 0, niederhalten: 0 };
+    let monsterStatus = { schlaf: 0, verwirrt: 0 };
 
-    monster.lastDmg = 0;
     // Monsterwerte basierend auf Spieleranzahl skalieren
     const numPlayers = helden.length;
     if (numPlayers > 1) {
@@ -243,6 +202,7 @@ export async function teamKampf(helden, monster) {
     while (monster.hp > 0 && helden.some(h => h.hp > 0)) {
         // AP-Regeneration für alle lebenden Helden am Rundenanfang
         await printSlow("\n--- RUNDENBEGINN ---");
+        monster.lastDmg = 0;
         helden.filter(h => h.hp > 0).forEach(held => {
             let apRegen = 5; // Standard
             // Zusätzliche AP durch Ausrüstung (Boss-Loot)
@@ -264,7 +224,7 @@ export async function teamKampf(helden, monster) {
             
             if (aktion === "angriff") {
                 monster.lastDmg = 0;
-                // Jeder Angriffsversuch baut 10 SP auf
+                // Basis SP-Gewinn pro Angriffsversuch
                 held.sp = Math.min(held.max_sp, held.sp + 10);
 
                 const { roll, natural } = wert;
@@ -273,7 +233,14 @@ export async function teamKampf(helden, monster) {
 
                 if (isFumble) {
                     await printSlow(`<span class="log-fumble">😵 KRITISCHER FEHLSCHLAG! 😵</span>`);
-                    await printSlow(`${held.name} stolpert über einen losen Stein und verliert die Balance! (Fehlschlag & -5 AP)`);
+                    const sprueche = [
+                        `${held.name} stolpert über einen losen Stein!`,
+                        `${held.name} verrutscht die Waffe in der Hand und schlägt weit daneben!`,
+                        `${held.name} wird von einem fiesen Staubkorn im Auge geblendet!`,
+                        `Die Ausrüstung von ${held.name} klappert so laut, dass der Schlag völlig misslingt!`,
+                        `${held.name} unterschätzt das Gewicht der Waffe und gerät ins Wanken!`
+                    ];
+                    await printSlow(`${sprueche[randomRange(0, sprueche.length - 1)]} (Fehlschlag & -5 AP)`);
                     held.ap = Math.max(0, held.ap - 5);
                 } else if (roll >= monster.rk || isCrit) {
                     const waffen_schaden = held.ausgeruestete_waffe ? held.ausgeruestete_waffe.wert : 2;
@@ -286,7 +253,7 @@ export async function teamKampf(helden, monster) {
 
                     monster.hp -= schaden;
                     monster.lastDmg = schaden;
-                    held.sp = Math.min(held.max_sp, held.sp + schaden); // Schaden füllt SP
+                    held.sp = Math.min(held.max_sp, held.sp + schaden);
                     await printSlow(`💥 ${isCrit ? "KRIT! " : "Treffer!"} ${held.name} fügt dem ${monster.name} ${schaden} Schaden zu.`);
 
                     // Effekt: Lebensraub
@@ -305,35 +272,17 @@ export async function teamKampf(helden, monster) {
                 } else {
                     await printSlow("❌ Verfehlt!");
                 }
-                updateUI(helden, monster, monsterStatus);
             }
 
             if (aktion === "fähigkeit") {
                 const { ability, targetHeld } = wert;
-                
-                // Visueller Effekt für Ultimates
-                if (ability.isUltimate) {
-                    await printSlow(`
-                        <div class="log-ultimate-container">
-                            <span class="ultimate-bolt">⚡</span>
-                            💥 ULTIMATIVE KRAFT: ${ability.name.toUpperCase()} 💥
-                        </div>
-                    `);
-                    const logEl = document.getElementById('log-panel');
-                    if (logEl) {
-                        logEl.classList.add('ultimate-activation-flash');
-                        setTimeout(() => logEl.classList.remove('ultimate-activation-flash'), 1000);
-                    }
-                } else {
-                    await printSlow(`✨ ${held.name} setzt ${ability.name} ein!`);
-                }
-
+                await printSlow(`✨ ${held.name} setzt ${ability.name} ein!`);
                 monster.lastDmg = 0;
 
                 if (ability.schaden) {
                     monster.hp -= ability.schaden;
                     monster.lastDmg = ability.schaden;
-                    held.sp = Math.min(held.max_sp, held.sp + ability.schaden); // Fähigkeitsschaden füllt SP
+                    held.sp = Math.min(held.max_sp, held.sp + ability.schaden);
                     await printSlow(`💥 ${ability.name} trifft ${monster.name} für ${ability.schaden} Schaden!`);
 
                     // Lebensraub funktioniert auch bei Fähigkeiten, wenn die Waffe es erlaubt
@@ -378,35 +327,32 @@ export async function teamKampf(helden, monster) {
                     monsterStatus.verwirrt = ability.verwirrt;
                     await printSlow(`🌀 ${monster.name} ist verwirrt!`);
                 }
-                updateUI(helden, monster, monsterStatus);
             }
 
             if (monster.hp <= 0) break;
         }
                 
-        if (monster.hp > 0) {
+        const lebende_helden = helden.filter(h => h.hp > 0);
+        
+        if (monster.hp > 0 && lebende_helden.length > 0) {
             if (monsterStatus.schlaf > 0) {
                 await printSlow(`\n💤 ${monster.name} schläft tief und fest und setzt diese Runde aus.`);
                 monsterStatus.schlaf--;
-                updateUI(helden, monster, monsterStatus);
-                continue;
-            }
-
-            if (monsterStatus.verwirrt > 0) {
+                continue; // Springt zum Rundenanfang zurück
+            } else if (monsterStatus.verwirrt > 0) {
                 monsterStatus.verwirrt--;
                 if (Math.random() > 0.5) {
                     await printSlow(`\n🌀 ${monster.name} ist völlig verwirrt!`);
                     const selbstSchaden = randomRange(5, 10);
-                    monster.lastDmg = selbstSchaden;
                     monster.hp -= selbstSchaden;
                     await printSlow(`💥 Es greift sich selbst an und erleidet ${selbstSchaden} Schaden!`);
-                    updateUI(helden, monster, monsterStatus);
-                    if (monster.hp <= 0) break;
                     continue;
                 }
             }
 
-            const lebende_helden = helden.filter(h => h.hp > 0);
+            // Zielprüfung: Sicherstellen, dass noch jemand lebt
+            if (lebende_helden.length === 0) break;
+
             const ziel = lebende_helden[Math.floor(Math.random() * lebende_helden.length)];
             
             await printSlow(`\n👹 Der ${monster.name} holt aus und greift ${ziel.name} an!`);
@@ -417,7 +363,14 @@ export async function teamKampf(helden, monster) {
             
             if (m_isFumble) {
                 await printSlow(`<span class="log-fumble">🌀 DER GEGNER PATZT! 🌀</span>`);
-                await printSlow(`Der ${monster.name} rutscht aus und sein Angriff geht völlig ins Leere!`);
+                const monsterSprueche = [
+                    `Der ${monster.name} rutscht auf einer Pfütze aus!`,
+                    `Der Angriff vom ${monster.name} geht völlig ins Leere!`,
+                    `Der ${monster.name} stolpert über seine eigenen Gliedmaßen!`,
+                    `Der ${monster.name} verfängt sich kurzzeitig in der Umgebung!`,
+                    `Ein plötzlicher Krampf lässt den Schlag vom ${monster.name} verpuffen!`
+                ];
+                await printSlow(monsterSprueche[randomRange(0, monsterSprueche.length - 1)]);
             } else if (monster_wurf >= ziel.ruestung_klasse() || m_isCrit) {
                 let schaden = randomRange(5, 12);
                 if (m_isCrit) {
@@ -429,7 +382,6 @@ export async function teamKampf(helden, monster) {
             } else {
                 await printSlow(`🛡️ ${ziel.name} blockt den Angriff erfolgreich ab!`);
             }
-            updateUI(helden, monster, monsterStatus);
         }
     }
                 

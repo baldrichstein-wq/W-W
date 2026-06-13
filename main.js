@@ -16,7 +16,11 @@ function zeigeHallOfFame() {
     if (history.length === 0) {
         listContainer.innerHTML = '<p style="text-align:center;">Noch keine Legenden verzeichnet...</p>';
     } else {
-        history.sort((a, b) => (b.level * 1000 + b.xp) - (a.level * 1000 + a.xp));
+        history.sort((a, b) => {
+            const scoreA = (a.level || 0) * 1000 + (a.xp || 0);
+            const scoreB = (b.level || 0) * 1000 + (b.xp || 0);
+            return scoreB - scoreA;
+        });
         history.forEach((h, i) => {
             const medal = i === 0 ? "🥇" : (i === 1 ? "🥈" : "🥉");
             const entry = document.createElement('div');
@@ -49,10 +53,19 @@ document.addEventListener('DOMContentLoaded', () => {
     const resetBtn = document.getElementById('reset-btn');
     const modal = document.getElementById('hof-modal');
     const closeBtn = document.querySelector('.close-modal');
+    const brightnessSlider = document.getElementById('bg-brightness');
+    const gameLog = document.getElementById('game-log');
 
     if (hofBtn) hofBtn.addEventListener('click', zeigeHallOfFame);
     if (resetBtn) resetBtn.addEventListener('click', resetChampion);
     
+    if (brightnessSlider && gameLog) {
+        brightnessSlider.addEventListener('input', (e) => {
+            const opacity = 1 - (e.target.value / 100);
+            gameLog.style.backgroundColor = `rgba(15, 10, 5, ${opacity})`;
+        });
+    }
+
     if (closeBtn) closeBtn.onclick = () => modal.style.display = 'none';
     window.onclick = (e) => { if (e.target === modal) modal.style.display = 'none'; };
 });
@@ -152,7 +165,7 @@ async function spielStarten() {
         
         const wahl = await question("Was ist euer Plan? (1-3): ");
         if (wahl === "1") {
-            await Story.shopBesuch(helden, true);
+            await Story.shopBesuch(helden);
         } else if (wahl === "2") {
             amEingang = false;
         } else if (wahl === "3") {
@@ -325,6 +338,35 @@ async function spielStarten() {
         if (!await Combat.teamKampf(helden, targetMonster)) return; // Game Over Abbruch
 
         if (ebene === 8) {
+            // --- SECRET EBENE LOGIK ---
+            const hatSiegel = helden.some(h => h.inventar.some(it => it.name === "Goldener Siegelring"));
+            
+            if (hatSiegel) {
+                await printSlow("\n✨ Der Goldene Siegelring in eurem Besitz beginnt gleißend hell zu leuchten!");
+                await printSlow("Hinter dem Thron öffnet sich ein instabiler Riss in der Luft. Ein Portal in eine Secret Ebene!");
+                const wahl = await question("Wollt ihr das Portal betreten und das letzte Rätsel wagen? (ja/nein): ");
+                
+                if (wahl.toLowerCase() === "ja") {
+                    const geloest = await Story.raetselPhase();
+                    if (geloest) {
+                        await Story.secretEbeneIntro();
+                        const secretBoss = new Monster("Leeren-Wächter", 400, 20, 20, 2000, 5000, { Energie: 1.5, Physisch: 0.5 });
+                        if (!await Combat.teamKampf(helden, secretBoss)) return;
+                        await printSlow(`\n🌟 <span class="rare-item">UNGLAUBLICH! Ihr habt das wahre Ende des Dungeons bezwungen!</span>`);
+
+                        // --- DER ROSA ORK EVENT ---
+                        await printSlow("\nPlötzlich raschelt es in einer dunklen Ecke der Leere. Ein kräftiger Ork tritt hervor, der einen großen Eimer mit leuchtend rosa Farbe bei sich trägt.");
+                        await printSlow(`Ork: "Ihr habt mich gefunden, das wird nie wieder passieren!"`);
+                        await printSlow("\nMit einer entschlossenen Geste schüttet er sich den Eimer rosa Farbe über den Kopf. Er trieft nun von oben bis unten in hellem Pink.");
+                        await printSlow(`Ork: "Jetzt bin ich unsichtbar, ihr könnt mich nicht mehr sehen!"`);
+                        await printSlow("\nDer Ork schleicht (extrem auffällig) davon und verschwindet im Nebel der Dimension.");
+                    }
+                }
+            }
+
+            await printSlow("\n✨ Ein gleißendes Portal öffnet sich und zieht euch zurück in die Welt des Lichts...");
+            await question("Drückt Enter, um zur Siegerehrung zu gelangen...");
+
             console.log("\n" + "★".repeat(50));
             await printSlow("🏆 SIEG! Der Thron des Dungeons wurde erobert!");
             
@@ -385,4 +427,6 @@ async function spielStarten() {
 }
 
 // Spiel starten
-spielStarten();
+document.addEventListener('DOMContentLoaded', () => {
+    spielStarten().catch(err => console.error("Kritischer Fehler beim Spielstart:", err));
+});

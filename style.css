@@ -33,6 +33,24 @@ body {
     display: flex;
     gap: 15px;
     justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.control-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: 'Cinzel', serif;
+    font-size: 0.85em;
+    color: var(--accent-color);
+    margin-left: 10px;
+}
+
+input[type="range"] {
+    cursor: pointer;
+    accent-color: var(--accent-color);
+    width: 100px;
 }
 
 .meta-btn {
@@ -252,7 +270,7 @@ header h1 {
 
 .log-entry {
     animation: logFadeIn 0.5s ease-out forwards;
-    text-shadow: 1px 1px 2px #000; /* Zusätzlicher Kontrast zum Hintergrund */
+    text-shadow: 2px 2px 4px #000, 0px 0px 10px rgba(0,0,0,0.5); /* Deutlich stärkerer Kontrast */
 }
 
 /* Spezialeffekt Highlights im Log */

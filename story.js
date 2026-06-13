@@ -1,6 +1,8 @@
 import Item from './item.js';
 import { printSlow, question, wuerfelD20, randomRange } from './utils.js';
 
+let schluesselGefunden = false;
+
 const SHOP_WAREN = {
     "1": { label: "Heiltrank kaufen (5 Gold)", cost: 5, type: "traenke" },
     "2": { label: "Stahlschwert kaufen (25 Gold, +8 Schaden)", cost: 25, type: "item", name: "Stahlschwert", kind: "Waffe", val: 8 },
@@ -15,14 +17,14 @@ const SHOP_WAREN = {
     "9": { label: "Pflanzenteile (1 Gold)", cost: 1, type: "item", name: "Pflanzenteile", kind: "Material", val: 0 },
     "10": { label: "Fläschchen (1 Gold)", cost: 1, type: "item", name: "Fläschchen", kind: "Material", val: 0 },
     // Waffen & Ausrüstung
-    "13": { label: "Dager (6 Gold, + 3 Schaden)", cost: 6, type: "item", name: "Dager", kind: "Waffe", val: 3 },
+    "13": { label: "Dolch (6 Gold, + 3 Schaden)", cost: 6, type: "item", name: "Dolch", kind: "Waffe", val: 3 },
     "14": { label: "Axt des Vernichters (20 Gold, + 8 Schaden)", cost: 20, type: "item", name: "Axt des Vernichters", kind: "Waffe", val: 8 },
     "15": { label: "Feuriger Zauberstab T2 (10 Gold, + 8 Schaden)", cost: 10, type: "item", name: "Feuerstab T2", kind: "Waffe", val: 8 },
     "16": { label: "Blitzer (10 Gold, + 8 Schaden)", cost: 10, type: "item", name: "Blitzer", kind: "Waffe", val: 8 },
     // Heiler & Barde
     "18": { label: "Stab der Großen Heilung (12 Gold)", cost: 12, type: "item", name: "Heilerstab", kind: "Waffe", val: 2 },
-    "21": { label: "Drehleier (15 Gold)", cost: 15, type: "item", name: "Drehleier", kind: "Instrument", val: 0 },
-    "22": { label: "Laute der Schönheit (15 Gold)", cost: 15, type: "item", name: "Laute", kind: "Instrument", val: 0 },
+    "21": { label: "Drehleier (15 Gold)", cost: 15, type: "item", name: "Drehleier", kind: "Waffe", val: 0 },
+    "22": { label: "Laute der Schönheit (15 Gold)", cost: 15, type: "item", name: "Laute", kind: "Waffe", val: 0 },
     // Nahrung (Direkte HP Heilung)
     "26": { label: "Essensration (2 Gold, + 4 HP)", cost: 2, type: "hp", val: 4, name: "Essensration" },
     "27": { label: "Wasser (2 Gold, + 2 HP)", cost: 2, type: "hp", val: 2, name: "Wasser" },
@@ -344,8 +346,46 @@ async function bossLootGeben(helden) {
     empfaenger.inventar.push(item);
     
     await printSlow(`✨ ${empfaenger.name} erhält ein <span class="rare-item">seltenes Fundstück: ${item.name}</span> (${item.typ}: ${item.wert})!`);
+
+    // Chance auf das Secret Item (30% bei Mini-Bossen, falls noch nicht gefunden)
+    if (!schluesselGefunden && Math.random() < 0.3) {
+        const siegel = new Item("Goldener Siegelring", "Secret", 0);
+        empfaenger.inventar.push(siegel);
+        schluesselGefunden = true;
+        await printSlow(`\n🗝️ <span class="rare-item">HALT! Was ist das?</span> ${empfaenger.name} findet zudem einen **${siegel.name}**. Er scheint magisch zu vibrieren...`);
+    }
     
     if (empfaenger.isKI) empfaenger.kiAutomatischAusruesten();
+}
+
+async function raetselPhase() {
+    const raetselPool = [
+        { q: "Was hat Städte, aber keine Häuser; Berge, aber keine Bäume; und Wasser, aber keine Fische?", a: "landkarte" },
+        { q: "Ich bin immer hungrig, ich muss immer gefüttert werden. Das Holz, das ich berühre, wird bald rot. Was bin ich?", a: "feuer" },
+        { q: "Ich habe einen Hals, aber keinen Kopf. Ich habe zwei Arme, aber keine Hände. Was bin ich?", a: "hemd" },
+        { q: "Was wird nass, während es trocknet?", a: "handtuch" }
+    ];
+
+    const r = raetselPool[randomRange(0, raetselPool.length - 1)];
+    await printSlow("\n🔮 Eine spektrale Stimme hallt durch den Raum:");
+    await printSlow(`"<span class="synergy-text">${r.q}</span>"`);
+    
+    const antwort = await question("Deine Antwort: ");
+    if (antwort.toLowerCase().trim() === r.a) {
+        await printSlow(`\n✨ <span class="hp-gain">"Richtig... tretet ein in das Reich, das jenseits der Zeit liegt."</span>`);
+        return true;
+    } else {
+        await printSlow(`\n💨 <span class="effect-lifesteal">"Falsch! Das Portal bleibt euch verschlossen."</span>`);
+        return false;
+    }
+}
+
+async function secretEbeneIntro() {
+    const logPanel = document.getElementById('log-panel');
+    if (logPanel) logPanel.style.backgroundImage = "url('img/Dungon-Secret.png')";
+    await printSlow(`\n🌌 <span class="rare-item">DIE VERBORGENE DIMENSION</span> 🌌`);
+    await printSlow("Ihr tretet durch den Riss in der Realität. Hier gelten die Gesetze der Natur nicht mehr.");
+    await printSlow("Vor euch schwebt der **Leeren-Wächter**, das wahre Ende dieses Dungeons.");
 }
 
 async function faehigkeitWaehlen(spieler) {
@@ -573,4 +613,4 @@ async function tavernenBesuch(helden) {
     helden.forEach(h => h.hp = Math.min(h.max_hp, h.hp + 10));
 }
 
-export { schatzFinden, shopBesuch, tavernenBesuch, bossLootGeben, faehigkeitWaehlen, synergienPruefen, craftingMenue, schwarzeTafel };
+export { schatzFinden, shopBesuch, tavernenBesuch, bossLootGeben, faehigkeitWaehlen, synergienPruefen, craftingMenue, schwarzeTafel, raetselPhase, secretEbeneIntro };
