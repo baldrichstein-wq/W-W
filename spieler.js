@@ -11,9 +11,11 @@ export default class Spieler {
         this.traenke = 0;
         this.inventar = [];
         this.isCriticalHpSoundPlayed = false; // Flag für kritische HP-Soundwiedergabe
-        this.gold = 15; // Startgold
+        this.gold = 30; // Startgold
         this.ap = 0; // Aktionspunkte
         this.max_ap = 0; // Maximale Aktionspunkte
+        this.sp = 0; // Spezialpunkte für Ultimates
+        this.max_sp = 100;
         
         // Standard-Boni
         this.grund_atk = 3;   // Für den Angriffswurf
@@ -123,104 +125,154 @@ export default class Spieler {
             this.max_hp = this.grund_hp + this.rasse_hp +10;
             this.atk_bonus = this.grund_atk + this.rasse_atk +3;
             this.def_bonus = this.grund_def + this.rasse_def +7;
+            this.grund_cha = 0;
             this.ausgeruestete_ruestung = new Item("Kettenhemd", "Ruestung", 14);
             this.ausgeruestete_waffe = new Item("Eisenschwert", "Waffe", 6);
             this.ausgeruestete_schild = new Item("Holzschild", "Schild", 2);
             this.abilities = [
                 { name: "Mächtiger Hieb", ap_kosten: 10, schaden: 15 },
                 { name: "Seitlicher Hieb", ap_kosten: 15, schaden: 15 },
-                { name: "Wutrauch", ap_kosten: 20, atk_buff: 5 }
+                { name: "Wutrauch", ap_kosten: 20, atk_buff: 5 },
+                { name: "Durchbrechen", ap_kosten: 18, schaden: 20 },
+                { name: "Zorn des Ares", sp_kosten: 100, schaden: 60, atk_buff: 15, isUltimate: true, element: "Physisch" }
             ];
+            this.inventar.push(new Item("Essensration", "Gegenstand", 4));
+            this.inventar.push(new Item("Wetzstein", "Material", 2));
         } else if (klasseLower === "magier") {
             this.max_hp = this.grund_hp + this.rasse_hp +3;
             this.atk_bonus = this.grund_atk + this.rasse_atk +4;
             this.def_bonus = this.grund_def + this.rasse_def +1;
+            this.grund_cha = 2;
             this.ausgeruestete_ruestung = new Item("Stoffrobe", "Ruestung", 10);
             this.ausgeruestete_waffe = new Item("Zauberstab", "Waffe", 8);
             this.abilities = [
                 { name: "Feuerball", ap_kosten: 20, schaden: 20 },
                 { name: "Windschnitt", ap_kosten: 12, schaden: 10 },
-                { name: "Erlösung", ap_kosten: 2, execute_threshold: 5 }
+                { name: "Erlösung", ap_kosten: 2, execute_threshold: 5 },
+                { name: "Blitzschlag", ap_kosten: 15, schaden: 15 },
+                { name: "Armageddon", sp_kosten: 100, schaden: 80, niederhalten: 2, isUltimate: true, element: "Feuer" }
             ];
+            this.inventar.push(new Item("Wasser", "Gegenstand", 2));
+            this.inventar.push(new Item("Kristallsplitter", "Material", 5));
         } else if (klasseLower === "schurke") {
             this.max_hp = this.grund_hp + this.rasse_hp + 2;
             this.atk_bonus = this.grund_atk +this.rasse_atk +5;
             this.def_bonus = this.grund_def + this.rasse_def +0;
+            this.grund_cha = 1;
             this.ausgeruestete_ruestung = new Item("Lederrüstung", "Ruestung", 12);
             this.ausgeruestete_waffe = new Item("Dolch", "Waffe", 4);
             this.abilities = [
                 { name: "Meucheln", ap_kosten: 12, schaden: 18 },
                 { name: "Hinterhalt", ap_kosten: 6, schaden: 5 },
-                { name: "Tarnen", ap_kosten: 10, stealth_buff: 6 }
+                { name: "Tarnen", ap_kosten: 10, stealth_buff: 6 },
+                { name: "Giftstoß", ap_kosten: 15, schaden: 10, verwirrt: 1 },
+                { name: "Nachtschatten-Exitus", sp_kosten: 100, schaden: 70, verwirrt: 3, isUltimate: true, element: "Physisch" }
             ];
+            this.inventar.push(new Item("Gifttrank", "Trank", 5));
+            this.inventar.push(new Item("Wurfmesser", "Waffe", 2));
         } else if (klasseLower === "verteidiger") {
             this.max_hp = this.grund_hp + this.rasse_hp + 15;
             this.atk_bonus = this.grund_atk + this.rasse_atk + 0;
             this.def_bonus = this.grund_def + this.rasse_def + 5;
+            this.grund_cha = 0;
             this.ausgeruestete_ruestung = new Item("Plattenpanzer", "Ruestung", 16);
             this.ausgeruestete_waffe = new Item("Keule", "Waffe", 4);
             this.ausgeruestete_schild = new Item("Turmschild", "Schild", 4);
             this.abilities = [
                 { name: "Schildstoß", ap_kosten: 8, schaden: 10 },
                 { name: "Verspotten", ap_kosten: 12, stealth_debuff: -5 },
-                { name: "Blocken", ap_kosten: 14, schaden_reduktion: 5 }
+                { name: "Blocken", ap_kosten: 14, schaden_reduktion: 5 },
+                { name: "Stahlmauer", ap_kosten: 15, def_buff: 5 },
+                { name: "Götterschild", sp_kosten: 100, def_buff: 15, heilung: 30, niederhalten: 1, isUltimate: true, element: "Heilig" }
             ];
+            this.inventar.push(new Item("Essensration", "Gegenstand", 4));
+            this.inventar.push(new Item("Rüstungspolitur", "Material", 3));
         } else if (klasseLower === "heiler") {
             this.max_hp = this.grund_hp + this.rasse_hp + 4;
             this.atk_bonus = this.grund_atk + this.rasse_atk + 0;
             this.def_bonus = this.grund_def + this.rasse_def +1;
+            this.grund_cha = 2;
             this.ausgeruestete_ruestung = new Item("Stoffrobe", "Ruestung", 10);
             this.ausgeruestete_waffe = new Item("Heilerstab", "Waffe", 3);
             this.abilities = [
                 { name: "Lichtsegen", ap_kosten: 15, heilung: 20 },
                 { name: "Wiedergeburt", ap_kosten: 30, belebt: 1 },
-                { name: "Lichtstrahl", ap_kosten: 5, schaden: 8 }
+                { name: "Lichtstrahl", ap_kosten: 5, schaden: 8 },
+                { name: "Heiliges Licht", ap_kosten: 10, heilung: 15 },
+                { name: "Göttliches Erwachen", sp_kosten: 100, heilung: 50, belebt: 1, atk_buff: 10, isUltimate: true, element: "Heilig" }
             ];
+            this.inventar.push(new Item("Heiliges Wasser", "Gegenstand", 5));
+            this.inventar.push(new Item("Verbandszeug", "Material", 3));
         } else if (klasseLower === "barde") {
             this.max_hp = this.grund_hp + this.rasse_hp + 5;
             this.atk_bonus = this.grund_atk + this.rasse_atk + 2;
             this.def_bonus = this.grund_def + this.rasse_def +1;
+            this.grund_cha = 6;
             this.ausgeruestete_ruestung = new Item("Stoffrobe", "Ruestung", 10);
             this.ausgeruestete_waffe = new Item("Laute", "Waffe", 4);
             this.abilities = [
                 { name: "Inspirierendes Lied", ap_kosten: 10, heilung: 10, bonus_schaden: 5 },
-                { name: "Schlaflied", ap_kosten: 20, schlaf_dauer: 1 },
-                { name: "Songversuch", ap_kosten: 15, verwirrt: 1 }
+                { name: "Schlaflied", ap_kosten: 20, schlaf_dauer: 2 },
+                { name: "Songversuch", ap_kosten: 15, verwirrt: 3 },
+                { name: "Siegeslied", ap_kosten: 12, atk_buff: 3 },
+                { name: "Symphonie des Endes", sp_kosten: 100, schaden: 40, atk_buff: 10, schlaf_dauer: 2, isUltimate: true, element: "Schall" }
             ];
+            this.inventar.push(new Item("BockBier", "Gegenstand", 3));
+            this.inventar.push(new Item("Ersatzsaiten", "Material", 2));
         } else if (klasseLower === "tueftler") {
             this.max_hp = this.grund_hp + this.rasse_hp + 8;
             this.atk_bonus = this.grund_atk + this.rasse_atk + 3;
             this.def_bonus = this.grund_def + this.rasse_def + 3;
+            this.grund_cha = 1;
             this.ausgeruestete_ruestung = new Item("Lederrüstung", "Ruestung", 12);
             this.ausgeruestete_waffe = new Item("Schraubenschlüssel", "Waffe", 5);
             this.abilities = [
-                { name: "Sprengfalle", material_kosten: "Sprengfalle", schaden: 20 },
-                { name: "Geschütz", material_kosten: "Geschütz", schaden: 10, leben: 10 },
-                { name: "Netzkanone", material_kosten: "Netz", faengt: 1 }
+                { name: "Sprengfalle", ap_kosten: 0, material_kosten: "Sprengfalle", schaden: 20 },
+                { name: "Geschütz", ap_kosten: 0, material_kosten: "Geschütz", schaden: 10, leben: 10 },
+                { name: "Netzkanone", ap_kosten: 0, material_kosten: "Netz", niederhalten: 3 },
+                { name: "Dampfstoß", ap_kosten: 0, schaden: 12 },
+                { name: "Annihilator-Drohne", sp_kosten: 100, schaden: 90, niederhalten: 2, isUltimate: true, element: "Energie" }
             ];
+            this.inventar.push(new Item("Mechanischeteile", "Material", 0));
+            this.inventar.push(new Item("Mechanischeteile", "Material", 0));
+            this.inventar.push(new Item("Schrauben und Muttern", "Material", 0));
+            this.inventar.push(new Item("Maschinenoel", "Material", 0));
         } else if (klasseLower === "alchemist") {
             this.max_hp = this.grund_hp + this.rasse_hp + 8;
             this.atk_bonus = this.grund_atk + this.rasse_atk + 2;
             this.def_bonus = this.grund_def + this.rasse_def + 3;
+            this.grund_cha = 1;
             this.ausgeruestete_ruestung = new Item("Lederschürze", "Ruestung", 11);
             this.ausgeruestete_waffe = new Item("Wurfbombe", "Waffe", 7);
             this.abilities = [
-                { name: "Säureflasche", material_kosten: "Säuretrank", schaden: 20 },
-                { name: "Giftflasche", material_kosten: "Gifttrank", schaden: 10 },
-                { name: "Heilflasche", material_kosten: "Heiltrank", leben: 10 }
+                { name: "Säureflasche", ap_kosten: 0, material_kosten: "Säuretrank", schaden: 20 },
+                { name: "Giftflasche", ap_kosten: 0, material_kosten: "Gifttrank", schaden: 10 },
+                { name: "Heilflasche", ap_kosten: 0, material_kosten: "Heiltrank", leben: 10 },
+                { name: "Rauchbombe", ap_kosten: 0, verwirrt: 1 },
+                { name: "Stein der Weisen", sp_kosten: 100, schaden: 50, heilung: 50, verwirrt: 2, isUltimate: true, element: "Säure" }
             ];
+            this.inventar.push(new Item("Pflanzenteile", "Material", 0));
+            this.inventar.push(new Item("Pflanzenteile", "Material", 0));
+            this.inventar.push(new Item("Fläschchen", "Material", 0));
+            this.inventar.push(new Item("Fläschchen", "Material", 0));
+            this.inventar.push(new Item("Bestienteile", "Material", 0));
         } 
         else {
             this.max_hp = this.grund_hp + this.rasse_hp;
             this.atk_bonus = this.grund_atk + this.rasse_atk;
             this.def_bonus = this.grund_def + this.rasse_def;
+            this.grund_cha = 0;
+            this.inventar.push(new Item("Altes Brot", "Gegenstand", 1));
         }
         
         // Korrektur des Typo und Initialisierung der AP
-        this.grund_ap = 20; // Standard-Aktionspunkte
+        this.grund_ap = 30; // Erhöht auf 30 (vorher 20)
         this.max_ap = this.grund_ap + this.rasse_ap;
+        this.grund_cha += this.rasse_cha;
         this.hp = this.max_hp;
         this.ap = this.max_ap; // AP starten voll
+        this.verbrauchteMaterialien = [];
+        this.activeQuests = [];
     }
 
     ruestung_klasse() {
@@ -294,7 +346,9 @@ export default class Spieler {
             this.ap = this.max_ap; // AP regenerieren beim Level-Up
             this.atk_bonus += 1;
             console.log(`\n🌟 LEVEL UP für ${this.name}! Level ${this.level}!`);
+            return true;
         }
+        return false;
     }
 
     zeige_status() {

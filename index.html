@@ -10,23 +10,24 @@
     <header>
         <h1>Dungeons Koop-Edition</h1>
         <p>Ein kooperatives Browser-RPG</p>
+        <div id="meta-controls">
+            <button id="hof-btn" class="meta-btn">🏆 Ruhmeshalle</button>
+            <button id="reset-btn" class="meta-btn">♻️ Boss zurücksetzen</button>
+        </div>
     </header>
 
     <main id="game-container">
         <!-- Status Panel für Spieler -->
         <section id="stats-panel">
-            <div class="player-card" id="player1-card">
-                <h3>Spieler 1</h3>
-                <div id="p1-status" class="status-text">Wartet auf Heldenerstellung...</div>
-            </div>
-            <div class="player-card" id="player2-card">
-                <h3>Spieler 2</h3>
-                <div id="p2-status" class="status-text">Wartet auf Heldenerstellung...</div>
-            </div>
         </section>
 
         <!-- Hauptbereich für Textausgabe -->
         <section id="log-panel">
+            <!-- Monster Status Display (Sticky am oberen Rand des Logs) -->
+            <div id="monster-ui" class="player-card" style="display: none; position: sticky; top: 0; z-index: 10; margin-bottom: 15px; border-color: var(--header-color); background-color: var(--panel-bg);">
+                <h3 id="monster-name-ui" style="color: var(--header-color); border-color: var(--header-color);">Gegner</h3>
+                <div id="monster-stats-ui" class="status-text"></div>
+            </div>
             <div id="game-log"></div>
         </section>
 
@@ -39,6 +40,17 @@
             </div>
         </section>
     </main>
+
+    <!-- Modal für die Ruhmeshalle -->
+    <div id="hof-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h2 class="hof-title">🏆 Ruhmeshalle 🏆</h2>
+            <div id="hof-list">
+                <!-- Einträge werden dynamisch generiert -->
+            </div>
+        </div>
+    </div>
 
     <audio id="critical-hp-sound" src="audio/warning.mp3" preload="auto"></audio>
     <script type="module" src="main.js"></script>

@@ -9,7 +9,8 @@ const originalLog = console.log;
 console.log = (...args) => {
     originalLog(...args);
     const p = document.createElement('p');
-    p.textContent = args.join(' ');
+    p.innerHTML = args.join(' ');
+    p.classList.add('log-entry');
     logPanel.appendChild(p);
     logPanel.scrollTop = logPanel.scrollHeight;
 };

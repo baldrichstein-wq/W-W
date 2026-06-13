@@ -1,4 +1,5 @@
 import { question, randomRange, printSlow, wuerfelD20 } from './utils.js';
+import * as Story from './story.js';
 
 async function spielerZug(spieler, monster_name, monster_hp, helden) {
     if (spieler.isKI) {
@@ -44,7 +45,7 @@ async function spielerZug(spieler, monster_name, monster_hp, helden) {
         }
 
         await printSlow(`⚔️ ${spieler.name} greift an! Wurf: ${wurf} (+${spieler.atk_bonus}) = ${gesamt_angriff}`);
-        return ["angriff", gesamt_angriff];
+        return ["angriff", { roll: gesamt_angriff, natural: wurf }];
     }
 
     while (true) {
@@ -60,7 +61,7 @@ async function spielerZug(spieler, monster_name, monster_hp, helden) {
             const wurf = wuerfelD20();
             const gesamt_angriff = wurf + spieler.atk_bonus;
             await printSlow(`🎲 Würfel: ${wurf} (+${spieler.atk_bonus}) = ${gesamt_angriff} gegen RK des Monsters.`);
-            return ["angriff", gesamt_angriff];
+            return ["angriff", { roll: gesamt_angriff, natural: wurf }];
             
         } else if (wahl === "2") {
             if (spieler.traenke > 0) {
@@ -195,16 +196,25 @@ export async function teamKampf(helden, monster) {
         monster.xp = monster.xp * numPlayers; // XP pro Spieler
         monster.gold = monster.gold * numPlayers; // Gold pro Spieler
         await printSlow(`(Das Monster skaliert mit ${numPlayers} Helden: HP: ${monster.hp}, ATK: ${monster.atk}, RK: ${monster.rk})`);
+        updateUI(helden, monster, monsterStatus);
     }
     
     while (monster.hp > 0 && helden.some(h => h.hp > 0)) {
         // AP-Regeneration für alle lebenden Helden am Rundenanfang
         await printSlow("\n--- RUNDENBEGINN ---");
         helden.filter(h => h.hp > 0).forEach(held => {
-            const apRegen = 5; // Standard-AP-Regeneration pro Runde
+            let apRegen = 5; // Standard
+            // Zusätzliche AP durch Ausrüstung (Boss-Loot)
+            const ausruestung = [held.ausgeruestete_waffe, held.ausgeruestete_ruestung, held.ausgeruestete_schild];
+            ausruestung.forEach(item => {
+                if (item?.effekt?.typ === "ap_regen") apRegen += item.effekt.wert;
+            });
+
             held.ap = Math.min(held.max_ap, held.ap + apRegen);
-            console.log(`✨ ${held.name} regeneriert ${apRegen} AP. (Aktuell: ${held.ap}/${held.max_ap})`);
+            console.log(`<span class="effect-ap">✨ ${held.name} regeneriert ${apRegen} AP.</span> (Aktuell: ${held.ap}/${held.max_ap})`);
         });
+        updateUI(helden, monster, monsterStatus);
+
         for (const held of helden) {
             if (held.hp <= 0) continue;
                 
@@ -212,11 +222,34 @@ export async function teamKampf(helden, monster) {
             const [aktion, wert] = await spielerZug(held, monster.name, monster.hp, helden);
             
             if (aktion === "angriff") {
-                if (wert >= monster.rk) {
+                const { roll, natural } = wert;
+                const isCrit = natural === 20;
+                const isFumble = natural === 1;
+
+                if (isFumble) {
+                    await printSlow(`<span class="log-fumble">😵 KRITISCHER FEHLSCHLAG! 😵</span>`);
+                    await printSlow(`${held.name} stolpert über einen losen Stein und verliert die Balance! (Fehlschlag & -5 AP)`);
+                    held.ap = Math.max(0, held.ap - 5);
+                } else if (roll >= monster.rk || isCrit) {
                     const waffen_schaden = held.ausgeruestete_waffe ? held.ausgeruestete_waffe.wert : 2;
-                    const schaden = randomRange(1, waffen_schaden) + held.level;
+                    let schaden = randomRange(1, waffen_schaden) + held.level;
+
+                    if (isCrit) {
+                        schaden *= 2;
+                        await printSlow(`<span class="log-critical">💥 KRITISCHER TREFFER! 💥</span>`);
+                    }
+
                     monster.hp -= schaden;
-                    await printSlow(`💥 Treffer! ${held.name} fügt dem ${monster.name} ${schaden} Schaden zu.`);
+                    await printSlow(`💥 ${isCrit ? "KRIT! " : "Treffer!"} ${held.name} fügt dem ${monster.name} ${schaden} Schaden zu.`);
+
+                    // Effekt: Lebensraub
+                    if (held.ausgeruestete_waffe?.effekt?.typ === "lebensraub") {
+                        const heilung = Math.floor(schaden * held.ausgeruestete_waffe.effekt.wert);
+                        if (heilung > 0) {
+                            held.hp = Math.min(held.max_hp, held.hp + heilung);
+                            await printSlow(`<span class="effect-lifesteal">🩸 Lebensraub!</span> ${held.name} heilt sich um <span class="hp-gain">${heilung} HP</span>.`);
+                        }
+                    }
                     
                     if (monsterStatus.schlaf > 0 && monster.hp > 0) {
                         monsterStatus.schlaf = 0;
@@ -225,6 +258,8 @@ export async function teamKampf(helden, monster) {
                 } else {
                     await printSlow("❌ Verfehlt!");
                 }
+                // UI nach Angriff aktualisieren
+                updateUI(helden, monster, monsterStatus);
             }
 
             if (aktion === "fähigkeit") {
@@ -232,8 +267,25 @@ export async function teamKampf(helden, monster) {
                 await printSlow(`✨ ${held.name} setzt ${ability.name} ein!`);
 
                 if (ability.schaden) {
-                    monster.hp -= ability.schaden;
-                    await printSlow(`💥 ${ability.name} trifft ${monster.name} für ${ability.schaden} Schaden!`);
+                    let finalSchaden = ability.schaden;
+                    let elementText = "";
+                    if (ability.element && monster.resistenzen[ability.element]) {
+                        const multiplier = monster.resistenzen[ability.element];
+                        finalSchaden = Math.round(finalSchaden * multiplier);
+                        elementText = multiplier < 1 ? ` (resistent gegen ${ability.element})` : ` (schwach gegen ${ability.element})`;
+                        await printSlow(`Elementar-Effekt: ${ability.element} ${multiplier < 1 ? 'Resistenz' : 'Schwäche'}!`);
+                    }
+                    monster.hp -= finalSchaden;
+                    await printSlow(`💥 ${ability.name} trifft ${monster.name} für ${finalSchaden} Schaden${elementText}!`);
+
+                    // Lebensraub funktioniert auch bei Fähigkeiten, wenn die Waffe es erlaubt
+                    if (held.ausgeruestete_waffe?.effekt?.typ === "lebensraub") {
+                        const heilung = Math.floor(ability.schaden * held.ausgeruestete_waffe.effekt.wert);
+                        if (heilung > 0) {
+                            held.hp = Math.min(held.max_hp, held.hp + heilung);
+                            await printSlow(`<span class="effect-lifesteal">🩸 Lebensraub!</span> ${held.name} heilt sich um <span class="hp-gain">${heilung} HP</span>.`);
+                        }
+                    }
                     
                     if (monsterStatus.schlaf > 0 && monster.hp > 0) {
                         monsterStatus.schlaf = 0;
@@ -246,7 +298,11 @@ export async function teamKampf(helden, monster) {
                 }
                 if (ability.atk_buff) {
                     held.atk_bonus += ability.atk_buff;
-                    await printSlow(`🔥 ${held.name} kanalisiert Wut! (+${ability.atk_buff} ATK Bonus)`);
+                    await printSlow(`<span class="buff-text">🔥 ${held.name} kanalisiert Wut! (+${ability.atk_buff} ATK Bonus)</span>`);
+                }
+                if (ability.def_buff) {
+                    held.def_bonus += ability.def_buff;
+                    await printSlow(`<span class="buff-text">🛡️ ${held.name} stärkt die Verteidigung! (+${ability.def_buff} RK Bonus)</span>`);
                 }
                 if (ability.execute_threshold && monster.hp <= ability.execute_threshold) {
                     monster.hp = 0;
@@ -292,26 +348,42 @@ export async function teamKampf(helden, monster) {
             const ziel = lebende_helden[Math.floor(Math.random() * lebende_helden.length)];
             
             await printSlow(`\n👹 Der ${monster.name} holt aus und greift ${ziel.name} an!`);
-            const monster_wurf = wuerfelD20() + monster.atk;
+            const m_roll = wuerfelD20();
+            const monster_wurf = m_roll + monster.atk;
+            const m_isCrit = m_roll === 20;
+            const m_isFumble = m_roll === 1;
             
-            if (monster_wurf >= ziel.ruestung_klasse()) {
-                const schaden = randomRange(5, 12);
+            if (m_isFumble) {
+                await printSlow(`<span class="log-fumble">🌀 DER GEGNER PATZT! 🌀</span>`);
+                await printSlow(`Der ${monster.name} rutscht aus und sein Angriff geht völlig ins Leere!`);
+            } else if (monster_wurf >= ziel.ruestung_klasse() || m_isCrit) {
+                let schaden = randomRange(5, 12);
+                if (m_isCrit) {
+                    schaden *= 2;
+                    await printSlow(`<span class="log-critical">💀 KRITISCHER GEGNER-TREFFER! 💀</span>`);
+                }
                 ziel.hp = Math.max(0, ziel.hp - schaden);
-                await printSlow(`🩸 ${ziel.name} wird getroffen und verliert ${schaden} HP!`);
+                await printSlow(`🩸 ${m_isCrit ? "KRIT! " : ""}${ziel.name} wird getroffen und verliert ${schaden} HP!`);
             } else {
                 await printSlow(`🛡️ ${ziel.name} blockt den Angriff erfolgreich ab!`);
             }
+            // UI nach Monsterzug aktualisieren
+            updateUI(helden, monster, monsterStatus);
         }
     }
                 
     if (helden.some(h => h.hp > 0)) {
         await printSlow(`\n🎉 Sieg über den ${monster.name}! Jeder Held erhält ${monster.xp} XP und ${monster.gold} Gold.`);
-        helden.forEach(held => {
+        for (const held of helden) {
             held.xp += monster.xp;
             held.gold += monster.gold;
             if (held.hp <= 0) held.hp = 1;
-            held.check_levelup();
-        });
+            if (held.check_levelup()) {
+                await Story.faehigkeitWaehlen(held);
+            }
+        }
+        // Monster UI am Ende des Kampfes ausblenden
+        updateUI(helden);
         return true;
     }
     await printSlow("\n💀 Eure gesamte Gruppe wurde ausgelöscht... GAME OVER.");
