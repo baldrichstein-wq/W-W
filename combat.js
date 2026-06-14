@@ -1,19 +1,41 @@
-import { question, randomRange, printSlow, wuerfelD20, updateUI } from './utils.js';
+import { question, randomRange, printSlow, wuerfelD20, updateUI, formatAbilityDesc } from './utils.js';
 import * as Story from './story.js';
 
 async function spielerZug(spieler, monster_name, monster_hp, helden) {
+    if (spieler.isVerwirrt && Math.random() < 0.4) {
+        await printSlow(`\n🌀 ${spieler.name} tappt orientierungslos im Dunkeln umher und verpasst vor lauter Verwirrung seinen Zug!`);
+        if (Math.random() < 0.3) {
+            const selbstSchaden = randomRange(3, 7);
+            spieler.hp -= selbstSchaden;
+            spieler.totalDamageTaken += selbstSchaden;
+            await printSlow(`💥 Vor lauter Panik verletzt sich ${spieler.name} selbst für <span class="effect-lifesteal">${selbstSchaden} HP</span>!`);
+        }
+        return ["verwirrt", 0];
+    }
+
     if (spieler.isKI) {
         await printSlow(`\n🤖 [KI-ZUG: ${spieler.name.toUpperCase()}]`);
         
         const istHeilerOderAlchemist = spieler.klasse.toLowerCase() === "heiler" || spieler.klasse.toLowerCase() === "alchemist";
 
         // 1. Priorität: Selbstheilung wenn HP unter 40%
-        if (spieler.hp < spieler.max_hp * 0.4 && spieler.traenke > 0) {
-            spieler.traenke -= 1;
-            const heilung = randomRange(8, 18);
-            spieler.hp = Math.min(spieler.max_hp, spieler.hp + heilung);
-            await printSlow(`🧪 ${spieler.name} nutzt einen Trank. +${heilung} HP!`);
-            return ["heilung", 0];
+        if (spieler.hp < spieler.max_hp * 0.4) {
+            if (spieler.traenke > 0) {
+                spieler.traenke -= 1;
+                const heilung = randomRange(8, 18);
+                spieler.hp = Math.min(spieler.max_hp, spieler.hp + heilung);
+                await printSlow(`🧪 ${spieler.name} nutzt einen Trank. +${heilung} HP!`);
+                return ["heilung", 0];
+            } else {
+                const foodIdx = spieler.inventar.findIndex(it => it.typ === "Gegenstand" && it.wert > 0);
+                if (foodIdx !== -1) {
+                    const food = spieler.inventar[foodIdx];
+                    spieler.hp = Math.min(spieler.max_hp, spieler.hp + food.wert);
+                    spieler.inventar.splice(foodIdx, 1);
+                    await printSlow(`🍴 ${spieler.name} verbraucht ${food.name} aus dem Vorrat. +${food.wert} HP!`);
+                    return ["heilung", 0];
+                }
+            }
         }
 
         // 2. Priorität: Verbündeten heilen, wenn dessen HP unter 30%
@@ -31,6 +53,13 @@ async function spielerZug(spieler, monster_name, monster_hp, helden) {
             lowAlly.hp = Math.min(lowAlly.max_hp, lowAlly.hp + heilung);
             await printSlow(`🧪 ${spieler.name} ${heilMethode}! +${heilung} HP für ${lowAlly.name}.`);
             return ["heilung_verbündeter", 0];
+        }
+
+        // NEU: Ultimate nutzen, wenn SP voll sind
+        const ultimate = spieler.abilities.find(a => a.isUltimate && spieler.sp >= 100);
+        if (ultimate) {
+            spieler.sp = 0;
+            return ["fähigkeit", { ability: ultimate, targetHeld: null }];
         }
 
         // 3. Priorität: Angriff
@@ -79,14 +108,34 @@ async function spielerZug(spieler, monster_name, monster_hp, helden) {
                 await printSlow("Dein Inventar ist leer.");
                 continue;
             }
-            spieler.inventar.forEach((item, i) => {
-                console.log(`${i + 1}. ${item.name} (${item.typ}: ${item.wert})`);
+            
+            // Gruppierung für die Anzeige
+            const groupedInv = [];
+            spieler.inventar.forEach(item => {
+                const entry = groupedInv.find(g => g.name === item.name && g.typ === item.typ && g.wert === item.wert);
+                if (entry) entry.count++;
+                else groupedInv.push({ name: item.name, typ: item.typ, wert: item.wert, count: 1 });
             });
+
+            groupedInv.forEach((g, i) => {
+                console.log(`${i + 1}. ${g.count > 1 ? g.count + 'x ' : ''}${g.name} (${g.typ}: ${g.wert})`);
+            });
+
             const inv_wahl = await question("Nummer wählen oder 0 für zurück: ");
             const idx = parseInt(inv_wahl) - 1;
             
-            if (!isNaN(idx) && idx >= 0 && idx < spieler.inventar.length) {
-                const erfolgName = spieler.ausruesten(idx);
+            if (!isNaN(idx) && idx >= 0 && idx < groupedInv.length) {
+                const sel = groupedInv[idx];
+                const originalIdx = spieler.inventar.findIndex(it => it.name === sel.name && it.typ === sel.typ && it.wert === sel.wert);
+                
+                if (sel.typ === "Gegenstand" && sel.wert > 0) {
+                    spieler.hp = Math.min(spieler.max_hp, spieler.hp + sel.wert);
+                    spieler.inventar.splice(originalIdx, 1);
+                    await printSlow(`🍴 ${spieler.name} verbraucht ${sel.name} und heilt <span class="hp-gain">${sel.wert} HP</span>!`);
+                    return ["heilung", 0];
+                }
+
+                const erfolgName = spieler.ausruesten(originalIdx);
                 if (erfolgName) {
                     await printSlow(`🛡️ Gegenstand ${erfolgName} ausgerüstet!`);
                     return ["ausruesten", 0];
@@ -101,17 +150,35 @@ async function spielerZug(spieler, monster_name, monster_hp, helden) {
             }
             console.log("\n--- Verfügbare Fähigkeiten ---");
             spieler.abilities.forEach((ab, i) => {
-                console.log(`${i + 1}. ${ab.name} (AP: ${ab.ap_kosten})`);
+                let info = "";
+                if (ab.isUltimate) {
+                    info = `(ULTIMATE - SP: ${ab.sp_kosten})`;
+                } else if (ab.material_kosten) {
+                    const count = spieler.inventar.filter(it => it.name === ab.material_kosten).length;
+                    const warn = count === 0 ? ' <span class="effect-lifesteal">[FEHLT]</span>' : '';
+                    info = `(Vorrat: ${count}x ${ab.material_kosten})${warn}`;
+                } else {
+                    info = `(AP: ${ab.ap_kosten})`;
+                }
+                const desc = formatAbilityDesc(ab, spieler);
+                console.log(`${i + 1}. <span class="tooltip">${ab.name}<span class="tooltiptext"><strong>${ab.name}</strong><br>${desc}</span></span> ${info}`);
             });
             const ab_wahl = await question("Wahl (0 für zurück): ");
             const idx = parseInt(ab_wahl) - 1;
 
             if (!isNaN(idx) && idx >= 0 && idx < spieler.abilities.length) {
                 const ability = spieler.abilities[idx];
-                const kosten = ability.ap_kosten || 0;
-                if (spieler.ap < kosten) {
-                    await printSlow("❌ Nicht genug Aktionspunkte (AP)!");
-                    continue;
+
+                if (ability.isUltimate) {
+                    if (spieler.sp < 100) {
+                        await printSlow("❌ Deine Spezialleiste (SP) ist noch nicht voll!");
+                        continue;
+                    }
+                } else {
+                    if (spieler.ap < (ability.ap_kosten || 0)) {
+                        await printSlow("❌ Nicht genug Aktionspunkte (AP)!");
+                        continue;
+                    }
                 }
 
                 // Materialprüfung für Tüftler/Alchemist
@@ -138,7 +205,12 @@ async function spielerZug(spieler, monster_name, monster_hp, helden) {
                     if (!targetHeld) continue;
                 }
 
-                spieler.ap -= kosten;
+                if (ability.isUltimate) {
+                    spieler.sp = 0;
+                } else {
+                    spieler.ap -= (ability.ap_kosten || 0);
+                }
+                
                 return ["fähigkeit", { ability, targetHeld }];
             }
         }
@@ -182,8 +254,33 @@ async function spielerZug(spieler, monster_name, monster_hp, helden) {
     }
 }
 
-export async function teamKampf(helden, monster) {
-    await printSlow(`\n⚔️ Ein mächtiger ${monster.name} (HP: ${monster.hp} | RK: ${monster.rk}) blockiert den Weg!`);
+export async function teamKampf(helden, monster, imDunkeln = false) {
+    if (imDunkeln) {
+        await printSlow("\n🌑 <span class='effect-lifesteal'>Die Dunkelheit hier ist absolut! Ohne Fackel seid ihr orientierungslos.</span>");
+        await printSlow(`👹 Der ${monster.name} nutzt die Schatten für einen Hinterhalt!`);
+        
+        const lebende = helden.filter(h => h.hp > 0);
+        if (lebende.length > 0) {
+            const ziel = lebende[Math.floor(Math.random() * lebende.length)];
+            const m_roll = wuerfelD20();
+            const monster_wurf = m_roll + monster.atk;
+            
+            if (monster_wurf >= ziel.ruestung_klasse() || m_roll === 20) {
+                let schaden = randomRange(5, 12);
+                if (m_roll === 20) schaden *= 2;
+                ziel.hp = Math.max(0, ziel.hp - schaden);
+                ziel.totalDamageTaken += schaden;
+                ziel.damageSources[monster.name] = (ziel.damageSources[monster.name] || 0) + schaden;
+                await printSlow(`🩸 <span class="log-critical">HINTERHALT!</span> ${ziel.name} wird im Dunkeln überrascht und verliert ${schaden} HP!`);
+            } else {
+                await printSlow(`🛡️ ${ziel.name} hört ein Rascheln und blockt den Angriff im Dunkeln gerade noch ab!`);
+            }
+        }
+        // Alle Spieler für diesen Kampf verwirren
+        helden.forEach(h => h.isVerwirrt = true);
+    } else {
+        await printSlow(`\n⚔️ Ein mächtiger ${monster.name} (HP: ${monster.hp} | RK: ${monster.rk}) blockiert den Weg!`);
+    }
 
     let monsterStatus = { schlaf: 0, verwirrt: 0 };
 
@@ -205,6 +302,7 @@ export async function teamKampf(helden, monster) {
         monster.lastDmg = 0;
         helden.filter(h => h.hp > 0).forEach(held => {
             let apRegen = 5; // Standard
+            apRegen += (held.ap_regen_bonus || 0);
             // Zusätzliche AP durch Ausrüstung (Boss-Loot)
             const ausruestung = [held.ausgeruestete_waffe, held.ausgeruestete_ruestung, held.ausgeruestete_schild];
             ausruestung.forEach(item => {
@@ -212,18 +310,21 @@ export async function teamKampf(helden, monster) {
             });
 
             held.ap = Math.min(held.max_ap, held.ap + apRegen);
-            console.log(`<span class="effect-ap">✨ ${held.name} regeneriert ${apRegen} AP.</span> (Aktuell: ${held.ap}/${held.max_ap})`);
+            // Unterdrücke die AP-Meldung für Klassen, die keine AP nutzen
+            if (!["tueftler", "alchemist"].includes(held.klasse.toLowerCase())) {
+                console.log(`<span class="effect-ap">✨ ${held.name} regeneriert ${apRegen} AP.</span> (Aktuell: ${held.ap}/${held.max_ap})`);
+            }
         });
         updateUI(helden, monster, monsterStatus);
 
         for (const held of helden) {
             if (held.hp <= 0) continue;
+            monster.lastDmg = 0; // Schaden für den neuen Zug zurücksetzen
                 
             console.log(`\n--- Gegner: ${monster.name} (${monster.hp} HP) ---`);
             const [aktion, wert] = await spielerZug(held, monster.name, monster.hp, helden);
             
             if (aktion === "angriff") {
-                monster.lastDmg = 0;
                 // Basis SP-Gewinn pro Angriffsversuch
                 held.sp = Math.min(held.max_sp, held.sp + 10);
 
@@ -253,7 +354,9 @@ export async function teamKampf(helden, monster) {
 
                     monster.hp -= schaden;
                     monster.lastDmg = schaden;
+                    held.totalDamageDealt += schaden;
                     held.sp = Math.min(held.max_sp, held.sp + schaden);
+                    updateUI(helden, monster, monsterStatus);
                     await printSlow(`💥 ${isCrit ? "KRIT! " : "Treffer!"} ${held.name} fügt dem ${monster.name} ${schaden} Schaden zu.`);
 
                     // Effekt: Lebensraub
@@ -276,14 +379,53 @@ export async function teamKampf(helden, monster) {
 
             if (aktion === "fähigkeit") {
                 const { ability, targetHeld } = wert;
-                await printSlow(`✨ ${held.name} setzt ${ability.name} ein!`);
-                monster.lastDmg = 0;
+                
+                if (ability.isUltimate) {
+                    console.log(`
+                        <div class="log-ultimate-container">
+                            <span class="ultimate-bolt">⚡</span>
+                            <h2 style="color:var(--accent-color); margin:0;">ULTIMATE: ${ability.name.toUpperCase()}</h2>
+                            <p style="margin:5px 0 0 0;">${held.name} entfesselt seine wahre Macht!</p>
+                        </div>`);
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                } else {
+                    await printSlow(`✨ ${held.name} setzt ${ability.name} ein!`);
+                }
+
+                if (ability.licht) {
+                    const isBarde = held.klasse.toLowerCase() === "barde";
+                    const durationProp = isBarde ? "bardenLichtDauer" : "heilerLichtDauer";
+                    const bonusProp = isBarde ? "atk_bonus" : "def_bonus";
+                    const bonusVal = isBarde ? ability.licht_atk : ability.licht_def;
+                    const emoji = isBarde ? "🎯" : "🛡️";
+                    const statName = isBarde ? "ATK" : "RK";
+
+                    if (!held[durationProp] || held[durationProp] <= 0) {
+                        helden.forEach(h => h[bonusProp] += (bonusVal || 0));
+                    }
+                    held[durationProp] = ability.licht;
+                    
+                    if (isBarde) {
+                        await printSlow(`\n🌟 Das magische Leuchten von ${held.name} erhellt die Umgebung und schärft eure Sinne! (+${bonusVal} ${statName})`);
+                    } else {
+                        await printSlow(`\n✨ Das heilige Leuchten von ${held.name} vertreibt die Schatten und stärkt eure Abwehr! (+${bonusVal} ${statName})`);
+                    }
+                }
 
                 if (ability.schaden) {
-                    monster.hp -= ability.schaden;
-                    monster.lastDmg = ability.schaden;
-                    held.sp = Math.min(held.max_sp, held.sp + ability.schaden);
-                    await printSlow(`💥 ${ability.name} trifft ${monster.name} für ${ability.schaden} Schaden!`);
+                    let schadenTotal = ability.schaden;
+
+                    // Sonderlogik für Schildschlag/Schildstoß (RK + ATK)
+                    if (ability.name === "Schildschlag" || ability.name === "Schildstoß") {
+                        schadenTotal = held.ruestung_klasse() + held.atk_bonus;
+                    }
+
+                    monster.hp -= schadenTotal;
+                    monster.lastDmg = schadenTotal;
+                    held.totalDamageDealt += schadenTotal;
+                    held.sp = Math.min(held.max_sp, held.sp + schadenTotal);
+                    updateUI(helden, monster, monsterStatus);
+                    await printSlow(`💥 ${ability.name} trifft ${monster.name} für ${schadenTotal} Schaden!`);
 
                     // Lebensraub funktioniert auch bei Fähigkeiten, wenn die Waffe es erlaubt
                     if (held.ausgeruestete_waffe?.effekt?.typ === "lebensraub") {
@@ -304,15 +446,26 @@ export async function teamKampf(helden, monster) {
                     await printSlow(`💚 ${targetHeld.name} regeneriert ${ability.heilung} HP.`);
                 }
                 if (ability.atk_buff) {
-                    held.atk_bonus += ability.atk_buff;
-                    await printSlow(`<span class="buff-text">🔥 ${held.name} kanalisiert Wut! (+${ability.atk_buff} ATK Bonus)</span>`);
+                    if (held.klasse.toLowerCase() === "barde") {
+                        helden.filter(h => h.hp > 0).forEach(h => h.atk_bonus += ability.atk_buff);
+                        await printSlow(`<span class="buff-text">🎶 ${held.name} spielt ein inspirierendes Lied! Die gesamte Gruppe erhält +${ability.atk_buff} ATK.</span>`);
+                    } else {
+                        held.atk_bonus += ability.atk_buff;
+                        await printSlow(`<span class="buff-text">🔥 ${held.name} kanalisiert Wut! (+${ability.atk_buff} ATK Bonus)</span>`);
+                    }
                 }
                 if (ability.def_buff) {
-                    held.def_bonus += ability.def_buff;
-                    await printSlow(`<span class="buff-text">🛡️ ${held.name} stärkt die Verteidigung! (+${ability.def_buff} RK Bonus)</span>`);
+                    if (held.klasse.toLowerCase() === "barde") {
+                        helden.filter(h => h.hp > 0).forEach(h => h.def_bonus += ability.def_buff);
+                        await printSlow(`<span class="buff-text">🎶 ${held.name} spielt ein schützendes Lied! Die gesamte Gruppe erhält +${ability.def_buff} RK.</span>`);
+                    } else {
+                        held.def_bonus += ability.def_buff;
+                        await printSlow(`<span class="buff-text">🛡️ ${held.name} stärkt die Verteidigung! (+${ability.def_buff} RK Bonus)</span>`);
+                    }
                 }
                 if (ability.execute_threshold && monster.hp <= ability.execute_threshold) {
                     monster.hp = 0;
+                    updateUI(helden, monster, monsterStatus);
                     await printSlow(`💀 GNADENSTOSS! ${monster.name} wurde hingerichtet.`);
                 }
                 if (ability.belebt && targetHeld) {
@@ -326,6 +479,12 @@ export async function teamKampf(helden, monster) {
                 if (ability.verwirrt) {
                     monsterStatus.verwirrt = ability.verwirrt;
                     await printSlow(`🌀 ${monster.name} ist verwirrt!`);
+                }
+                if (ability.hp_kosten) {
+                    held.hp = Math.max(0, held.hp - ability.hp_kosten);
+                    held.totalDamageTaken += ability.hp_kosten;
+                    held.damageSources["Eigen-Schaden (Fähigkeit)"] = (held.damageSources["Eigen-Schaden (Fähigkeit)"] || 0) + ability.hp_kosten;
+                    await printSlow(`🩸 ${held.name} zahlt ${ability.hp_kosten} HP für die Kraft der Fähigkeit!`);
                 }
             }
 
@@ -345,6 +504,8 @@ export async function teamKampf(helden, monster) {
                     await printSlow(`\n🌀 ${monster.name} ist völlig verwirrt!`);
                     const selbstSchaden = randomRange(5, 10);
                     monster.hp -= selbstSchaden;
+                    monster.lastDmg = selbstSchaden;
+                    updateUI(helden, monster, monsterStatus);
                     await printSlow(`💥 Es greift sich selbst an und erleidet ${selbstSchaden} Schaden!`);
                     continue;
                 }
@@ -378,6 +539,8 @@ export async function teamKampf(helden, monster) {
                     await printSlow(`<span class="log-critical">💀 KRITISCHER GEGNER-TREFFER! 💀</span>`);
                 }
                 ziel.hp = Math.max(0, ziel.hp - schaden);
+                ziel.totalDamageTaken += schaden;
+                ziel.damageSources[monster.name] = (ziel.damageSources[monster.name] || 0) + schaden;
                 await printSlow(`🩸 ${m_isCrit ? "KRIT! " : ""}${ziel.name} wird getroffen und verliert ${schaden} HP!`);
             } else {
                 await printSlow(`🛡️ ${ziel.name} blockt den Angriff erfolgreich ab!`);
@@ -386,13 +549,26 @@ export async function teamKampf(helden, monster) {
     }
                 
     if (helden.some(h => h.hp > 0)) {
-        await printSlow(`\n🎉 Sieg über den ${monster.name}! Jeder Held erhält ${monster.xp} XP und ${monster.gold} Gold.`);
+        helden.forEach(h => h.isVerwirrt = false); // Verwirrung nach Kampf lösen
+        
+        const hasBuff = helden.some(h => h.hatBardenBuff);
+        const goldBetrag = hasBuff ? Math.floor(monster.gold * 1.1) : monster.gold;
+
+        await printSlow(`\n🎉 Sieg über den ${monster.name}! Jeder Held erhält ${monster.xp} XP und ${goldBetrag} Gold.`);
         for (const held of helden) {
             held.xp += monster.xp;
-            held.gold += monster.gold;
+            held.gold += (held.hatBardenBuff ? Math.floor(monster.gold * 1.1) : monster.gold);
             if (held.hp <= 0) held.hp = 1;
+
+            // Visuelles Feedback vor dem Level-Up
+            updateUI(helden, monster); 
+            if (held.xp >= held.xp_needed) {
+                await printSlow(`\n✨ <span class="rare-item">${held.name} steht an der Schwelle zu neuer Macht!</span>`);
+            }
+
             if (held.check_levelup()) {
-                await Story.faehigkeitWaehlen(held);
+                await printSlow(`\n🌟 LEVEL UP für ${held.name}! Level ${held.level}!`, 'level-up-animation');
+                await Story.levelUpMenu(held);
             }
         }
         return true;

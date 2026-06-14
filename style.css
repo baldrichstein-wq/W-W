@@ -246,6 +246,85 @@ header h1 {
     background: linear-gradient(to right, #ff8c00, #ffd700);
 }
 
+.xp-fill {
+    background: linear-gradient(to right, #8e44ad, #9b59b6);
+}
+
+/* Status-Badge System */
+.status-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin: 5px 0;
+}
+
+.status-badge {
+    background: rgba(0, 0, 0, 0.6);
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-size: 0.75em;
+    border: 1px solid;
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    font-weight: bold;
+    font-family: 'Cinzel', serif;
+}
+
+.badge-buff { border-color: #2ecc71; color: #2ecc71; box-shadow: 0 0 5px rgba(46, 204, 113, 0.3); }
+.badge-debuff { border-color: #e74c3c; color: #e74c3c; box-shadow: 0 0 5px rgba(231, 76, 60, 0.3); }
+
+
+/* Tooltip-System */
+.tooltip {
+    position: relative;
+    display: inline-block;
+    cursor: help;
+    border-bottom: 1px dotted var(--accent-color);
+}
+
+.tooltip .tooltiptext {
+    visibility: hidden;
+    width: 220px;
+    background-color: var(--panel-bg);
+    color: var(--text-color);
+    text-align: center;
+    border: 1px solid var(--accent-color);
+    border-radius: 6px;
+    padding: 10px;
+    position: absolute;
+    z-index: 1000;
+    bottom: 130%;
+    left: 50%;
+    transform: translateX(-50%);
+    opacity: 0;
+    transition: opacity 0.3s, transform 0.3s, visibility 0.3s;
+    transition-delay: 0s;
+    font-size: 0.85em;
+    font-family: 'EB Garamond', serif;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.8);
+    pointer-events: none;
+    line-height: 1.4;
+}
+
+.tooltip:hover .tooltiptext {
+    visibility: visible;
+    opacity: 1;
+    transform: translateX(-50%) translateY(-5px);
+    transition-delay: 0.5s;
+}
+
+.tooltip .tooltiptext::after {
+    content: "";
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    margin-left: -5px;
+    border-width: 5px;
+    border-style: solid;
+    border-color: var(--accent-color) transparent transparent transparent;
+}
+
 /* Animation für kritische HP */
 @keyframes pulse-critical {
     0% { box-shadow: 0 4px 15px rgba(0,0,0,0.5), inset 0 0 10px rgba(0,0,0,0.3); border-color: var(--accent-color); }
@@ -320,6 +399,32 @@ header h1 {
 .inventory-material {
     color: #aab7b8;
     font-style: italic;
+}
+
+/* Animation für die Fortschrittsleiste bei 100% */
+@keyframes progress-complete-glow {
+    0% { filter: brightness(1); box-shadow: 0 0 5px rgba(212, 175, 55, 0.5); }
+    50% { filter: brightness(1.8); box-shadow: 0 0 20px rgba(212, 175, 55, 1); }
+    100% { filter: brightness(1); box-shadow: 0 0 5px rgba(212, 175, 55, 0.5); }
+}
+
+.progress-complete {
+    animation: progress-complete-glow 1s ease-in-out infinite;
+}
+
+/* Animation für den Legenden-Aufstieg */
+@keyframes legend-shimmer {
+    0% { text-shadow: 0 0 10px #fff, 0 0 20px var(--accent-color); color: #fff; transform: scale(1); }
+    50% { text-shadow: 0 0 20px #fff, 0 0 40px var(--btn-hover); color: var(--accent-color); transform: scale(1.05); }
+    100% { text-shadow: 0 0 10px #fff, 0 0 20px var(--accent-color); color: #fff; transform: scale(1); }
+}
+
+.log-legend-title {
+    animation: legend-shimmer 2s infinite ease-in-out;
+    font-family: 'Cinzel', serif;
+    font-size: 2em;
+    margin: 10px 0;
+    letter-spacing: 3px;
 }
 
 /* Animation für kritische Treffer im Log */
@@ -403,6 +508,18 @@ header h1 {
     font-size: 4em;
     animation: lightning-bolt 0.8s ease-in-out forwards;
     pointer-events: none;
+}
+
+/* Animation für den Level-Up Text */
+@keyframes level-up-glow {
+    0% { transform: scale(1); color: var(--text-color); text-shadow: none; }
+    50% { transform: scale(1.05); color: #ffd700; text-shadow: 0 0 15px #ffd700, 0 0 25px #ff8c00; }
+    100% { transform: scale(1); color: var(--text-color); text-shadow: none; }
+}
+
+.level-up-animation {
+    animation: level-up-glow 1.5s ease-in-out;
+    font-weight: bold;
 }
 
 /* Modal Styles für die Ruhmeshalle */

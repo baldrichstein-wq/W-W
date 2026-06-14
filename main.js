@@ -91,7 +91,16 @@ async function spielStarten() {
 
     async function charakterErstellen(spielerNummer) {
         const name = await question(`Spieler ${spielerNummer} - Name deines Helden: `);
-        const rasse = await question("Rasse (Mensch, Ork, Zwerg, Elf, Goblin): ");
+        
+        console.log("\nVerfügbare Rassen:");
+        const rassenString = rassenListe.map((r, i) => `${i + 1}. ${r}`).join(" | ");
+        console.log(rassenString + "\n");
+        
+        const rasseWahl = await question("Wahl (Nummer): ");
+        const rasseIndex = parseInt(rasseWahl) - 1;
+        const rasse = (rasseIndex >= 0 && rasseIndex < rassenListe.length) 
+            ? rassenListe[rasseIndex] 
+            : "Mensch";
         
         console.log("\nVerfügbare Klassen:");
         const klassenString = klassenListe.map((k, i) => `${i + 1}. ${k}`).join(" | ");
@@ -156,20 +165,34 @@ async function spielStarten() {
     await printSlow("\nIhr erreicht den düsteren Eingang des Dungeons. Ein Lagerfeuer knistert und ein fahrender Händler wartet auf Kundschaft.");
     
     let amEingang = true;
+    let bardenLiedGespielt = false;
     while (amEingang) {
         updateUI(helden);
         console.log("\n--- DER DUNGEON-EINGANG ---");
         console.log("1. Letzte Vorbereitungen (Händler besuchen)");
         console.log("2. In die Tiefe hinabsteigen (Dungeon betreten)");
         console.log("3. Die Schwarze Tafel (Aufträge)");
+        const canCraft = helden.some(h => ["tueftler", "alchemist"].includes(h.klasse.toLowerCase()));
+        if (canCraft) console.log("4. Handwerken (Werkbank nutzen)");
+        const hasBarde = helden.some(h => h.klasse.toLowerCase() === "barde");
+        if (hasBarde && !bardenLiedGespielt) console.log("5. Ein Lied am Feuer spielen (Barden-Buff)");
         
-        const wahl = await question("Was ist euer Plan? (1-3): ");
+        let promptMsg = "Was ist euer Plan? (1-3): ";
+        if (canCraft && (hasBarde && !bardenLiedGespielt)) promptMsg = "Was ist euer Plan? (1-5): ";
+        else if (canCraft || (hasBarde && !bardenLiedGespielt)) promptMsg = "Was ist euer Plan? (1-4): ";
+
+        const wahl = await question(promptMsg);
         if (wahl === "1") {
             await Story.shopBesuch(helden);
         } else if (wahl === "2") {
             amEingang = false;
         } else if (wahl === "3") {
             await Story.schwarzeTafel(helden);
+        } else if (wahl === "4" && canCraft) {
+            await Story.craftingMenue(helden);
+        } else if (wahl === "5" && hasBarde && !bardenLiedGespielt) {
+            await Story.bardenLied(helden);
+            bardenLiedGespielt = true;
         } else {
             console.log("Ungültige Wahl.");
         }
@@ -182,14 +205,20 @@ async function spielStarten() {
         1: "Dungon-Wald.png",
         2: "Dungon-Ruine.png",
         3: "Dungon-Friedhof.png",
-        4: "Dungon-Kristal.png",
-        5: "Dungon-Eis.png",
-        6: "Dungon-Magma.png",
-        7: "Dungon-Himmel.png",
-        8: "Dungon-endboss.png"
+        4: "Dungon-Sumpf.png",
+        5: "Dungon-Pilz.png",
+        6: "Dungon-Wasser.png",
+        7: "Dungon-Labyrinth.png",
+        8: "Dungon-Kristal.png",
+        9: "Dungon-Eis.png",
+        10: "Dungon-Magma.png",
+        11: "Dungon-Hoelle.png",
+        12: "Dungon-Himmel.png",
+        13: "Dungon-Dunkelheit.png",
+        14: "Dungon-endboss.png"
     };
 
-    for (let ebene = 1; ebene <= 8; ebene++) {
+    for (let ebene = 1; ebene <= 14; ebene++) {
         // Hintergrundbild setzen
         if (ebeneBilder[ebene]) {
             if (logPanel) logPanel.style.backgroundImage = `url('img/${ebeneBilder[ebene]}')`;
@@ -211,23 +240,118 @@ async function spielStarten() {
             await printSlow(`\n✨ EBENE 7: Die himmlischen Sphären ✨`);
         } else if (ebene === 8) {
             await printSlow(`\n🌋 EBENE 8: Der Thron des Weltenfressers 🌋`);
+        } else if (ebene === 13) {
+            await printSlow(`\n🌑 EBENE 13: Die absolute Dunkelheit 🌑`);
         } else {
             await printSlow(`\n🏰 EBENE ${ebene} 🏰`);
         }
         
-        const raumAnzahl = (ebene === 8) ? 1 : randomRange(4, 10);
+        // Die Labyrinthebene (7) generiert deutlich mehr Räume (15-25).
+        // Der Endboss (14) hat nur einen Raum.
+        const raumAnzahl = (ebene === 14) ? 1 : (ebene === 7 ? randomRange(15, 25) : randomRange(7, 15));
 
+        let raetselMeisterErschienen = false;
         for (let raum = 1; raum <= raumAnzahl; raum++) {
-            updateUI(helden);
+            updateUI(helden, null, null, ebene, raum, raumAnzahl);
             await printSlow(`\n--- Ebene ${ebene} | Raum ${raum}/${raumAnzahl} ---`);
 
-            if (ebene === 8) {
+            const brauchtFackel = [3, 7, 13].includes(ebene);
+            let imDunkeln = brauchtFackel;
+
+            if (brauchtFackel) {
+                // Erst prüfen, ob ein Barde magisches Licht aktiv hat
+                const lichtBarde = helden.find(h => h.bardenLichtDauer > 0);
+                if (lichtBarde) {
+                    imDunkeln = false;
+                    lichtBarde.bardenLichtDauer--;
+                    if (lichtBarde.bardenLichtDauer <= 0) {
+                        const ab = lichtBarde.abilities.find(a => a.name === "Lied des Lichts");
+                        helden.forEach(h => h.atk_bonus -= (ab.licht_atk || 0));
+                        await printSlow(`\n🎶 Das magische Licht von ${lichtBarde.name} ist verblasst. Eure Sinne trüben sich wieder.`);
+                    }
+                } else {
+                    const lichtHeiler = helden.find(h => h.heilerLichtDauer > 0);
+                    if (lichtHeiler) {
+                        imDunkeln = false;
+                        lichtHeiler.heilerLichtDauer--;
+                        if (lichtHeiler.heilerLichtDauer <= 0) {
+                            const ab = lichtHeiler.abilities.find(a => a.name === "Heiliges Leuchten");
+                            helden.forEach(h => h.def_bonus -= (ab.licht_def || 0));
+                            await printSlow(`\n✨ Das heilige Leuchten von ${lichtHeiler.name} erlischt. Der Schutz schwindet.`);
+                        }
+                    }
+                }
+
+                // Wenn kein magisches Licht, dann Fackel prüfen
+                if (imDunkeln) {
+                const fHalter = helden.find(h => h.inventar.some(it => it.name === "Fackel"));
+                if (fHalter) {
+                    imDunkeln = false;
+                    const fIdx = fHalter.inventar.findIndex(it => it.name === "Fackel");
+                    const f = fHalter.inventar[fIdx];
+                    if (f.ladungen === undefined) f.ladungen = 5;
+                    f.ladungen--;
+                    if (f.ladungen <= 0) {
+                        fHalter.inventar.splice(fIdx, 1);
+                        await printSlow(`\n🔥 <span class='effect-lifesteal'>Die Fackel von ${fHalter.name} ist abgebrannt!</span>`);
+                    } else if (f.ladungen === 1) {
+                        await printSlow(`\n⚠️ Die Fackel von ${fHalter.name} beginnt bedenklich zu flackern...`);
+                    }
+                }
+                }
+            }
+
+            if (ebene === 14) {
                 await printSlow("Die Realität selbst scheint hier zu zerreißen. Vor euch liegt nur noch ein gewaltiger Abgrund, in dem das Ende aller Welten auf euch wartet...");
                 continue;
             }
 
+            // Spezial-Logik für Sackgassen in der Labyrinthebene (Ebene 7)
+            const deadEndChance = (ebene === 7) ? 0.2 : 0; // 20% Chance auf eine Sackgasse
             const eventChance = Math.random();
-            if (eventChance < 0.6) { // 60% Chance auf Kampf
+
+            if (!raetselMeisterErschienen && ebene < 14 && raum < raumAnzahl && Math.random() < 0.2) {
+                await Story.raetselMeisterBegegnung(helden);
+                raetselMeisterErschienen = true;
+            } else if (Math.random() < deadEndChance) {
+                await printSlow("\n🚧 <span class='effect-lifesteal'>SACKGASSE!</span> Ihr biegt falsch ab und steht plötzlich vor einer massiven Mauer.");
+                await printSlow("Aus den Ritzen des Mauerwerks bricht ein <span class='rare-item'>Elite-Labyrinth-Wächter</span> hervor!");
+
+                const eliteMonster = new Monster(
+                    `Elite-Labyrinth-Wächter (Lvl ${ebene}++)`,
+                    Math.floor((20 + ebene * 8) * 1.5), // 50% mehr HP
+                    (2 + ebene) + 3,                    // +3 ATK
+                    (10 + Math.floor(ebene / 2)) + 2,   // +2 RK
+                    25 * ebene * 2,                     // Mehr XP
+                    20 * ebene * 2,                     // Mehr Gold
+                    { Physisch: 0.7, Magie: 1.2 }       // Spezial-Resistenzen
+                );
+
+                if (!await Combat.teamKampf(helden, eliteMonster, imDunkeln)) return;
+                await printSlow("Nach dem harten Kampf findet ihr mühsam den Weg zurück zum Hauptgang.");
+
+                // Chance auf "Karte des Labyrinths"
+                if (Math.random() < 0.25) { // 25% Chance
+                    const lebendeHelden = helden.filter(h => h.hp > 0);
+                    const finder = lebendeHelden[randomRange(0, lebendeHelden.length - 1)];
+                    if (finder) {
+                        await printSlow(`\n🗺️ <span class="rare-item">${finder.name} findet eine 'Karte des Labyrinths'!</span>`);
+                        await printSlow("Die Karte zeigt einen direkten Weg durch die nächsten Gänge.");
+                        
+                        const roomsToSkip = 5;
+                        const oldRaum = raum;
+                        raum = Math.min(raumAnzahl, raum + roomsToSkip); // Überspringt 5 Räume, aber nicht über die Gesamtzahl hinaus
+                        await printSlow(`Ihr überspringt ${raum - oldRaum} Räume und seid nun in Raum ${raum}/${raumAnzahl}.`);
+                        updateUI(helden, null, null, ebene, raum, raumAnzahl); // UI aktualisieren, um übersprungene Räume anzuzeigen
+                    }
+                }
+            } else if (eventChance < 0.7) { // 70% Chance auf Kampf
+                // Heiliges Leuchten Abschreckung auf Ebene 3 (Friedhof)
+                if (ebene === 3 && helden.some(h => h.heilerLichtDauer > 0) && Math.random() < 0.3) {
+                    await printSlow("\n✨ <span class='hp-gain'>Die Untoten weichen zischend vor dem heiligen Licht zurück. Der Weg ist frei!</span>");
+                    continue;
+                }
+
                 const monsterNamen = ebene === 1
                     ? ["Wildschwein", "Wald-Kobold", "Giftige Schlange", "Riesenspinne", "Irrlicht", "Baumgeist"]
                     : ebene === 2
@@ -235,22 +359,39 @@ async function spielStarten() {
                     : ebene === 3
                     ? ["Skelett-Wächter", "Wiedergänger", "Grabwurm", "Schatten", "Verfluchte Rüstung"]
                     : ebene === 4
-                    ? ["Kristall-Elementar", "Splitter-Käfer", "Glas-Gargoyle", "Amethyst-Wächter", "Reflektions-Schatten"]
+                    ? ["Sumpf-Lurker", "Moder-Zombie", "Giftiger Schlamm", "Riesenkroko", "Sumpf-Irrlicht"]
                     : ebene === 5
-                    ? ["Eis-Elementar", "Schneewolf", "Frost-Wiedergänger", "Yeti", "Eissplitter-Spinne"]
+                    ? ["Sporen-Wächter", "Gift-Champignon", "Myzel-Krieger", "Leuchtkäfer", "Parasit-Ranke"]
                     : ebene === 6
-                    ? ["Feuer-Salamander", "Magma-Schleim", "Aschen-Skelett", "Höllenhund", "Vulkan-Elementar"]
+                    ? ["Wasser-Elementar", "Seekrieger", "Riesenkrake", "Sirene", "Tiefsee-Angler"]
                     : ebene === 7
+                    ? ["Minotaurus-Wächter", "Labyrinth-Spinne", "Fallensteller", "Irrgarten-Geist"]
+                    : ebene === 8
+                    ? ["Kristall-Elementar", "Splitter-Käfer", "Glas-Gargoyle", "Amethyst-Wächter", "Reflektions-Schatten"]
+                    : ebene === 9
+                    ? ["Eis-Elementar", "Schneewolf", "Frost-Wiedergänger", "Yeti", "Eissplitter-Spinne"]
+                    : ebene === 10
+                    ? ["Feuer-Salamander", "Magma-Schleim", "Aschen-Skelett", "Höllenhund", "Vulkan-Elementar"]
+                    : ebene === 11
+                    ? ["Erzdämon", "Sukkubus", "Höllenhund", "Flammen-Teufel", "Gefallene Seele"]
+                    : ebene === 12
                     ? ["Himmelswächter", "Lichtgeist", "Seraphim", "Sternenkind", "Ätherischer Drache"]
+                    : ebene === 13
+                    ? ["Schatten-Hülle", "Leeren-Geist", "Albtraum-Schrecken", "Dunkler Priester", "Uralte Finsternis"]
                     : ["Skelettkrieger", "Dungeon-Schleim", "Kobold-Plünderer", "Riesenspinne", "Grabräuber"];
                 
                 const name = monsterNamen[randomRange(0, monsterNamen.length - 1)];
                 let resistenzen = {};
                 if (ebene === 1) resistenzen = { Feuer: 1.2 }; // Wald: leicht schwach gegen Feuer
-                else if (ebene === 4) resistenzen = { Physisch: 0.8, Blitz: 1.2 }; // Kristall: resistent gegen Physisch, schwach gegen Blitz
-                else if (ebene === 5) resistenzen = { Eis: 0.5, Feuer: 1.5 }; // Eis: resistent gegen Eis, schwach gegen Feuer
-                else if (ebene === 6) resistenzen = { Feuer: 0.5, Eis: 1.5 }; // Magma: resistent gegen Feuer, schwach gegen Eis
-                else if (ebene === 7) resistenzen = { Heilig: 0.5, Schatten: 1.5 }; // Himmel: resistent gegen Heilig, schwach gegen Schatten (falls Schatten-Elemente eingeführt werden)
+                else if (ebene === 4) resistenzen = { Gift: 0.5, Feuer: 1.5 }; // Sumpf: Gift-resistent, schwach gegen Feuer
+                else if (ebene === 5) resistenzen = { Gift: 0.5, Physisch: 0.8 }; // Pilz: zäh, giftig
+                else if (ebene === 6) resistenzen = { Feuer: 0.2, Blitz: 1.5 }; // Wasser: Feuer-resistent, schwach gegen Blitz
+                else if (ebene === 11) resistenzen = { Feuer: 0.1, Heilig: 2.0, Eis: 1.5 }; // Hölle: Extrem Feuer-resistent, schwach gegen Heilig/Eis
+                else if (ebene === 8) resistenzen = { Physisch: 0.8, Blitz: 1.2 }; // Kristall: resistent gegen Physisch, schwach gegen Blitz
+                else if (ebene === 9) resistenzen = { Eis: 0.5, Feuer: 1.5 }; // Eis: resistent gegen Eis, schwach gegen Feuer
+                else if (ebene === 10) resistenzen = { Feuer: 0.5, Eis: 1.5 }; // Magma: resistent gegen Feuer, schwach gegen Eis
+                else if (ebene === 12) resistenzen = { Heilig: 0.5, Schatten: 1.5 }; // Himmel: resistent gegen Heilig, schwach gegen Schatten
+                else if (ebene === 13) resistenzen = { Schatten: 0.1, Heilig: 1.8, Eis: 1.2 }; // Dunkelheit: Fast immun gegen Schatten, schwach gegen Heilig
 
                 const monster = new Monster(
                     `${name} (Lvl ${ebene})`, 
@@ -261,33 +402,111 @@ async function spielStarten() {
                     10 * ebene,
                     resistenzen
                 );
-                if (!await Combat.teamKampf(helden, monster)) return; // Game Over Abbruch
-            } else if (eventChance < 0.8) { // 20% Chance auf Schatz
-                await Story.schatzFinden(helden);
-                helden.forEach(h => h.hp = Math.max(1, h.hp)); // Truhen-Fallen fix
-            } else if (eventChance < 0.95) { // 15% Chance auf Händler
-                await Story.shopBesuch(helden);
-            } else { // 5% Chance auf eine sichere Rast
-                await Story.tavernenBesuch(helden);
+                if (!await Combat.teamKampf(helden, monster, imDunkeln)) return; // Game Over Abbruch
+            } else { // 30% Chance auf Schatz
+                if (Math.random() < 0.5) {
+                    // Mimik-Chance auf der Labyrinth-Ebene (Ebene 7)
+                    if (ebene === 7 && Math.random() < 0.35) {
+                        await printSlow("\n📦 Ihr entdeckt eine prachtvolle Truhe in einer dunklen Ecke des Labyrinths.");
+                        await printSlow("Doch als ihr die Hand nach dem Schloss ausstreckt, verwandelt sich das Holz in klebriges Fleisch und ein Maul voller Zähne schnappt zu! <span class='log-critical'>MIMIK-ALARM!</span>");
+                        const mimic = new Monster("Labyrinth-Mimik", 110, 10 + ebene, 14, 250, 150, { Feuer: 1.5, Schatten: 0.5 });
+                        if (!await Combat.teamKampf(helden, mimic, imDunkeln)) return;
+                    } else {
+                        await Story.schatzFinden(helden);
+                        helden.forEach(h => h.hp = Math.max(1, h.hp)); // Truhen-Fallen fix
+                    }
+                } else {
+                    await Story.feenBegegnung(helden);
+                }
             }
 
-            updateUI(helden);
+            updateUI(helden, null, null, ebene, raum, raumAnzahl);
             if (raum < raumAnzahl) {
-                const canCraft = helden.some(h => ["tueftler", "alchemist"].includes(h.klasse.toLowerCase()));
-                const wahl = await question(canCraft ? "\n(C) Crafting oder (Enter) Weiter?" : "\nDrückt Enter, um tiefer in die Ebene vorzudringen...");
-                if (canCraft && wahl.toLowerCase() === 'c') {
-                    await Story.craftingMenue(helden);
-                    updateUI(helden);
-                    await question("\nDrückt nun Enter zum Weitergehen...");
+                let interaktion = true;
+                while (interaktion) {
+                    const canCraft = helden.some(h => ["tueftler", "alchemist"].includes(h.klasse.toLowerCase()));
+                    const barde = helden.find(h => h.klasse.toLowerCase() === "barde" && h.abilities.some(a => a.name === "Lied des Lichts"));
+                    const heiler = helden.find(h => h.klasse.toLowerCase() === "heiler" && h.abilities.some(a => a.name === "Heiliges Leuchten"));
+                    
+                    let msg = "\n";
+                    if (canCraft) msg += "(C) Crafting | ";
+                    if (barde) msg += "(L) Lied des Lichts | ";
+                    if (heiler) msg += "(H) Heiliges Leuchten | ";
+                    msg += "(V) Vorräte | (Enter) Weiter: ";
+
+                    const wahl = (await question(msg)).toLowerCase();
+                    
+                    if (canCraft && wahl === 'c') {
+                        await Story.craftingMenue(helden);
+                    } else if (barde && wahl === 'l') {
+                        const fähigkeit = barde.abilities.find(a => a.name === "Lied des Lichts");
+                        if (barde.ap >= fähigkeit.ap_kosten) {
+                            barde.ap -= fähigkeit.ap_kosten;
+                            if (!barde.bardenLichtDauer || barde.bardenLichtDauer <= 0) {
+                                helden.forEach(h => h.atk_bonus += (fähigkeit.licht_atk || 0));
+                            }
+                            barde.bardenLichtDauer = fähigkeit.licht;
+                            await printSlow(`\n🌟 ${barde.name} spielt das Lied des Lichts! Ein magischer Glanz vertreibt die Dunkelheit und schärft eure Sinne.`);
+                        } else {
+                            await printSlow("\n❌ Der Barde ist zu erschöpft für dieses Lied.");
+                        }
+                    } else if (heiler && wahl === 'h') {
+                        const fähigkeit = heiler.abilities.find(a => a.name === "Heiliges Leuchten");
+                        if (heiler.ap >= fähigkeit.ap_kosten) {
+                            heiler.ap -= fähigkeit.ap_kosten;
+                            if (!heiler.heilerLichtDauer || heiler.heilerLichtDauer <= 0) {
+                                helden.forEach(h => h.def_bonus += (fähigkeit.licht_def || 0));
+                            }
+                            heiler.heilerLichtDauer = fähigkeit.licht;
+                            await printSlow(`\n✨ ${heiler.name} beschwört ein Heiliges Leuchten! Die Dunkelheit weicht und die Gruppe fühlt sich geschützt.`);
+                        } else {
+                            await printSlow("\n❌ Der Heiler hat nicht genug Energie für dieses Gebet.");
+                        }
+                    } else if (wahl === 'v') {
+                        await Story.vorraeteNutzen(helden);
+                    } else {
+                        interaktion = false;
+                    }
+                    updateUI(helden, null, null, ebene, raum, raumAnzahl);
                 }
             }
         }
         
         // Mini-Boss Kampf am Ende der Ebene
-        updateUI(helden);
+        await Story.tavernenBesuch(helden);
+        updateUI(helden, null, null, ebene, "Wächter", "Boss");
+
+        const brauchtFackelBoss = [3, 7, 13].includes(ebene);
+        let imDunkelnBoss = brauchtFackelBoss;
+
+        if (brauchtFackelBoss) {
+            const lichtBardeBoss = helden.find(h => h.bardenLichtDauer > 0);
+            if (lichtBardeBoss) {
+                imDunkelnBoss = false;
+                lichtBardeBoss.bardenLichtDauer--;
+                if (lichtBardeBoss.bardenLichtDauer <= 0) {
+                    const ab = lichtBardeBoss.abilities.find(a => a.name === "Lied des Lichts");
+                    helden.forEach(h => h.atk_bonus -= (ab.licht_atk || 0));
+                    await printSlow(`\n🎶 Das magische Licht von ${lichtBardeBoss.name} verlischt im ungünstigsten Moment!`);
+                }
+            } else {
+                const fHalter = helden.find(h => h.inventar.some(it => it.name === "Fackel"));
+                if (fHalter) {
+                imDunkelnBoss = false;
+                const fIdx = fHalter.inventar.findIndex(it => it.name === "Fackel");
+                const f = fHalter.inventar[fIdx];
+                if (f.ladungen === undefined) f.ladungen = 5;
+                f.ladungen--;
+                if (f.ladungen <= 0) {
+                    fHalter.inventar.splice(fIdx, 1);
+                    await printSlow(`\n🔥 <span class='effect-lifesteal'>Die Fackel erlischt während des Bosskampfs!</span>`);
+                }
+            }
+            }
+        }
 
         let targetMonster;
-        if (ebene === 8) {
+        if (ebene === 14) {
             const lastChampion = JSON.parse(localStorage.getItem('dungeon_champion'));
             
             if (lastChampion) {
@@ -310,13 +529,25 @@ async function spielStarten() {
                 : ebene === 3
                 ? ["Banshee", "Grabfürst", "Lich-Lehrling"]
                 : ebene === 4
-                ? ["Diamant-Goliath", "Smaragd-Basilisk", "Prismatischer Konstrukt"]
+                ? ["Sumpf-Hydra", "Schlamm-König", "Uralter Aligator"]
                 : ebene === 5
-                ? ["Frost-Riese", "Eiskönigin", "Uraltes Mammut"]
+                ? ["Pilz-Mutter", "Sporen-Lord", "Riesen-Myzel"]
                 : ebene === 6
-                ? ["Lavadrache-Jungtier", "Phönix-Wächter", "Feuerfürst"]
+                ? ["Leviathan", "Meeres-Gott", "Tiefsee-Hydra"]
                 : ebene === 7
+                ? ["Dädalus-Konstrukt", "Labyrinth-Fürst", "Uralter Minotaurus"]
+                : ebene === 8
+                ? ["Diamant-Goliath", "Smaragd-Basilisk", "Prismatischer Konstrukt"]
+                : ebene === 9
+                ? ["Frost-Riese", "Eiskönigin", "Uraltes Mammut"]
+                : ebene === 10
+                ? ["Lavadrache-Jungtier", "Phönix-Wächter", "Feuerfürst"]
+                : ebene === 11
+                ? ["Asmodäus", "Beelzebub", "Höllen-General"]
+                : ebene === 12
                 ? ["Erzengel", "Sternenwächter", "Himmlischer Richter"]
+                : ebene === 13
+                ? ["Fürst der Schatten", "Ewiger Verderber", "Auge des Abgrunds"]
                 : ["Schattenritter", "Feuer-Elementar", "Untoter Hauptmann", "Gorgone", "Eisen-Golem", "Knochen-Drache"];
             const miniName = miniBossNamen[(ebene - 1) % miniBossNamen.length];
             targetMonster = new Monster(
@@ -331,27 +562,41 @@ async function spielStarten() {
                 (ebene === 5) ? { Eis: 0.5, Feuer: 1.5 } : // Eis: resistent gegen Eis, schwach gegen Feuer
                 (ebene === 6) ? { Feuer: 0.5, Eis: 1.5 } : // Magma: resistent gegen Feuer, schwach gegen Eis
                 (ebene === 7) ? { Heilig: 0.5, Schatten: 1.5 } : // Himmel: resistent gegen Heilig, schwach gegen Schatten
+                (ebene === 13) ? { Schatten: 0, Heilig: 2.5 } : // Dunkelheit: Schatten-Immunität, extreme Heil-Schwäche
                 {} // Standard: keine Resistenzen
             );
         }
 
-        if (!await Combat.teamKampf(helden, targetMonster)) return; // Game Over Abbruch
+        if (!await Combat.teamKampf(helden, targetMonster, imDunkelnBoss)) return; // Game Over Abbruch
 
-        if (ebene === 8) {
+        // Barden-Buff Entfernung nach Ebene 1
+        if (ebene === 1 && bardenLiedGespielt) {
+            helden.forEach(h => {
+                if (h.hatBardenBuff) {
+                    h.max_hp -= 5;
+                    h.hp = Math.min(h.hp, h.max_hp);
+                    h.atk_bonus -= 1;
+                    delete h.hatBardenBuff;
+                }
+            });
+            await printSlow("\n🎶 Der Nachhall des Bardenliedes verblasst... Der Buff ist abgelaufen.");
+        }
+
+        if (ebene === 14) {
             // --- SECRET EBENE LOGIK ---
             const hatSiegel = helden.some(h => h.inventar.some(it => it.name === "Goldener Siegelring"));
             
             if (hatSiegel) {
                 await printSlow("\n✨ Der Goldene Siegelring in eurem Besitz beginnt gleißend hell zu leuchten!");
                 await printSlow("Hinter dem Thron öffnet sich ein instabiler Riss in der Luft. Ein Portal in eine Secret Ebene!");
-                const wahl = await question("Wollt ihr das Portal betreten und das letzte Rätsel wagen? (ja/nein): ");
+                const portalWahl = await question("Wollt ihr das Portal betreten und das letzte Rätsel wagen? (ja/nein): ");
                 
-                if (wahl.toLowerCase() === "ja") {
+                if (portalWahl.toLowerCase().trim() === "ja") {
                     const geloest = await Story.raetselPhase();
                     if (geloest) {
                         await Story.secretEbeneIntro();
                         const secretBoss = new Monster("Leeren-Wächter", 400, 20, 20, 2000, 5000, { Energie: 1.5, Physisch: 0.5 });
-                        if (!await Combat.teamKampf(helden, secretBoss)) return;
+                        if (!await Combat.teamKampf(helden, secretBoss, false)) return; // In der Leere braucht man keine Fackel (eigenes Licht)
                         await printSlow(`\n🌟 <span class="rare-item">UNGLAUBLICH! Ihr habt das wahre Ende des Dungeons bezwungen!</span>`);
 
                         // --- DER ROSA ORK EVENT ---
@@ -371,13 +616,35 @@ async function spielStarten() {
             await printSlow("🏆 SIEG! Der Thron des Dungeons wurde erobert!");
             
             // Ranking erstellen
-            const sieger = [...helden].sort((a, b) => (b.level * 1000 + b.xp) - (a.level * 1000 + a.xp));
+            // Der Sieger ist derjenige mit dem besten Verhältnis aus ausgeteiltem und erlittenem Schaden
+            const sieger = [...helden].sort((a, b) => 
+                (b.totalDamageDealt - b.totalDamageTaken) - (a.totalDamageDealt - a.totalDamageTaken)
+            );
             
             await printSlow("\n👑 DAS SIEGERTREPPCHEN 👑");
             for (let i = 0; i < sieger.length; i++) {
                 const h = sieger[i];
                 const medal = i === 0 ? "🥇" : (i === 1 ? "🥈" : "🥉");
-                await printSlow(`${medal} Platz ${i+1}: <span class="rare-item">${h.name}</span> (Level ${h.level} ${h.klasse})`);
+                await printSlow(`${medal} Platz ${i+1}: <span class="rare-item">${h.name}</span> (Level ${h.level})`);
+                await printSlow(`   ⚔️ Schaden Ausgeteilt: ${h.totalDamageDealt} | 🩸 Schaden Erlitten: ${h.totalDamageTaken}`);
+                
+                // Höchste Schadensquelle finden
+                let maxSource = "Keine";
+                let maxDmg = 0;
+                for (const [source, dmg] of Object.entries(h.damageSources)) {
+                    if (dmg > maxDmg) { maxDmg = dmg; maxSource = source; }
+                }
+                if (maxDmg > 0) await printSlow(`   💀 Meiste Pein durch: ${maxSource} (${maxDmg} Dmg)`);
+
+                // Achievement: Unantastbar (0 erlittener Schaden über das gesamte Spiel)
+                if (h.totalDamageTaken === 0) {
+                    await printSlow(`   ✨ <span class="hp-gain">🏆 ERRUNGENSCHAFT: UNANTASTBAR!</span> (${h.name} hat das gesamte Abenteuer ohne einen einzigen Kratzer überstanden!)`);
+                }
+
+                // Achievement: Pazifist (Weniger als 100 Schaden ausgeteilt)
+                if (h.totalDamageDealt < 100) {
+                    await printSlow(`   🕊️ <span class="hp-gain">🏆 ERRUNGENSCHAFT: PAZIFIST!</span> (${h.name} hat den Sieg mit minimaler Gewalt errungen!)`);
+                }
             }
 
             // Champion als nächsten Boss speichern
@@ -411,16 +678,25 @@ async function spielStarten() {
         }
 
         await Story.bossLootGeben(helden);
-        updateUI(helden);
+        await Story.shopBesuch(helden, true);
+        updateUI(helden, null, null, ebene, "Sieg", "✓");
 
         await printSlow(`\n🌟 Ebene ${ebene} abgeschlossen! Die Treppe nach unten ist frei.`);
-        if (ebene < 8) {
-            const canCraft = helden.some(h => ["tueftler", "alchemist"].includes(h.klasse.toLowerCase()));
-            const wahl = await question(canCraft ? "\n(C) Crafting oder (Enter) Nächste Ebene?" : "\nDrückt Enter für die nächste Ebene...");
-            if (canCraft && wahl.toLowerCase() === 'c') {
-                await Story.craftingMenue(helden);
-                updateUI(helden);
-                await question("\nDrückt nun Enter für den Abstieg...");
+        if (ebene < 14) {
+            let interaktion = true;
+            while (interaktion) {
+                const canCraft = helden.some(h => ["tueftler", "alchemist"].includes(h.klasse.toLowerCase()));
+                const msg = canCraft ? "\n(C) Crafting | (V) Vorräte | (Enter) Nächste Ebene: " : "\n(V) Vorräte nutzen | (Enter) Nächste Ebene: ";
+                const wahl = (await question(msg)).toLowerCase();
+                
+                if (canCraft && wahl === 'c') {
+                    await Story.craftingMenue(helden);
+                } else if (wahl === 'v') {
+                    await Story.vorraeteNutzen(helden);
+                } else {
+                    interaktion = false;
+                }
+                updateUI(helden, null, null, ebene, "Vorbereitung", "Abstieg");
             }
         }
     }

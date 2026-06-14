@@ -1,35 +1,51 @@
 import Item from './item.js';
-import { printSlow, question, wuerfelD20, randomRange } from './utils.js';
+import { printSlow, question, wuerfelD20, randomRange, updateUI, formatAbilityDesc } from './utils.js';
 
 let schluesselGefunden = false;
 
+const SPECIALIZATIONS = {
+    "krieger": ["Paladin", "Berserker"],
+    "magier": ["Erzmagier", "Nekromant"],
+    "schurke": ["Assassine", "Schattenläufer"],
+    "heiler": ["Hohepriester", "Inquisitor"],
+    "verteidiger": ["Wächter", "Ritter"],
+    "barde": ["Minnesänger", "Troubadour"],
+    "tueftler": ["Maschinist", "Erfinder"],
+    "alchemist": ["Meister-Alchemist", "Mutator"]
+};
+
 const SHOP_WAREN = {
-    "1": { label: "Heiltrank kaufen (5 Gold)", cost: 5, type: "traenke" },
-    "2": { label: "Stahlschwert kaufen (25 Gold, +8 Schaden)", cost: 25, type: "item", name: "Stahlschwert", kind: "Waffe", val: 8 },
-    "3": { label: "Schuppenpanzer kaufen (25 Gold, RK 15)", cost: 25, type: "item", name: "Schuppenpanzer", kind: "Ruestung", val: 15 },
-    "4": { label: "Gifttrank kaufen (5 Gold)", cost: 5, type: "item", name: "Gifttrank", kind: "Trank", val: 0 },
+    "1": { label: "Heiltrank kaufen (5 Gold)", cost: 5, type: "traenke", name: "Heiltrank", lore: "Ein sprudelndes rotes Elixier, das Wunden schließt." },
+    "2": { label: "Stahlschwert kaufen (25 Gold, +8 Schaden)", cost: 25, type: "item", name: "Stahlschwert", kind: "Waffe", val: 8, lore: "Eine scharf geschliffene Klinge aus gutem Stahl." },
+    "3": { label: "Schuppenpanzer kaufen (25 Gold, RK 15)", cost: 25, type: "item", name: "Schuppenpanzer", kind: "Ruestung", val: 15, lore: "Rüstung aus gehärteten Metallschuppen." },
+    "4": { label: "Gifttrank kaufen (5 Gold)", cost: 5, type: "item", name: "Gifttrank", kind: "Trank", val: 0, lore: "Riecht verdächtig nach bitteren Mandeln." },
+    "11": { label: "Fackel kaufen (5 Gold)", cost: 5, type: "item", name: "Fackel", kind: "Werkzeug", val: 0, lore: "Erhellt dunkle Orte, brennt aber nach 5 Räumen ab." },
     // Tueftler Materialien
-    "5": { label: "Mechanischeteile (1 Gold)", cost: 1, type: "item", name: "Mechanischeteile", kind: "Material", val: 0 },
-    "6": { label: "Maschinenoel (1 Gold)", cost: 1, type: "item", name: "Maschinenoel", kind: "Material", val: 0 },
-    "7": { label: "Schrauben und Muttern (1 Gold)", cost: 1, type: "item", name: "Schrauben und Muttern", kind: "Material", val: 0 },
+    "5": { label: "Mechanischeteile (1 Gold)", cost: 1, type: "item", name: "Mechanischeteile", kind: "Material", val: 0, lore: "Zahnräder und Federn für Tüftler." },
+    "6": { label: "Maschinenoel (1 Gold)", cost: 1, type: "item", name: "Maschinenoel", kind: "Material", val: 0, lore: "Schmiermittel für reibungslose Abläufe." },
+    "7": { label: "Schrauben und Muttern (1 Gold)", cost: 1, type: "item", name: "Schrauben und Muttern", kind: "Material", val: 0, lore: "Hält alles zusammen." },
     // Alchemist Materialien
-    "8": { label: "Bestienteile (1 Gold)", cost: 1, type: "item", name: "Bestienteile", kind: "Material", val: 0 },
-    "9": { label: "Pflanzenteile (1 Gold)", cost: 1, type: "item", name: "Pflanzenteile", kind: "Material", val: 0 },
-    "10": { label: "Fläschchen (1 Gold)", cost: 1, type: "item", name: "Fläschchen", kind: "Material", val: 0 },
+    "8": { label: "Bestienteile (1 Gold)", cost: 1, type: "item", name: "Bestienteile", kind: "Material", val: 0, lore: "Zähne, Klauen und Horn." },
+    "9": { label: "Pflanzenteile (1 Gold)", cost: 1, type: "item", name: "Pflanzenteile", kind: "Material", val: 0, lore: "Getrocknete Kräuter und Wurzeln." },
+    "10": { label: "Fläschchen (1 Gold)", cost: 1, type: "item", name: "Fläschchen", kind: "Material", val: 0, lore: "Ein leeres Gefäß für Alchemie." },
     // Waffen & Ausrüstung
-    "13": { label: "Dolch (6 Gold, + 3 Schaden)", cost: 6, type: "item", name: "Dolch", kind: "Waffe", val: 3 },
-    "14": { label: "Axt des Vernichters (20 Gold, + 8 Schaden)", cost: 20, type: "item", name: "Axt des Vernichters", kind: "Waffe", val: 8 },
-    "15": { label: "Feuriger Zauberstab T2 (10 Gold, + 8 Schaden)", cost: 10, type: "item", name: "Feuerstab T2", kind: "Waffe", val: 8 },
-    "16": { label: "Blitzer (10 Gold, + 8 Schaden)", cost: 10, type: "item", name: "Blitzer", kind: "Waffe", val: 8 },
+    "13": { label: "Dolch (6 Gold, + 3 Schaden)", cost: 6, type: "item", name: "Dolch", kind: "Waffe", val: 3, lore: "Klein, aber tödlich in den richtigen Händen." },
+    "14": { label: "Axt des Vernichters (20 Gold, + 8 Schaden)", cost: 20, type: "item", name: "Axt des Vernichters", kind: "Waffe", val: 8, lore: "Eine schwere Axt, die Rüstungen spaltet." },
+    "15": { label: "Feuriger Zauberstab T2 (10 Gold, + 8 Schaden)", cost: 10, type: "item", name: "Feuerstab T2", kind: "Waffe", val: 8, lore: "Strahlt eine konstante Wärme aus." },
+    "16": { label: "Blitzer (10 Gold, + 8 Schaden)", cost: 10, type: "item", name: "Blitzer", kind: "Waffe", val: 8, lore: "Ein Stab, der vor elektrischer Spannung knistert." },
     // Heiler & Barde
-    "18": { label: "Stab der Großen Heilung (12 Gold)", cost: 12, type: "item", name: "Heilerstab", kind: "Waffe", val: 2 },
-    "21": { label: "Drehleier (15 Gold)", cost: 15, type: "item", name: "Drehleier", kind: "Waffe", val: 0 },
-    "22": { label: "Laute der Schönheit (15 Gold)", cost: 15, type: "item", name: "Laute", kind: "Waffe", val: 0 },
+    "18": { label: "Stab der Großen Heilung (12 Gold)", cost: 12, type: "item", name: "Heilerstab", kind: "Waffe", val: 2, lore: "Ein heiliges Relikt zur Linderung von Schmerz." },
+    "21": { label: "Drehleier (15 Gold)", cost: 15, type: "item", name: "Drehleier", kind: "Waffe", val: 0, lore: "Erzeugt einen melancholischen, stetigen Ton." },
+    "22": { label: "Laute der Schönheit (15 Gold)", cost: 15, type: "item", name: "Laute", kind: "Waffe", val: 0, lore: "Klingt so süß, dass sogar Orks innehalten." },
     // Nahrung (Direkte HP Heilung)
-    "26": { label: "Essensration (2 Gold, + 4 HP)", cost: 2, type: "hp", val: 4, name: "Essensration" },
-    "27": { label: "Wasser (2 Gold, + 2 HP)", cost: 2, type: "hp", val: 2, name: "Wasser" },
-    "28": { label: "BockBier (3 Gold, + 3 HP)", cost: 3, type: "hp", val: 3, name: "BockBier" },
-    "29": { label: "Radler des Elfen (2 Gold, + 1 HP)", cost: 2, type: "hp", val: 1, name: "Radler" }
+    "26": { label: "Essensration (2 Gold, + 4 HP)", cost: 2, type: "hp", val: 4, name: "Essensration", lore: "Nahrhaft und haltbar." },
+    "27": { label: "Wasser (2 Gold, + 2 HP)", cost: 2, type: "hp", val: 2, name: "Wasser", lore: "Klar und erfrischend." },
+    "28": { label: "BockBier (3 Gold, + 3 HP)", cost: 3, type: "hp", val: 3, name: "BockBier", lore: "Dunkel und kräftig." },
+    "29": { label: "Radler des Elfen (2 Gold, + 1 HP)", cost: 2, type: "hp", val: 1, name: "Radler", lore: "Eine leichte Erfrischung." },
+    // Verfluchte Items (Stark, aber kosten HP beim Kauf)
+    "35": { label: "Seelenfresser (15 Gold, -10 HP, +12 Schaden)", cost: 15, type: "item", name: "Seelenfresser", kind: "Waffe", val: 12, hpPenalty: 10, lore: "Die Klinge verlangt nach Blut. Dem deinen oder dem ihrer Feinde." },
+    "36": { label: "Dämonenpanzer (20 Gold, -15 HP, RK 18)", cost: 20, type: "item", name: "Dämonenpanzer", kind: "Ruestung", val: 18, hpPenalty: 15, lore: "Ein Flüstern geht von diesem dunklen Metall aus." },
+    "37": { label: "Höllenschild (15 Gold, -8 HP, RK +6)", cost: 15, type: "item", name: "Höllenschild", kind: "Schild", val: 6, hpPenalty: 8, lore: "Verteidigung hat ihren Preis." }
 };
 
 const BOSS_LOOT = [
@@ -38,26 +54,70 @@ const BOSS_LOOT = [
     { name: "Plattenpanzer der Ewigkeit", kind: "Ruestung", val: 22 },
     { name: "Aegis-Schild", kind: "Schild", val: 8 },
     { name: "Kristallstab", kind: "Waffe", val: 15 },
-    { name: "Umhang des Schattens", kind: "Ruestung", val: 18 }
+    { name: "Umhang des Schattens", kind: "Ruestung", val: 18 },
+    { name: "Sturmbrecher-Hammer", kind: "Waffe", val: 13 },
+    { name: "Sonnenschild", kind: "Schild", val: 7 },
+    { name: "Gewand der Weisheit", kind: "Ruestung", val: 16 },
+    { name: "Frostbiss-Dolch", kind: "Waffe", val: 11 },
+    { name: "Himmelsstahl-Panzer", kind: "Ruestung", val: 20 },
+    { name: "Drachenschuppen-Schild", kind: "Schild", val: 9 },
+    { name: "Mondlicht-Stab", kind: "Waffe", val: 14 },
+    { name: "Schattenweber-Gewand", kind: "Ruestung", val: 17 },
+    { name: "Großschwert des Champions", kind: "Waffe", val: 16 },
+    { name: "Turmschild der Ehre", kind: "Schild", val: 10 },
+    { name: "Robe des Erzmagiers", kind: "Ruestung", val: 15 },
+    { name: "Blutroter Speer", kind: "Waffe", val: 13 },
+    { name: "Geisterwächter-Schild", kind: "Schild", val: 8 },
+    { name: "Mithril-Kettenhemd", kind: "Ruestung", val: 19 },
+    { name: "Donnerschlag-Axt", kind: "Waffe", val: 15 },
+    { name: "Schild des ewigen Feuers", kind: "Schild", val: 9 },
+    { name: "Runenverzierte Rüstung", kind: "Ruestung", val: 18 },
+    { name: "Obsidian-Klinge", kind: "Waffe", val: 17 },
+    { name: "Heiliger Prunkharnisch", kind: "Ruestung", val: 21 },
+    { name: "Wyvernkrallen-Dolch", kind: "Waffe", val: 12 }
 ];
 
 const RARE_ARTIFACTS = [
-    { name: "Ring des Phönix", cost: 80, kind: "Schmuck", val: 5, effekt: { typ: "ap_regen", wert: 4 } },
-    { name: "Schattenklinge", cost: 100, kind: "Waffe", val: 18, effekt: { typ: "lebensraub", wert: 0.15 } },
-    { name: "Gotteswall", cost: 120, kind: "Schild", val: 10, effekt: { typ: "ap_regen", wert: 3 } },
-    { name: "Amulett der Götter", cost: 150, kind: "Schmuck", val: 0, effekt: { typ: "ap_regen", wert: 10 } }
+    { name: "Ring des Phönix", cost: 80, kind: "Schmuck", val: 5, effekt: { typ: "ap_regen", wert: 4 }, lore: "Ein warmer Ring, der niemals abkühlt." },
+    { name: "Schattenklinge", cost: 100, kind: "Waffe", val: 18, effekt: { typ: "lebensraub", wert: 0.15 }, lore: "Verschmilzt fast mit der Dunkelheit." },
+    { name: "Gotteswall", cost: 120, kind: "Schild", val: 10, effekt: { typ: "ap_regen", wert: 3 }, lore: "Ein unbezwingbarer Schutz." },
+    { name: "Amulett der Götter", cost: 150, kind: "Schmuck", val: 0, effekt: { typ: "ap_regen", wert: 10 }, lore: "Die pure Essenz göttlicher Kraft." }
 ];
 
 const CRAFTING_REZEPTE = {
     "tueftler": [
         { name: "Sprengfalle", materialien: { "Mechanischeteile": 2, "Schrauben und Muttern": 1 } },
         { name: "Geschütz", materialien: { "Mechanischeteile": 2, "Maschinenoel": 1 } },
-        { name: "Netz", materialien: { "Mechanischeteile": 1, "Schrauben und Muttern": 2 } }
+        { name: "Netz", materialien: { "Mechanischeteile": 1, "Schrauben und Muttern": 2 } },
+        { name: "Dampfpatrone", materialien: { "Maschinenoel": 1, "Schrauben und Muttern": 1 } },
+        { name: "Batterie", materialien: { "Mechanischeteile": 1, "Maschinenoel": 1 } },
+        { name: "Reparatur-Kit", materialien: { "Mechanischeteile": 1, "Schrauben und Muttern": 1 } },
+        { name: "Schockgranate", materialien: { "Mechanischeteile": 2, "Schrauben und Muttern": 1 } },
+        { name: "Fokuslinse", materialien: { "Mechanischeteile": 1, "Maschinenoel": 1 } },
+        { name: "Stasis-Modul", materialien: { "Mechanischeteile": 3, "Maschinenoel": 1 } },
+        { name: "Mini-Rakete", materialien: { "Mechanischeteile": 2, "Schrauben und Muttern": 2 } },
+        { name: "Schild-Generator", materialien: { "Mechanischeteile": 2, "Maschinenoel": 2 } },
+        { name: "Taktgeber", materialien: { "Schrauben und Muttern": 3, "Maschinenoel": 1 } },
+        { name: "Nanobots", materialien: { "Mechanischeteile": 2, "Maschinenoel": 3 } },
+        { name: "Ionen-Kern", materialien: { "Mechanischeteile": 4, "Schrauben und Muttern": 2 } },
+        { name: "Belagerungs-Kern", materialien: { "Mechanischeteile": 5, "Maschinenoel": 2 } },
+        { name: "Drohnen-Steuerung", materialien: { "Mechanischeteile": 3, "Schrauben und Muttern": 3 } }
     ],
     "alchemist": [
         { name: "Säuretrank", materialien: { "Pflanzenteile": 2, "Fläschchen": 1 } },
         { name: "Gifttrank", materialien: { "Bestienteile": 2, "Fläschchen": 1 } },
-        { name: "Heiltrank", materialien: { "Pflanzenteile": 1, "Fläschchen": 1 } }
+        { name: "Heiltrank", materialien: { "Pflanzenteile": 1, "Fläschchen": 1 } },
+        { name: "Rauchbombe", materialien: { "Pflanzenteile": 2, "Fläschchen": 1 } },
+        { name: "Explosivtrank", materialien: { "Bestienteile": 2, "Fläschchen": 1 } },
+        { name: "Stärkungstrank", materialien: { "Bestienteile": 1, "Pflanzenteile": 1, "Fläschchen": 1 } },
+        { name: "Chaos-Viole", materialien: { "Bestienteile": 2, "Pflanzenteile": 1, "Fläschchen": 1 } },
+        { name: "Frosttrank", materialien: { "Pflanzenteile": 3, "Fläschchen": 1 } },
+        { name: "Wuttrank", materialien: { "Bestienteile": 3, "Fläschchen": 1 } },
+        { name: "Regenerationspaste", materialien: { "Pflanzenteile": 4 } },
+        { name: "Säureflasche", materialien: { "Bestienteile": 1, "Fläschchen": 1 } },
+        { name: "Magnum Opus", materialien: { "Bestienteile": 3, "Pflanzenteile": 3, "Fläschchen": 2 } },
+        { name: "Panacea", materialien: { "Pflanzenteile": 5, "Fläschchen": 2 } },
+        { name: "Ultima-Bombe", materialien: { "Bestienteile": 5, "Fläschchen": 2 } }
     ]
 };
 
@@ -65,6 +125,18 @@ function hatMaterialien(spieler, materialien) {
     const counts = {};
     spieler.inventar.forEach(it => counts[it.name] = (counts[it.name] || 0) + 1);
     return Object.entries(materialien).every(([name, menge]) => (counts[name] || 0) >= menge);
+}
+
+function berechneMaxHerstellbar(spieler, materialien) {
+    const counts = {};
+    spieler.inventar.forEach(it => counts[it.name] = (counts[it.name] || 0) + 1);
+    let max = Infinity;
+    for (const [name, menge] of Object.entries(materialien)) {
+        const besitz = counts[name] || 0;
+        const moeglich = Math.floor(besitz / menge);
+        if (moeglich < max) max = moeglich;
+    }
+    return max === Infinity ? 0 : max;
 }
 
 function verbraucheMaterialien(spieler, materialien) {
@@ -80,6 +152,16 @@ const QUEST_POOL = [
     { id: 1, title: "Jagdfieber", desc: "Besiege 10 Kreaturen im Wald.", reward: { gold: 30, xp: 20 } },
     { id: 2, title: "Ersatzteile", desc: "Bringe dem Schmied 3 Mechanischeteile.", reward: { gold: 20, xp: 15 } },
     { id: 3, title: "Königsmörder", desc: "Besiege den Skelett-König in den Ruinen.", reward: { gold: 100, xp: 50 } }
+];
+
+const RAETSEL_MASTER_POOL = [
+    { q: "Ich habe Städte, aber keine Häuser. Ich habe Berge, aber keine Bäume. Ich habe Wasser, aber keine Fische. Was bin ich?", a: "landkarte" },
+    { q: "Was wird nass, während es trocknet?", a: "handtuch" },
+    { q: "Je mehr man davon wegnimmt, desto größer wird es. Was ist das?", a: "loch" },
+    { q: "Was läuft, hat aber keine Beine?", a: "nase" },
+    { q: "Welcher Tag ist der längste in der Woche?", a: "donnerstag" },
+    { q: "Wer es macht, der sagt es nicht. Wer es nimmt, der kennt es nicht. Wer es kennt, der will es nicht. Was ist das?", a: "falschgeld" },
+    { q: "Was hat Augen, kann aber nichts sehen?", a: "kartoffel" }
 ];
 
 function materialNachKlasse(held) {
@@ -99,8 +181,16 @@ async function zerlegenMenue(held) {
             return;
         }
 
+        // Gruppierung für die Anzeige
+        const groupedLoot = [];
+        loot.forEach(item => {
+            const entry = groupedLoot.find(g => g.name === item.name && g.typ === item.typ && g.wert === item.wert);
+            if (entry) entry.count++;
+            else groupedLoot.push({ name: item.name, typ: item.typ, wert: item.wert, count: 1 });
+        });
+
         console.log(`\n--- ♻️ ZERLEGEN: ${held.name} ---`);
-        loot.forEach((it, i) => console.log(`${i + 1}. ${it.name} (${it.typ}, Wert: ${it.wert})`));
+        groupedLoot.forEach((g, i) => console.log(`${i + 1}. ${g.count > 1 ? g.count + 'x ' : ''}${g.name} (${g.typ}, Wert: ${g.wert})`));
         console.log("0. Zurück");
 
         const wahl = await question("Welches Item zerlegen? ");
@@ -108,16 +198,38 @@ async function zerlegenMenue(held) {
             aktiv = false;
         } else {
             const idx = parseInt(wahl) - 1;
-            if (idx >= 0 && idx < loot.length) {
-                const item = loot[idx];
-                held.inventar.splice(held.inventar.indexOf(item), 1);
-                
-                const mat = materialNachKlasse(held);
-                const menge = randomRange(1, 2);
-                for(let i=0; i<menge; i++) {
-                    held.inventar.push(new Item(mat, "Material", 0));
+            if (idx >= 0 && idx < groupedLoot.length) {
+                const selected = groupedLoot[idx];
+                const anzInput = await question(`Wie viele ${selected.name} zerlegen? (Max ${selected.count}): `);
+                const anz = parseInt(anzInput);
+
+                if (!isNaN(anz) && anz > 0 && anz <= selected.count) {
+                    let matsGefunden = {};
+                    for (let n = 0; n < anz; n++) {
+                        const itemIdx = held.inventar.findIndex(it => it.name === selected.name && it.typ === selected.typ && it.wert === selected.wert);
+                        if (itemIdx !== -1) {
+                            held.inventar.splice(itemIdx, 1);
+                            const mat = materialNachKlasse(held);
+                            const menge = randomRange(1, 2);
+                            for (let i = 0; i < menge; i++) {
+                                held.inventar.push(new Item(mat, "Material", 0, null, "Rohstoff für Handwerkskunst."));
+                                matsGefunden[mat] = (matsGefunden[mat] || 0) + 1;
+                            }
+                            // Chance auf seltene Komponenten
+                            if (Math.random() < 0.05) { // 5% Chance
+                                const rareMat = held.klasse.toLowerCase() === "tueftler" ? "Ionen-Kern" : "Magnum Opus";
+                                held.inventar.push(new Item(rareMat, "Material", 0, null, "Eine seltene und mächtige Komponente."));
+                                matsGefunden[rareMat] = (matsGefunden[rareMat] || 0) + 1;
+                                await printSlow(`✨ ${held.name} findet eine seltene Komponente: <span class="rare-item">${rareMat}</span>!`);
+                            }
+
+                        }
+                    }
+                    const matString = Object.entries(matsGefunden).map(([name, count]) => `${count}x ${name}`).join(", ");
+                    await printSlow(`🔨 ${held.name} zerlegt ${anz}x ${selected.name} und gewinnt: ${matString}!`);
+                } else {
+                    await printSlow("❌ Ungültige Anzahl.");
                 }
-                await printSlow(`🔨 ${held.name} zerlegt ${item.name} und gewinnt ${menge}x ${mat}!`);
             }
         }
     }
@@ -177,7 +289,7 @@ async function craftingMenue(helden) {
                     if (schlechter) {
                         held.inventar.splice(held.inventar.indexOf(it), 1);
                         const mat = materialNachKlasse(held);
-                        held.inventar.push(new Item(mat, "Material", 0));
+                        held.inventar.push(new Item(mat, "Material", 0, null, "Rohstoff für Handwerkskunst."));
                         await printSlow(`🤖 ${held.name} zerlegt ${it.name} -> ${mat}.`);
                     }
                 }
@@ -185,15 +297,21 @@ async function craftingMenue(helden) {
                 const rezepte = CRAFTING_REZEPTE[held.klasse.toLowerCase()];
                 const machbar = rezepte.find(r => hatMaterialien(held, r.materialien));
                 if (machbar) {
-                    verbraucheMaterialien(held, machbar.materialien);
-                    held.inventar.push(new Item(machbar.name, "Spezial", 0));
-                    await printSlow(`🤖 ${held.name} (KI) hat ${machbar.name} hergestellt.`);
+                    const wurf = wuerfelD20();
+                    if (wurf + held.grund_int >= 10) {
+                        verbraucheMaterialien(held, machbar.materialien);
+                        held.inventar.push(new Item(machbar.name, "Spezial", 0, null, "Ein handgefertigtes Werkzeug."));
+                        await printSlow(`🤖 ${held.name} (KI) hat ${machbar.name} erfolgreich hergestellt.`);
+                    } else {
+                        verbraucheMaterialien(held, machbar.materialien);
+                        await printSlow(`🤖 ${held.name} (KI) ist beim Crafting von ${machbar.name} gescheitert!`);
+                    }
                 }
                 amBasteln = false;
                 continue;
             }
 
-            console.log(`\n--- 🛠️ WERK BANK: ${held.name} (${held.klasse}) ---`);
+            console.log(`\n--- 🛠️ WERK BANK: ${held.name} (${held.klasse}) | Intelligenz: ${held.grund_int} ---`);
             console.log("1. Gegenstand herstellen");
             console.log("2. Ausrüstung zerlegen (Salvage)");
             console.log("0. Werkbank verlassen");
@@ -210,9 +328,18 @@ async function craftingMenue(helden) {
             if (modus !== "1") continue;
 
             const rezepte = CRAFTING_REZEPTE[held.klasse.toLowerCase()];
+            const inventarZaehler = held.inventar.reduce((acc, it) => {
+                acc[it.name] = (acc[it.name] || 0) + 1;
+                return acc;
+            }, {});
+
             rezepte.forEach((r, i) => {
-                const mats = Object.entries(r.materialien).map(([n, m]) => `${m}x ${n}`).join(", ");
-                console.log(`${i + 1}. ${r.name} herstellen (${mats})`);
+                const mats = Object.entries(r.materialien).map(([n, m]) => {
+                    const besitz = inventarZaehler[n] || 0;
+                    const farbe = besitz >= m ? 'hp-gain' : 'effect-lifesteal';
+                    return `${m}x <span class="${farbe}">${n}</span> (Du hast: ${besitz})`;
+                }).join(", ");
+                console.log(`${i + 1}. ${r.name} herstellen - Kosten: ${mats}`);
             });
             console.log("0. Werkbank verlassen");
 
@@ -222,17 +349,34 @@ async function craftingMenue(helden) {
             } else {
                 const rezept = rezepte[parseInt(wahl) - 1];
                 if (rezept) {
-                    if (hatMaterialien(held, rezept.materialien)) {
-                        verbraucheMaterialien(held, rezept.materialien);
-                        held.inventar.push(new Item(rezept.name, "Spezial", 0));
-                        await printSlow(`✨ Erfolg! ${held.name} hat ${rezept.name} hergestellt.`);
-                    } else {
+                    const maxHerstellbar = berechneMaxHerstellbar(held, rezept.materialien);
+                    if (maxHerstellbar === 0) {
                         await printSlow("❌ Fehlende Materialien!");
-                        amBasteln = false;
+                        continue;
+                    }
+
+                    const anzInput = await question(`Wie viele ${rezept.name} herstellen? (Max ${maxHerstellbar}, 0 zum Abbrechen): `);
+                    const anz = parseInt(anzInput);
+                    
+                    if (!isNaN(anz) && anz > 0 && anz <= maxHerstellbar) {
+                        let erfolge = 0;
+                        let patzer = 0;
+                        const dc = 10;
+                        for (let i = 0; i < anz; i++) {
+                            verbraucheMaterialien(held, rezept.materialien);
+                            const wurf = wuerfelD20();
+                            if (wurf + held.grund_int >= dc) {
+                                held.inventar.push(new Item(rezept.name, "Spezial", 0, null, "Ein handgefertigtes Werkzeug."));
+                                erfolge++;
+                            } else {
+                                patzer++;
+                            }
+                        }
+                        if (erfolge > 0) await printSlow(`✨ Erfolg! ${held.name} hat ${erfolge}x ${rezept.name} hergestellt.`);
+                        if (patzer > 0) await printSlow(`💥 Patzer! Bei ${patzer} Versuchen wurden die Materialien zerstört.`);
                     }
                 } else {
                     await printSlow("❌ Ungültige Wahl.");
-                    amBasteln = false;
                 }
             }
         }
@@ -245,56 +389,131 @@ const KLASSEN_ABILITIES = {
         { name: "Kriegsschrei", ap_kosten: 20, atk_buff: 8 },
         { name: "Durchbohren", ap_kosten: 15, schaden: 25, element: "Physisch" },
         { name: "Blutdurst", ap_kosten: 30, atk_buff: 10 },
-        { name: "Klinge der Götter", ap_kosten: 40, schaden: 40, element: "Physisch" }
+        { name: "Klinge der Götter", ap_kosten: 40, schaden: 40, element: "Physisch" },
+        { name: "Erschütternder Schlag", ap_kosten: 20, schaden: 22, verwirrt: 1 },
+        { name: "Berserker-Modus", ap_kosten: 25, atk_buff: 12, def_buff: -5 },
+        { name: "Schildwall", ap_kosten: 20, def_buff: 10 },
+        { name: "Drachenhieb", ap_kosten: 30, schaden: 35, element: "Feuer" },
+        { name: "Unaufhaltsam", ap_kosten: 0, heilung: 15, ap_regen: 5 }
     ],
     "magier": [
         { name: "Meteor", ap_kosten: 40, schaden: 50, element: "Feuer" },
         { name: "Frostnova", ap_kosten: 25, schlaf_dauer: 1, element: "Eis" },
         { name: "Arkaner Fokus", ap_kosten: 10, atk_buff: 10 },
         { name: "Mana-Schild", ap_kosten: 25, def_buff: 10 },
-        { name: "Eiszeit", ap_kosten: 35, schlaf_dauer: 2, element: "Eis" }
+        { name: "Eiszeit", ap_kosten: 35, schlaf_dauer: 2, element: "Eis" },
+        { name: "Kettenblitz", ap_kosten: 28, schaden: 30, element: "Blitz" },
+        { name: "Zeitstopp", ap_kosten: 45, schlaf_dauer: 2 },
+        { name: "Spiegelbild", ap_kosten: 20, def_buff: 8 },
+        { name: "Desintegration", ap_kosten: 35, execute_threshold: 15 },
+        { name: "Elementarsturm", ap_kosten: 50, schaden: 60, element: "Energie" }
     ],
     "schurke": [
         { name: "Giftiger Dolch", ap_kosten: 15, schaden: 15, verwirrt: 1, element: "Gift" },
         { name: "Schattenschritt", ap_kosten: 20, atk_buff: 6 },
         { name: "Fächerstoß", ap_kosten: 25, schaden: 22, element: "Physisch" },
         { name: "Tödlicher Stoß", ap_kosten: 25, execute_threshold: 15, element: "Physisch" },
-        { name: "Schattentanz", ap_kosten: 25, atk_buff: 8 }
+        { name: "Schattentanz", ap_kosten: 25, atk_buff: 8 },
+        { name: "Rauchbombe", ap_kosten: 15, verwirrt: 2 },
+        { name: "Nierenhieb", ap_kosten: 18, schlaf_dauer: 1 },
+        { name: "Adrenalinrausch", ap_kosten: 0, ap_regen: 10 },
+        { name: "Ausweidertanz", ap_kosten: 30, schaden: 32 },
+        { name: "Meisterschütze", ap_kosten: 22, schaden: 28 }
     ],
     "heiler": [
         { name: "Heiliger Regen", ap_kosten: 25, heilung: 30, element: "Heilig" },
         { name: "Göttlicher Schutz", ap_kosten: 20, def_buff: 5 },
         { name: "Reinigung", ap_kosten: 10, heilung: 15, element: "Heilig" },
         { name: "Lebenslicht", ap_kosten: 40, heilung: 40, element: "Heilig" },
-        { name: "Göttlicher Zorn", ap_kosten: 25, schaden: 25, element: "Heilig" }
+        { name: "Göttlicher Zorn", ap_kosten: 25, schaden: 25, element: "Heilig" },
+        { name: "Segnung", ap_kosten: 20, atk_buff: 5, def_buff: 5 },
+        { name: "Zuflucht", ap_kosten: 30, heilung: 45 },
+        { name: "Bannung", ap_kosten: 18, schaden: 20, element: "Heilig" },
+        { name: "Märtyrer-Segen", ap_kosten: 15, heilung: 60, hp_kosten: 15 },
+        { name: "Licht-Avatar", ap_kosten: 40, atk_buff: 15, def_buff: 10 },
+        { name: "Heiliges Leuchten", ap_kosten: 15, licht: 5, licht_def: 2, abschrecken: 30 }
     ],
     "verteidiger": [
         { name: "Bollwerk", ap_kosten: 25, def_buff: 10 },
         { name: "Herausforderung", ap_kosten: 15, atk_buff: 3 },
         { name: "Eiserner Wille", ap_kosten: 20, heilung: 15 },
         { name: "Eiserner Wall", ap_kosten: 30, def_buff: 12 },
-        { name: "Vergeltung", ap_kosten: 25, schaden: 20, atk_buff: 5, element: "Physisch" }
+        { name: "Vergeltung", ap_kosten: 25, schaden: 20, atk_buff: 5, element: "Physisch" },
+        { name: "Standhalten", ap_kosten: 20, heilung: 25 },
+        { name: "Schildschlag", ap_kosten: 18, schaden: 15, verwirrt: 1 },
+        { name: "Unerschütterlich", ap_kosten: 25, def_buff: 15 },
+        { name: "Phalanx", ap_kosten: 35, def_buff: 8 },
+        { name: "Reflektionsschild", ap_kosten: 20, schaden: 15 }
     ],
     "barde": [
         { name: "Hymne des Sieges", ap_kosten: 30, atk_buff: 15 },
         { name: "Spottvers", ap_kosten: 15, schaden: 12, verwirrt: 1, element: "Schall" },
         { name: "Lied der Ruhe", ap_kosten: 25, schlaf_dauer: 1, element: "Schall" },
         { name: "Requiem", ap_kosten: 40, schaden: 30, verwirrt: 2, element: "Schall" },
-        { name: "Symphonie der Hoffnung", ap_kosten: 35, heilung: 20, atk_buff: 5 }
+        { name: "Symphonie der Hoffnung", ap_kosten: 35, heilung: 20, atk_buff: 5 },
+        { name: "Dissonanz", ap_kosten: 18, schaden: 18, verwirrt: 1 },
+        { name: "Ballade der Stärke", ap_kosten: 15, atk_buff: 10 },
+        { name: "Tanz der Schwerter", ap_kosten: 25, schaden: 25 },
+        { name: "Echo der Ahnen", ap_kosten: 20, heilung: 20 },
+        { name: "Finale der Verdammnis", ap_kosten: 45, schaden: 55 },
+        { name: "Lied des Lichts", ap_kosten: 15, licht: 5, licht_atk: 2 }
     ],
     "tueftler": [
-        { name: "Tesla-Spule", ap_kosten: 0, schaden: 35, element: "Blitz" },
-        { name: "Reparatur-Bot", ap_kosten: 0, heilung: 25 },
-        { name: "Schockgranate", ap_kosten: 0, schlaf_dauer: 1, element: "Energie" },
-        { name: "Laserstrahl", ap_kosten: 0, schaden: 45, element: "Energie" },
-        { name: "Stasis-Feld", ap_kosten: 0, niederhalten: 2, element: "Energie" }
+        { name: "Tesla-Spule", ap_kosten: 0, material_kosten: "Batterie", schaden: 35, element: "Blitz" },
+        { name: "Reparatur-Bot", ap_kosten: 0, material_kosten: "Reparatur-Kit", heilung: 25 },
+        { name: "Schockgranate", ap_kosten: 0, material_kosten: "Schockgranate", schlaf_dauer: 1, element: "Energie" },
+        { name: "Laserstrahl", ap_kosten: 0, material_kosten: "Fokuslinse", schaden: 45, element: "Energie" },
+        { name: "Stasis-Feld", ap_kosten: 0, material_kosten: "Stasis-Modul", niederhalten: 2, element: "Energie" },
+        { name: "Mini-Rakete", ap_kosten: 0, material_kosten: "Mini-Rakete", schaden: 30, element: "Feuer" },
+        { name: "Energiefeld", ap_kosten: 0, material_kosten: "Schild-Generator", def_buff: 10 },
+        { name: "Overclock", ap_kosten: 0, material_kosten: "Taktgeber", atk_buff: 12 },
+        { name: "Nanobots", ap_kosten: 0, material_kosten: "Nanobots", heilung: 30 },
+        { name: "Ionenkanone", ap_kosten: 0, material_kosten: "Ionen-Kern", schaden: 65, element: "Blitz" }
     ],
     "alchemist": [
-        { name: "Explosives Gemisch", ap_kosten: 0, schaden: 40, element: "Feuer" },
-        { name: "Stärkungstrank", ap_kosten: 0, atk_buff: 10 },
-        { name: "Nebelbombe", ap_kosten: 0, verwirrt: 1, element: "Gift" },
-        { name: "Elixier des Lebens", ap_kosten: 0, heilung: 45 },
-        { name: "Chaos-Viole", ap_kosten: 0, schaden: 30, verwirrt: 2, element: "Säure" }
+        { name: "Explosives Gemisch", ap_kosten: 0, material_kosten: "Explosivtrank", schaden: 40, element: "Feuer" },
+        { name: "Stärkungstrank", ap_kosten: 0, material_kosten: "Stärkungstrank", atk_buff: 10 },
+        { name: "Nebelbombe", ap_kosten: 0, material_kosten: "Rauchbombe", verwirrt: 1, element: "Gift" },
+        { name: "Elixier des Lebens", ap_kosten: 0, material_kosten: "Heiltrank", heilung: 45 },
+        { name: "Chaos-Viole", ap_kosten: 0, material_kosten: "Chaos-Viole", schaden: 30, verwirrt: 2, element: "Säure" },
+        { name: "Frosttrank", ap_kosten: 0, material_kosten: "Frosttrank", schlaf_dauer: 1, element: "Eis" },
+        { name: "Fläschchen der Wut", ap_kosten: 0, material_kosten: "Wuttrank", atk_buff: 15 },
+        { name: "Regenerationspaste", ap_kosten: 0, material_kosten: "Regenerationspaste", heilung: 35 },
+        { name: "Ätzende Wolke", ap_kosten: 0, material_kosten: "Säureflasche", schaden: 25, element: "Säure" },
+        { name: "Magnum Opus", ap_kosten: 0, material_kosten: "Magnum Opus", schaden: 45, heilung: 20, element: "Energie" }
+    ],
+    // --- SPEZIALISIERUNGEN ---
+    "paladin": [
+        { name: "Göttliches Urteil", ap_kosten: 35, schaden: 40, heilung: 15, element: "Heilig" },
+        { name: "Heiliger Schild", ap_kosten: 25, def_buff: 15, heilung: 10 }
+    ],
+    "berserker": [
+        { name: "Blutrausch", ap_kosten: 30, atk_buff: 20, hp_kosten: 10 },
+        { name: "Köpfen", ap_kosten: 40, schaden: 50, execute_threshold: 25 }
+    ],
+    "erzmagier": [
+        { name: "Zeitkrümmung", ap_kosten: 50, ap_regen: 20, schlaf_dauer: 1 },
+        { name: "Kometeneinschlag", ap_kosten: 60, schaden: 85, element: "Feuer" }
+    ],
+    "assassine": [
+        { name: "Todesstoß", ap_kosten: 35, schaden: 100, execute_threshold: 30 },
+        { name: "Schattenfluch", ap_kosten: 20, verwirrt: 3, element: "Schatten" }
+    ],
+    "hohepriester": [
+        { name: "Avatar des Lichts", ap_kosten: 50, heilung: 100, belebt: 1 },
+        { name: "Heilige Aura", ap_kosten: 30, def_buff: 10, ap_regen: 5 }
+    ],
+    "wächter": [
+        { name: "Unsterblichkeit", ap_kosten: 45, def_buff: 30, heilung: 20 },
+        { name: "Schild der Vergeltung", ap_kosten: 30, schaden: 30, def_buff: 10 }
+    ],
+    "maschinist": [
+        { name: "Belagerungsmodus", ap_kosten: 0, material_kosten: "Belagerungs-Kern", schaden: 70, element: "Physisch" },
+        { name: "Drohnen-Schwarm", ap_kosten: 0, material_kosten: "Drohnen-Steuerung", schaden: 40, verwirrt: 2 }
+    ],
+    "meister-alchemist": [
+        { name: "Panacea", ap_kosten: 0, material_kosten: "Panacea", heilung: 80, ap_regen: 20 },
+        { name: "Ultima-Bombe", ap_kosten: 0, material_kosten: "Ultima-Bombe", schaden: 90, element: "Energie" }
     ]
 };
 
@@ -334,28 +553,64 @@ async function synergienPruefen(helden) {
     }
 }
 
-async function bossLootGeben(helden) {
-    await printSlow("\n🎁 Der Wächter hinterlässt einen seltenen Schatz!");
-    const itemData = BOSS_LOOT[randomRange(0, BOSS_LOOT.length - 1)];
-    const item = new Item(itemData.name, itemData.kind, itemData.val);
+async function raetselMeisterBegegnung(helden) {
+    const r = RAETSEL_MASTER_POOL[randomRange(0, RAETSEL_MASTER_POOL.length - 1)];
+    await printSlow("\n🎭 <span class='rare-item'>Ein mysteriöser Rätselmeister erscheint aus dem Schatten!</span>");
+    await printSlow("'Seid gegrüßt, Wanderer. Löst mein Rätsel und werdet belohnt. Scheitert ihr, wird es schmerzhaft...'");
+    await printSlow(`\n"<span class="synergy-text">${r.q}</span>"`);
     
+    const antwort = await question("Deine Antwort: ");
+    const spielerAntwort = antwort.toLowerCase().trim().replace(/\.$/, "");
+
+    if (spielerAntwort === r.a.toLowerCase()) {
+        await printSlow(`\n✨ <span class="hp-gain">'Hervorragend! Ihr seid weiser als ihr ausseht.'</span>`);
+        const goldPlus = randomRange(40, 80);
+        const xpPlus = randomRange(25, 50);
+        
+        for (const h of helden) {
+            h.gold += goldPlus;
+            h.xp += xpPlus;
+            h.hp = Math.min(h.max_hp, h.hp + 15);
+            if (h.check_levelup()) {
+                await printSlow(`\n🌟 LEVEL UP für ${h.name}! Level ${h.level}!`, 'level-up-animation');
+                await levelUpMenu(h);
+            }
+        }
+        await printSlow(`🎁 Die Gruppe erhält <span class="hp-gain">${goldPlus} Gold, ${xpPlus} XP</span> und regeneriert <span class="hp-gain">15 HP</span>!`);
+    } else {
+        await printSlow(`\n💨 <span class="effect-lifesteal">'Leider falsch! Die Antwort war: ${r.a}. Bereitet euch auf meine Strafe vor!'</span>`);
+        const schaden = randomRange(10, 25);
+        for (const h of helden) {
+            h.hp = Math.max(1, h.hp - schaden);
+            h.totalDamageTaken += schaden;
+            h.damageSources["Rätselmeister"] = (h.damageSources["Rätselmeister"] || 0) + schaden;
+        }
+        await printSlow(`💥 <span class="effect-lifesteal">Ein magischer Blitz trifft die Gruppe! Jeder verliert ${schaden} HP.</span>`);
+    }
+    updateUI(helden);
+}
+
+async function bossLootGeben(helden) {
+    await printSlow("\n🎁 Der Wächter hinterlässt seltene Schätze für die Sieger!");
     const lebendeHelden = helden.filter(h => h.hp > 0);
     if (lebendeHelden.length === 0) return;
-    
-    const empfaenger = lebendeHelden[randomRange(0, lebendeHelden.length - 1)];
-    empfaenger.inventar.push(item);
-    
-    await printSlow(`✨ ${empfaenger.name} erhält ein <span class="rare-item">seltenes Fundstück: ${item.name}</span> (${item.typ}: ${item.wert})!`);
+
+    for (const empfaenger of lebendeHelden) {
+        const itemData = BOSS_LOOT[randomRange(0, BOSS_LOOT.length - 1)];
+        const item = new Item(itemData.name, itemData.kind, itemData.val, null, itemData.lore || "Ein legendärer Schatz des Wächters.");
+        empfaenger.inventar.push(item);
+        await printSlow(`✨ ${empfaenger.name} erhält ein <span class="rare-item">seltenes Fundstück: ${item.name}</span> (${item.typ}: ${item.wert})!`);
+        if (empfaenger.isKI) empfaenger.kiAutomatischAusruesten();
+    }
 
     // Chance auf das Secret Item (30% bei Mini-Bossen, falls noch nicht gefunden)
     if (!schluesselGefunden && Math.random() < 0.3) {
-        const siegel = new Item("Goldener Siegelring", "Secret", 0);
-        empfaenger.inventar.push(siegel);
+        const siegel = new Item("Goldener Siegelring", "Secret", 0, null, "Ein uraltes Erbstück. Er vibriert in der Nähe von Portalen.");
+        const finder = lebendeHelden[randomRange(0, lebendeHelden.length - 1)];
+        finder.inventar.push(siegel);
         schluesselGefunden = true;
-        await printSlow(`\n🗝️ <span class="rare-item">HALT! Was ist das?</span> ${empfaenger.name} findet zudem einen **${siegel.name}**. Er scheint magisch zu vibrieren...`);
+        await printSlow(`\n🗝️ <span class="rare-item">HALT! Was ist das?</span> ${finder.name} findet zudem einen **${siegel.name}**. Er scheint magisch zu vibrieren...`);
     }
-    
-    if (empfaenger.isKI) empfaenger.kiAutomatischAusruesten();
 }
 
 async function raetselPhase() {
@@ -371,7 +626,8 @@ async function raetselPhase() {
     await printSlow(`"<span class="synergy-text">${r.q}</span>"`);
     
     const antwort = await question("Deine Antwort: ");
-    if (antwort.toLowerCase().trim() === r.a) {
+    // Wir nutzen trim() und entfernen einen evtl. Punkt am Ende der Antwort
+    if (antwort.toLowerCase().trim().replace(/\.$/, "") === r.a) {
         await printSlow(`\n✨ <span class="hp-gain">"Richtig... tretet ein in das Reich, das jenseits der Zeit liegt."</span>`);
         return true;
     } else {
@@ -386,6 +642,35 @@ async function secretEbeneIntro() {
     await printSlow(`\n🌌 <span class="rare-item">DIE VERBORGENE DIMENSION</span> 🌌`);
     await printSlow("Ihr tretet durch den Riss in der Realität. Hier gelten die Gesetze der Natur nicht mehr.");
     await printSlow("Vor euch schwebt der **Leeren-Wächter**, das wahre Ende dieses Dungeons.");
+}
+
+async function levelUpMenu(held) {
+    await printSlow(`\n✨ --- LEVEL UP: ${held.name} (Level ${held.level}) ---`);
+
+    if (held.isKI) {
+        const wahl = randomRange(1, 4);
+        if (wahl === 1) { held.max_hp += 10; held.hp = held.max_hp; await printSlow(`🤖 ${held.name} steigert Konstitution (+10 Max HP).`); }
+        else if (wahl === 2) { held.atk_bonus += 2; await printSlow(`🤖 ${held.name} steigert Stärke (+2 ATK).`); }
+        else if (wahl === 3) { held.def_bonus += 2; await printSlow(`🤖 ${held.name} steigert Verteidigung (+2 RK).`); }
+        else { held.max_ap += 10; held.ap = held.max_ap; await printSlow(`🤖 ${held.name} steigert Fokus (+10 Max AP).`); }
+    } else {
+        console.log("Wähle ein Attribut zum Steigern:");
+        console.log(`1. Konstitution (+10 Max HP | Aktuell: ${held.max_hp})`);
+        console.log(`2. Stärke (+2 ATK Bonus | Aktuell: ${held.atk_bonus})`);
+        console.log(`3. Verteidigung (+2 RK Bonus | Aktuell: ${held.def_bonus})`);
+        console.log(`4. Fokus (+10 Max AP | Aktuell: ${held.max_ap})`);
+
+        const wahl = await question("Wahl (1-4): ");
+        if (wahl === "1") { held.max_hp += 10; held.hp = held.max_hp; }
+        else if (wahl === "2") { held.atk_bonus += 2; }
+        else if (wahl === "3") { held.def_bonus += 2; }
+        else if (wahl === "4") { held.max_ap += 10; held.ap = held.max_ap; }
+        else { await printSlow("Ungültige Wahl, du erhältst automatisch +10 Max HP."); held.max_hp += 10; held.hp = held.max_hp; }
+        await printSlow("Attribut erfolgreich gesteigert!");
+    }
+
+    // Im Anschluss eine neue Fähigkeit wählen lassen
+    await faehigkeitWaehlen(held);
 }
 
 async function faehigkeitWaehlen(spieler) {
@@ -410,11 +695,29 @@ async function faehigkeitWaehlen(spieler) {
         await printSlow(`🤖 ${spieler.name} lernt: ${gewaehlt.name}!`);
     } else {
         auswahl.forEach((a, i) => {
-            console.log(`${i + 1}. ${a.name} (AP: ${a.ap_kosten})`);
+            let info = "";
+            let warning = "";
+            if (a.isUltimate) info = `(ULTIMATE - SP: ${a.sp_kosten})`;
+            else if (a.material_kosten) {
+                const count = spieler.inventar.filter(it => it.name === a.material_kosten).length;
+                info = `(Benötigt: ${a.material_kosten})`;
+                if (count === 0) warning = ' <span class="effect-lifesteal">[Kein Vorrat]</span>';
+            }
+            else info = `(AP: ${a.ap_kosten})`;
+            const desc = formatAbilityDesc(a, spieler);
+            console.log(`${i + 1}. <span class="tooltip">${a.name}<span class="tooltiptext"><strong>${a.name}</strong><br>${desc}</span></span> ${info}${warning}`);
         });
         const wahl = await question("Wähle eine Fähigkeit (1-2): ");
         const idx = parseInt(wahl) - 1;
         const gewaehlt = (idx >= 0 && idx < auswahl.length) ? auswahl[idx] : auswahl[0];
+
+        if (gewaehlt.material_kosten) {
+            const count = spieler.inventar.filter(it => it.name === gewaehlt.material_kosten).length;
+            if (count === 0) {
+                await printSlow(`⚠️ <span class="effect-lifesteal">Warnung:</span> Du hast keine **${gewaehlt.material_kosten}** im Inventar. Du musst diese erst herstellen, um die Fähigkeit nutzen zu können!`);
+            }
+        }
+
         spieler.abilities.push(gewaehlt);
         await printSlow(`✨ Du hast ${gewaehlt.name} gelernt!`);
     }
@@ -457,13 +760,14 @@ async function schatzFinden(helden) {
             { name: "Mithrilkette", typ: "Ruestung", wert: 12 }
         ];
 
-        const goldFund = randomRange(1, 50);
+        let goldFund = randomRange(1, 50);
+        if (aktiver.hatBardenBuff) goldFund = Math.floor(goldFund * 1.1);
         aktiver.gold += goldFund;
         await printSlow(`💎 Erfolg! ${aktiver.name} öffnet die Truhe und findet ${goldFund} Gold!`);
 
         for (const h of helden) {
             const randomData = itemPool[randomRange(0, itemPool.length - 1)];
-            const loot = new Item(randomData.name, randomData.typ, randomData.wert);
+            const loot = new Item(randomData.name, randomData.typ, randomData.wert, null, "In einer alten Truhe gefunden.");
             h.inventar.push(loot);
             await printSlow(`🎁 ${h.name} erhält: <span class="rare-item">${loot.name}</span> (${loot.typ}: ${loot.wert})`);
             
@@ -473,17 +777,25 @@ async function schatzFinden(helden) {
         }
     } else {
         await printSlow("💥 Eine Falle explodiert! Alle Spieler verlieren 5 HP.");
-        helden.forEach(h => h.hp -= 5);
+        helden.forEach(h => {
+            h.hp -= 5;
+            h.totalDamageTaken += 5;
+            const sourceName = "Truhen-Falle";
+            h.damageSources[sourceName] = (h.damageSources[sourceName] || 0) + 5;
+        });
     }
 }
 
-async function shopBesuch(helden) {
+async function shopBesuch(helden, istNachBoss = false) {
+    if (istNachBoss) {
+        await printSlow("\n🏆 <span class=\"rare-item\">DER SIEGER-BONUS:</span> Der Händler ist beeindruckt von eurem Sieg und bietet euch Sonderkonditionen!");
+    }
     await printSlow("\n🏪 Ihr findet einen reisenden Händler im Dungeon.");
     
     // Glückswurf für seltene Artefakte (einmal pro Shop-Besuch)
     let seltenesArtefakt = null;
     const gluecksWurf = wuerfelD20();
-    if (gluecksWurf >= 18) {
+    if (gluecksWurf >= 18 || (istNachBoss && gluecksWurf >= 10)) {
         seltenesArtefakt = RARE_ARTIFACTS[randomRange(0, RARE_ARTIFACTS.length - 1)];
         await printSlow(`✨ <span class="rare-item">Der Händler flüstert: 'Ich habe heute etwas ganz Besonderes unter dem Tresen...'</span>`);
     }
@@ -492,11 +804,13 @@ async function shopBesuch(helden) {
         let shopping = true;
         while (shopping) {
             // Charisma-Bonus berechnen (5% pro Punkt)
-            const buyDiscount = Math.max(0.5, 1 - (held.grund_cha * 0.05));
+            const charismaRabatt = 1 - (held.grund_cha * 0.05);
+            const bossRabatt = istNachBoss ? 0.8 : 1.0;
+            const buyDiscount = Math.max(0.4, charismaRabatt * bossRabatt);
             const sellBonus = Math.min(1.0, 0.5 + (held.grund_cha * 0.05));
 
             console.log(`\n--- 🛒 SHOP: ${held.name} (Gold: ${held.gold} | Charisma: ${held.grund_cha}) ---`);
-            console.log("KAUFEN:");
+            if (istNachBoss) console.log("✨ <span class=\"hp-gain\">Aktion: 20% Sieger-Rabatt aktiv!</span>");
             
             Object.keys(SHOP_WAREN).forEach(id => {
                 const ware = SHOP_WAREN[id];
@@ -524,9 +838,18 @@ async function shopBesuch(helden) {
                 console.log("\n--- Dein Inventar zum Verkauf ---");
                 const potionSellPrice = Math.max(1, Math.floor(5 * sellBonus)); // 5 ist Basiswert
                 if (held.traenke > 0) console.log(`T. Heiltränke (${held.traenke}x) - Wert: ${potionSellPrice} Gold/Stk`);
-                held.inventar.forEach((it, i) => {
-                    const verkaufsPreis = Math.max(1, Math.floor(it.wert * sellBonus));
-                    console.log(`${i + 1}. ${it.name} - Wert: ${verkaufsPreis} Gold`);
+                
+                // Gruppiertes Inventar für die Anzeige
+                const groupedInv = [];
+                held.inventar.forEach(item => {
+                    const entry = groupedInv.find(g => g.name === item.name);
+                    if (entry) entry.count++;
+                    else groupedInv.push({ name: item.name, count: 1, wert: item.wert });
+                });
+
+                groupedInv.forEach((g, i) => {
+                    const verkaufsPreis = Math.max(1, Math.floor(g.wert * sellBonus));
+                    console.log(`${i + 1}. ${g.count > 1 ? g.count + 'x ' : ''}${g.name} - Wert: ${verkaufsPreis} Gold`);
                 });
                 console.log("B. Zurück zum Kauf-Menü");
 
@@ -542,23 +865,22 @@ async function shopBesuch(helden) {
                     }
                 } else {
                     const idx = parseInt(verkaufWahl) - 1;
-                    if (!isNaN(idx) && idx >= 0 && idx < held.inventar.length) {
-                        const item = held.inventar[idx];
-                        const preis = Math.max(1, Math.floor(item.wert * sellBonus));
-                        const count = held.inventar.filter(i => i.name === item.name).length;
+                    if (!isNaN(idx) && idx >= 0 && idx < groupedInv.length) {
+                        const selected = groupedInv[idx];
+                        const preis = Math.max(1, Math.floor(selected.wert * sellBonus));
                         
-                        const anz = parseInt(await question(`Wie viele ${item.name} verkaufen? (Max ${count}): `));
-                        if (!isNaN(anz) && anz > 0 && anz <= count) {
+                        const anz = parseInt(await question(`Wie viele ${selected.name} verkaufen? (Max ${selected.count}): `));
+                        if (!isNaN(anz) && anz > 0 && anz <= selected.count) {
                             let geloescht = 0;
                             // Von hinten löschen um Indizes während des Durchlaufs stabil zu halten
                             for (let i = held.inventar.length - 1; i >= 0 && geloescht < anz; i--) {
-                                if (held.inventar[i].name === item.name) {
+                                if (held.inventar[i].name === selected.name) {
                                     held.inventar.splice(i, 1);
                                     geloescht++;
                                 }
                             }
                             held.gold += geloescht * preis;
-                            await printSlow(`💰 Du verkaufst ${geloescht}x ${item.name} für ${geloescht * preis} Gold.`);
+                            await printSlow(`💰 Du verkaufst ${geloescht}x ${selected.name} für ${geloescht * preis} Gold.`);
                         }
                     }
                 }
@@ -589,8 +911,16 @@ async function shopBesuch(helden) {
                     held.gold -= anz * finalCost;
                     for (let i = 0; i < anz; i++) {
                         if (ware.type === "traenke") held.traenke += 1;
-                        else if (ware.type === "item") held.inventar.push(new Item(ware.name, ware.kind, ware.val));
-                        else if (ware.type === "hp") held.hp = Math.min(held.max_hp, held.hp + ware.val);
+                    else if (ware.type === "item") {
+                        held.inventar.push(new Item(ware.name, ware.kind, ware.val, ware.effekt || null, ware.lore || null));
+                        if (ware.hpPenalty) {
+                            held.hp = Math.max(1, held.hp - ware.hpPenalty);
+                            held.totalDamageTaken += ware.hpPenalty;
+                            held.damageSources["Verfluchter Gegenstand"] = (held.damageSources["Verfluchter Gegenstand"] || 0) + ware.hpPenalty;
+                            await printSlow(`💀 <span class="effect-lifesteal">Ein dunkler Fluch zehrt an ${held.name}!</span> -${ware.hpPenalty} HP.`);
+                        }
+                    }
+                        else if (ware.type === "hp") held.inventar.push(new Item(ware.name, "Gegenstand", ware.val, null, ware.lore || null));
                     }
 
                     if (ware.type === "traenke") await printSlow(`🧪 ${held.name} kauft ${anz}x Heiltrank.`);
@@ -598,7 +928,7 @@ async function shopBesuch(helden) {
                         await printSlow(`📦 ${held.name} kauft ${anz}x ${ware.name}.`);
                         if (held.isKI) held.kiAutomatischAusruesten();
                     }
-                    else if (ware.type === "hp") await printSlow(`🍎 ${held.name} nutzt ${anz}x ${ware.name} und regeneriert HP.`);
+                    else if (ware.type === "hp") await printSlow(`📦 ${held.name} kauft ${anz}x ${ware.name} als Vorrat.`);
                 }
             } else {
                 await printSlow("❌ Ungültige Wahl!");
@@ -610,7 +940,156 @@ async function shopBesuch(helden) {
 async function tavernenBesuch(helden) {
     await printSlow("\n🍺 Ihr betretet die gemütliche Taverne 'Zum tanzenden JS-Bug'.");
     await printSlow("Die Gruppe ruht sich aus und regeneriert 10 HP.");
-    helden.forEach(h => h.hp = Math.min(h.max_hp, h.hp + 10));
+
+    for (const held of helden) {
+        held.hp = Math.min(held.max_hp, held.hp + 10);
+
+        // Optionale AP-Regeneration gegen Gold
+        if (held.ap < held.max_ap) {
+            if (held.isKI) {
+                // KI regeneriert automatisch, wenn AP unter 50% und genug Gold vorhanden ist
+                if (held.ap < held.max_ap * 0.5 && held.gold >= 10) {
+                    held.gold -= 10;
+                    held.ap = held.max_ap;
+                    await printSlow(`🤖 ${held.name} (KI) kauft sich eine Erfrischung und regeneriert AP.`);
+                }
+            } else {
+                console.log(`\n--- 🍺 TAVERNE: ${held.name} (Gold: ${held.gold} | AP: ${held.ap}/${held.max_ap}) ---`);
+                const wahl = await question("Möchtest du für 10 Gold ein 'Starkbier' trinken, um deine AP vollständig zu regenerieren? (j/n): ");
+                if (wahl.toLowerCase() === "j" || wahl.toLowerCase() === "ja") {
+                    if (held.gold >= 10) {
+                        held.gold -= 10;
+                        held.ap = held.max_ap;
+                        await printSlow(`✨ ${held.name} trinkt das Starkbier und fühlt sich voller Energie! (AP regeneriert)`);
+                    } else {
+                        await printSlow("❌ Du hast nicht genug Gold!");
+                    }
+                }
+            }
+        }
+    }
 }
 
-export { schatzFinden, shopBesuch, tavernenBesuch, bossLootGeben, faehigkeitWaehlen, synergienPruefen, craftingMenue, schwarzeTafel, raetselPhase, secretEbeneIntro };
+async function vorraeteNutzen(helden) {
+    await printSlow("\n🎒 Die Gruppe öffnet ihre Rucksäcke, um sich zu stärken.");
+    
+    let amEssen = true;
+    while (amEssen) {
+        updateUI(helden);
+        console.log("\n--- 🍎 VORRÄTE VERBRAUCHEN ---");
+        helden.forEach((h, i) => {
+            console.log(`${i + 1}. ${h.name} (HP: ${h.hp}/${h.max_hp})`);
+        });
+        console.log("0. Zurück");
+
+        const heldWahl = await question("Welcher Held soll etwas essen? ");
+        if (heldWahl === "0") {
+            amEssen = false;
+        } else {
+            const hIdx = parseInt(heldWahl) - 1;
+            if (hIdx >= 0 && hIdx < helden.length) {
+                const held = helden[hIdx];
+                const vorraete = held.inventar.filter(it => it.typ === "Gegenstand" && it.wert > 0);
+                
+                if (vorraete.length === 0) {
+                    await printSlow(`❌ ${held.name} hat keine Vorräte im Inventar.`);
+                    continue;
+                }
+
+                const grouped = [];
+                vorraete.forEach(it => {
+                    const entry = grouped.find(g => g.name === it.name);
+                    if (entry) entry.count++;
+                    else grouped.push({ name: it.name, val: it.wert, count: 1 });
+                });
+
+                console.log(`\nVorräte von ${held.name}:`);
+                grouped.forEach((g, i) => console.log(`${i + 1}. ${g.count > 1 ? g.count + 'x ' : ''}${g.name} (+${g.val} HP)`));
+                console.log("0. Zurück");
+
+                const itemWahl = await question("Was soll verzehrt werden? ");
+                if (itemWahl === "0") continue;
+
+                const iIdx = parseInt(itemWahl) - 1;
+                if (iIdx >= 0 && iIdx < grouped.length) {
+                    const sel = grouped[iIdx];
+                    if (held.hp >= held.max_hp) {
+                        await printSlow(`❌ ${held.name} ist bereits bei voller Gesundheit!`);
+                        continue;
+                    }
+                    const invIdx = held.inventar.findIndex(it => it.name === sel.name && it.typ === "Gegenstand");
+                    held.hp = Math.min(held.max_hp, held.hp + sel.val);
+                    held.inventar.splice(invIdx, 1);
+                    await printSlow(`🍴 ${held.name} verzehrt ${sel.name} und regeneriert <span class="hp-gain">${sel.val} HP</span>.`);
+                }
+            }
+        }
+    }
+}
+
+async function bardenLied(helden) {
+    const barde = helden.find(h => h.klasse.toLowerCase() === "barde");
+    if (!barde) return;
+
+    await printSlow(`\n🎵 <span class="buff-text">${barde.name} spielt eine heroische Ballade am Lagerfeuer.</span>`);
+    await printSlow("Die Flammen tanzen im Takt und die Herzen der Gefährten schlagen höher!");
+    await printSlow("✨ <span class=\"hp-gain\">Gruppen-Buff erhalten: +5 Max HP, +1 ATK & +10% Gold</span> (Hält bis zum Ende von Ebene 1)");
+
+    helden.forEach(h => {
+        h.max_hp += 5;
+        h.hp += 5;
+        h.atk_bonus += 1;
+        h.hatBardenBuff = true;
+    });
+}
+
+async function feenBegegnung(helden) {
+    await printSlow("\n🧚 <span class='hp-gain'>Eine kleine, leuchtende Fee erscheint plötzlich vor euch!</span>");
+    await printSlow("'Ihr seht aus, als hättet ihr eine Aufmunterung verdient! Bitte sehr!'");
+
+    helden.forEach(h => {
+        if (h.hp > 0) {
+            const heilung = Math.floor(h.max_hp * 0.25);
+            h.hp = Math.min(h.max_hp, h.hp + heilung);
+            h.ap = Math.min(h.max_ap, h.ap + 10);
+        }
+    });
+
+    await printSlow("✨ Die Fee kichert. <span class='hp-gain'>(HP & AP regeneriert!)</span>");
+    await printSlow("'Wollt ihr noch mehr? Für etwas Gold kann ich euch die Geheimnisse des Dungeons flüstern...'");
+
+    for (const h of helden) {
+        if (h.hp <= 0 || h.isKI) continue;
+
+        let tauschen = true;
+        while (tauschen && h.gold >= 10) {
+            updateUI(helden);
+            console.log(`\n--- 🧚 FEE: ${h.name} (Gold: ${h.gold} | XP: ${h.xp}/${h.xp_needed}) ---`);
+            const antwort = await question("Möchtest du Gold gegen XP tauschen? (10 Gold = 15 XP). Gib die Anzahl der Tausche ein (0 für Ende): ");
+            const anzahl = parseInt(antwort);
+
+            if (!isNaN(anzahl) && anzahl > 0) {
+                const gesamtKosten = anzahl * 10;
+                if (h.gold >= gesamtKosten) {
+                    h.gold -= gesamtKosten;
+                    h.xp += anzahl * 15;
+                    await printSlow(`✨ Die Fee flüstert ${h.name} Wissen zu. <span class='rare-item'>+${anzahl * 15} XP!</span>`);
+                    
+                    if (h.check_levelup()) {
+                        await printSlow(`\n🌟 LEVEL UP für ${h.name}! Level ${h.level}!`, 'level-up-animation');
+                        await levelUpMenu(h);
+                    }
+                } else {
+                    await printSlow("❌ Du hast nicht genug Gold für so viel Wissen.");
+                }
+            } else {
+                tauschen = false;
+            }
+        }
+    }
+
+    await printSlow("✨ Die Fee verschwindet in einer Glitzerwolke.");
+    updateUI(helden);
+}
+
+export { schatzFinden, shopBesuch, tavernenBesuch, bossLootGeben, levelUpMenu, synergienPruefen, craftingMenue, schwarzeTafel, raetselPhase, secretEbeneIntro, vorraeteNutzen, bardenLied, feenBegegnung, raetselMeisterBegegnung };

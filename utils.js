@@ -1,8 +1,8 @@
 // Brücke zwischen Konsole und Browser-UI
 // Umleitung von console.log in das Game Log Panel
 const originalLog = console.log;
-console.log = (...args) => {
-    originalLog(...args);
+console.log = (...args) => { // This override is for general console.log calls, not for printSlow
+    originalLog(...args); // Log to the actual browser console
     const logContent = document.getElementById('game-log');
     const logContainer = document.getElementById('log-panel');
     if (!logContent || !logContainer) return;
@@ -10,13 +10,68 @@ console.log = (...args) => {
     const p = document.createElement('p');
     p.innerHTML = args.join(' ');
     p.classList.add('log-entry');
+    // No special class handling here, printSlow will handle its own elements
     logContent.appendChild(p);
     logContainer.scrollTop = logContainer.scrollHeight;
 };
 
-export async function printSlow(text) {
-    console.log(text);
+export async function printSlow(text, className = null) {
+    const logContent = document.getElementById('game-log');
+    const p = document.createElement('p');
+    p.innerHTML = text;
+    p.classList.add('log-entry');
+    if (className) p.classList.add(className);
+    logContent.appendChild(p);
+    logContent.scrollTop = logContent.scrollHeight;
     return new Promise(resolve => setTimeout(resolve, 300));
+}
+
+export function formatAbilityDesc(ab, held = null) {
+    let parts = [];
+    let displayedDmg = ab.schaden;
+
+    // Sonderlogik für Schildschlag/Schildstoß (RK + ATK)
+    if (held && (ab.name === "Schildschlag" || ab.name === "Schildstoß")) {
+        displayedDmg = held.ruestung_klasse() + held.atk_bonus;
+    }
+
+    if (displayedDmg) parts.push(`💥 ${displayedDmg} Dmg`);
+    if (ab.element) parts.push(`[${ab.element}]`);
+    if (ab.heilung) parts.push(`💚 ${ab.heilung} HP`);
+    if (ab.atk_buff) parts.push(`⚔️ ${ab.atk_buff > 0 ? '+' : ''}${ab.atk_buff} ATK`);
+    if (ab.def_buff) parts.push(`🛡️ ${ab.def_buff > 0 ? '+' : ''}${ab.def_buff} RK`);
+    if (ab.schlaf_dauer) parts.push(`💤 Schlaf (${ab.schlaf_dauer} R.)`);
+    if (ab.verwirrt) parts.push(`🌀 Verwirrt (${ab.verwirrt} R.)`);
+    if (ab.niederhalten) parts.push(`⛓️ Immobilisiert (${ab.niederhalten} R.)`);
+    if (ab.execute_threshold) parts.push(`💀 Kill < ${ab.execute_threshold}%`);
+    if (ab.ap_regen) parts.push(`✨ +${ab.ap_regen} AP`);
+    if (ab.hp_kosten) parts.push(`🩸 -${ab.hp_kosten} HP`);
+    if (ab.belebt) parts.push(`☀️ Reanimation`);
+    if (ab.licht) parts.push(`🌟 Licht (${ab.licht} R.)`);
+    if (ab.licht_atk) parts.push(`🎯 ATK: +${ab.licht_atk}`);
+    if (ab.licht_def) parts.push(`🛡️ RK: +${ab.licht_def}`);
+    if (ab.abschrecken) parts.push(`✨ Vertreibt Untote (${ab.abschrecken}%)`);
+    if (ab.stealth_buff) parts.push(`👤 +${ab.stealth_buff} Stealth`);
+    if (ab.schaden_reduktion) parts.push(`🛡️ -${ab.schaden_reduktion} Dmg erlitten`);
+    if (ab.bonus_schaden) parts.push(`⚔️ +${ab.bonus_schaden} Bonus-Dmg`);
+    return parts.length > 0 ? parts.join(" ") : "Spezialeffekt";
+}
+
+export function formatItemDesc(item) {
+    let parts = [];
+    if (item.typ === "Waffe") parts.push(`⚔️ Schaden: +${item.wert}`);
+    else if (item.typ === "Ruestung") parts.push(`🛡️ Rüstungsklasse: ${item.wert}`);
+    else if (item.typ === "Schild") parts.push(`🛡️ Schildwert: +${item.wert}`);
+    else if (item.typ === "Gegenstand" && item.wert > 0) parts.push(`❤️ Heilung: ${item.wert} HP`);
+    
+    if (item.ladungen !== undefined) parts.push(`🔥 Ladungen: ${item.ladungen}`);
+    
+    if (item.effekt) {
+        if (item.effekt.typ === "ap_regen") parts.push(`✨ AP-Regen: +${item.effekt.wert}`);
+        if (item.effekt.typ === "lebensraub") parts.push(`🩸 Lebensraub: ${Math.round(item.effekt.wert * 100)}%`);
+    }
+    const loreText = item.lore || "Ein nützlicher Gegenstand für Abenteurer.";
+    return `<div style="border-bottom: 1px solid rgba(212,175,55,0.3); padding-bottom: 5px; margin-bottom: 5px;">${parts.length > 0 ? parts.join("<br>") : item.typ}</div><i style="color: #aab7b8;">"${loreText}"</i>`;
 }
 
 export function question(text) {
@@ -57,8 +112,51 @@ export function wuerfelD20() {
     return randomRange(1, 20);
 }
 
-export function updateUI(helden, monster = null, monsterStatus = null) {
+let lastEbene = "-";
+let lastRaum = "-";
+let lastMax = "-";
+
+export function updateUI(helden, monster = null, monsterStatus = null, ebene = null, raum = null, raumAnzahl = null) {
     const criticalHpSound = document.getElementById('critical-hp-sound');
+    
+    if (ebene !== null) {
+        lastEbene = ebene;
+        lastRaum = raum;
+        lastMax = raumAnzahl;
+    }
+
+    // Dungeon-Fortschritt im UI anzeigen (wird oben im Stats-Panel eingefügt)
+    const statsPanel = document.getElementById('stats-panel');
+    let progressDiv = document.getElementById('dungeon-progress-ui');
+    if (!progressDiv && statsPanel) {
+        progressDiv = document.createElement('div');
+        progressDiv.id = 'dungeon-progress-ui';
+        progressDiv.className = 'player-card';
+        progressDiv.style.marginBottom = '15px';
+        progressDiv.style.textAlign = 'center';
+        statsPanel.prepend(progressDiv);
+    }
+    if (progressDiv) {
+        const currentR = parseInt(lastRaum);
+        const maxR = parseInt(lastMax);
+        let progressPercent = 0;
+        
+        if (!isNaN(currentR) && !isNaN(maxR) && maxR > 0) {
+            progressPercent = Math.min(100, Math.round((currentR / maxR) * 100));
+        } else if (lastMax === "Boss" || lastMax === "✓" || lastMax === "Abstieg") {
+            progressPercent = 100;
+        }
+        
+        const isComplete = progressPercent === 100;
+        const completeClass = isComplete ? 'progress-complete' : '';
+
+        progressDiv.innerHTML = `
+            <h3 style="margin:0; font-size: 1.2em; color:var(--accent-color);">🏰 EBENE ${lastEbene}</h3>
+            <div style="margin-top:5px; font-family: 'Cinzel', serif; font-size: 0.9em;">📍 Raum: ${lastRaum} / ${lastMax}</div>
+            <div class="progress-bar" style="margin-top: 8px; height: 8px; background-color: rgba(0,0,0,0.4); border: 1px solid var(--border-color);">
+                <div class="progress-fill ${completeClass}" style="width: ${progressPercent}%; background: linear-gradient(to right, #d4af37, #f2c057); box-shadow: 0 0 5px rgba(212, 175, 55, 0.5); transition: width 0.5s ease-in-out;"></div>
+            </div>`;
+    }
 
     helden.forEach((h, i) => {
         const card = document.getElementById(`player${i+1}-card`);
@@ -68,11 +166,39 @@ export function updateUI(helden, monster = null, monsterStatus = null) {
             const materialien = h.inventar.filter(item => item.typ === "Material");
             const sonstigeItems = h.inventar.filter(item => item.typ !== "Material");
 
-            const materialListe = materialien.length > 0 
-                ? materialien.map(m => `<span class="inventory-material">${m.name}</span>`).join(", ") 
+            // Materialien gruppieren (mit Tooltips)
+            const matMap = {};
+            materialien.forEach(m => {
+                if (!matMap[m.name]) matMap[m.name] = { count: 0, item: m };
+                matMap[m.name].count++;
+            });
+            const materialListe = Object.entries(matMap).length > 0 
+                ? Object.entries(matMap).map(([name, data]) => {
+                    const desc = formatItemDesc(data.item);
+                    return `<span class="inventory-material tooltip">${data.count > 1 ? data.count + 'x ' : ''}${name}<span class="tooltiptext"><strong>${name}</strong><br>${desc}</span></span>`;
+                }).join(", ") 
                 : "keine";
             
-            const inventarListe = sonstigeItems.length > 0 ? sonstigeItems.map(item => item.name).join(", ") : "leer";
+            // Sonstige Gegenstände gruppieren (mit Tooltips)
+            const itemMap = {};
+            sonstigeItems.forEach(it => {
+                const key = `${it.name}_${it.typ}_${it.wert}_${it.ladungen || 5}`;
+                if (!itemMap[key]) itemMap[key] = { count: 0, item: it };
+                itemMap[key].count++;
+            });
+            const inventarListe = Object.entries(itemMap).length > 0 
+                ? Object.entries(itemMap).map(([key, data]) => {
+                    const desc = formatItemDesc(data.item);
+                    const ladungenInfo = data.item.ladungen !== undefined ? ` (${data.item.ladungen})` : "";
+                    return `<span class="tooltip">${data.count > 1 ? data.count + 'x ' : ''}${data.item.name}${ladungenInfo}<span class="tooltiptext"><strong>${data.item.name}</strong><br>${desc}</span></span>`;
+                }).join(", ") 
+                : "leer";
+            
+            // Fähigkeiten mit Tooltips gruppieren
+            const abilityListe = h.abilities.map(ab => {
+                const desc = formatAbilityDesc(ab, h);
+                return `<span class="tooltip">${ab.name}<span class="tooltiptext"><strong>${ab.name}</strong><br>${desc}</span></span>`;
+            }).join(", ") || "keine";
             
             const questListe = h.activeQuests.length > 0 
                 ? h.activeQuests.map(q => q.title).join(", ") 
@@ -87,6 +213,7 @@ export function updateUI(helden, monster = null, monsterStatus = null) {
             const hpPercent = Math.max(0, Math.min(100, (h.hp / h.max_hp) * 100));
             const apPercent = Math.max(0, Math.min(100, (h.ap / h.max_ap) * 100));
             const spPercent = Math.max(0, Math.min(100, (h.sp / h.max_sp) * 100));
+            const xpPercent = Math.max(0, Math.min(100, (h.xp / h.xp_needed) * 100));
 
             if (hpPercent < 20 && h.hp > 0 && h.hp !== null) {
                 card.classList.add('critical-hp');
@@ -106,24 +233,57 @@ export function updateUI(helden, monster = null, monsterStatus = null) {
             const apVal = h.ap || 0;
             const spVal = h.sp || 0;
 
+            const klasseLower = h.klasse.toLowerCase();
+            const isCrafter = ["tueftler", "alchemist"].includes(klasseLower);
+            
+            let resourceHtml = "";
+            if (isCrafter) {
+                // Zähle hergestellte Gegenstände (Spezial) und Tränke im Inventar
+                const spezialItems = h.inventar.filter(it => it.typ === "Spezial" || it.typ === "Trank").length;
+                const resourceName = klasseLower === "tueftler" ? "Gadgets" : "Elixiere";
+                resourceHtml = `
+                    <div class="bar-container">
+                        <small>🧪 ${resourceName}: ${spezialItems} (bereit)</small>
+                        <div class="progress-bar"><div class="progress-fill ap-fill" style="width: 100%; opacity: 0.6; filter: hue-rotate(90deg);"></div></div>
+                    </div>`;
+            } else {
+                resourceHtml = `
+                    <div class="bar-container">
+                        <small>✨ AP: ${apVal}/${h.max_ap}</small>
+                        <div class="progress-bar"><div class="progress-fill ap-fill" style="width: ${apPercent}%"></div></div>
+                    </div>`;
+            }
+
+            // Spieler-Buffs sammeln
+            let playerStatusHtml = "";
+            const pEffects = [];
+            if (h.hatBardenBuff) pEffects.push(`<div class="status-badge badge-buff" title="Barden-Segen: +5 HP, +1 ATK, +10% Gold">🎵 Buff</div>`);
+            if (h.bardenLichtDauer > 0) pEffects.push(`<div class="status-badge badge-buff" title="Magisches Licht: Erhellt dunkle Orte (${h.bardenLichtDauer} R.)">🌟 Licht</div>`);
+            if (h.heilerLichtDauer > 0) pEffects.push(`<div class="status-badge badge-buff" title="Heiliges Leuchten: Erhellt dunkle Orte (${h.heilerLichtDauer} R.)">✨ Licht</div>`);
+            
+            if (pEffects.length > 0) playerStatusHtml = `<div class="status-container">${pEffects.join("")}</div>`;
+
             statusDiv.innerHTML = `
-                <strong>${h.name}</strong> (${h.klasse})<br>
-                💰 Gold: ${h.gold}<br>
+                <strong>${h.name}</strong> (${h.klasse}) - <span class="rare-item">Lvl ${h.level}</span><br>
+                ${playerStatusHtml}
+                💰 Gold: ${h.gold} | ⚔️ ATK: ${h.atk_bonus}<br>
                 <div class="bar-container">
                     <small>❤️ HP: ${hpVal}/${h.max_hp}</small>
                     <div class="progress-bar"><div class="progress-fill hp-fill" style="width: ${hpPercent}%"></div></div>
                 </div>
-                <div class="bar-container">
-                    <small>✨ AP: ${apVal}/${h.max_ap}</small>
-                    <div class="progress-bar"><div class="progress-fill ap-fill" style="width: ${apPercent}%"></div></div>
-                </div>
+                ${resourceHtml}
                 <div class="bar-container">
                     <small>⚡ SP (Ultimate): ${spVal}/${h.max_sp}</small>
                     <div class="progress-bar"><div class="progress-fill sp-fill" style="width: ${spPercent}%"></div></div>
                 </div>
+                <div class="bar-container">
+                    <small>🌟 XP: ${h.xp}/${h.xp_needed}${xpPercent >= 100 ? ' <span class="rare-item">🆙 BEREIT!</span>' : ''}</small>
+                    <div class="progress-bar"><div class="progress-fill xp-fill ${xpPercent >= 100 ? 'progress-complete' : ''}" style="width: ${xpPercent}%"></div></div>
+                </div>
                 🛡️ RK: ${h.ruestung_klasse()}<br>
                 <hr style="border: 0; border-top: 1px solid var(--border-color); margin: 5px 0;">
                 <div style="font-size: 0.85em;">
+                    <strong>Fähigkeiten:</strong> ${abilityListe}<br>
                     <strong>Ausrüstung:</strong> ${ausruestung}<br>
                     <strong>Gegenstände:</strong> ${inventarListe}<br>
                     <strong>Materialien:</strong> ${materialListe}<br>
@@ -137,16 +297,43 @@ export function updateUI(helden, monster = null, monsterStatus = null) {
     const monsterStatsDiv = document.getElementById('monster-stats-ui');
     const monsterNameDiv = document.getElementById('monster-name-ui');
 
-    if (monsterUi && monster && monster.hp > 0 && monsterNameDiv && monsterStatsDiv) {
+    // Zeige Monster-UI auch bei 0 HP an, damit der "Todesstoß"-Schaden sichtbar ist
+    if (monsterUi && monster && monster.hp >= 0 && monsterNameDiv && monsterStatsDiv) {
         monsterUi.style.display = 'block';
         monsterNameDiv.textContent = `👾 ${monster.name}`;
         const monsterHpPercent = monster.max_hp > 0 ? Math.max(0, Math.min(100, (monster.hp / monster.max_hp) * 100)) : 0;
         const damageText = monster.lastDmg > 0 ? `<span class="effect-lifesteal"> (-${monster.lastDmg})</span>` : "";
 
+        // Resistenzen verarbeiten
+        const resEntries = Object.entries(monster.resistenzen || {});
+        let resHtml = "";
+        if (resEntries.length > 0) {
+            const list = resEntries.map(([element, mult]) => {
+                // mult < 1 bedeutet Resistenz (grün), mult > 1 bedeutet Schwäche (rot)
+                const color = mult < 1 ? "#2ecc71" : "#e74c3c"; 
+                return `<span style="color: ${color}; font-weight: bold;">${element}</span>`;
+            }).join(", ");
+            resHtml = `<div style="font-size: 0.8em; margin-top: 6px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 4px;">🧬 Effekte: ${list}</div>`;
+        }
+
+    // Status-Effekte (Buffs/De-Buffs) verarbeiten
+    let statusHtml = "";
+    if (monsterStatus) {
+        const effects = [];
+        if (monsterStatus.schlaf > 0) effects.push(`<div class="status-badge badge-debuff" title="Schlaf: Monster setzt aus">💤 ${monsterStatus.schlaf}</div>`);
+        if (monsterStatus.verwirrt > 0) effects.push(`<div class="status-badge badge-debuff" title="Verwirrt: Chance auf Selbstschaden">🌀 ${monsterStatus.verwirrt}</div>`);
+        
+        if (effects.length > 0) {
+            statusHtml = `<div class="status-container">${effects.join("")}</div>`;
+        }
+    }
+
         monsterStatsDiv.innerHTML = `
             <div class="bar-container">
-                <small>❤️ HP: ${Math.max(0, monster.hp)}/${monster.max_hp}${damageText}</small>
+                <small>❤️ HP: ${Math.max(0, monster.hp)}/${monster.max_hp}${damageText} | ⚔️ ATK: ${monster.atk} | 🛡️ RK: ${monster.rk}</small>
                 <div class="progress-bar"><div class="progress-fill hp-fill" style="width: ${monsterHpPercent}%"></div></div>
+            ${statusHtml}
+                ${resHtml}
             </div>
         `;
     } else if (monsterUi) {
