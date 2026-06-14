@@ -1,4 +1,4 @@
-import { question, randomRange, printSlow, wuerfelD20 } from './utils.js';
+import { question, randomRange, printSlow, wuerfelD20, updateUI } from './utils.js';
 import * as Story from './story.js';
 
 async function spielerZug(spieler, monster_name, monster_hp, helden) {
