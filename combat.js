@@ -254,7 +254,7 @@ async function spielerZug(spieler, monster_name, monster_hp, helden) {
     }
 }
 
-export async function teamKampf(helden, monster, imDunkeln = false) {
+export async function teamKampf(helden, monster, imDunkeln = false, ebene = null) {
     if (imDunkeln) {
         await printSlow("\n🌑 <span class='effect-lifesteal'>Die Dunkelheit hier ist absolut! Ohne Fackel seid ihr orientierungslos.</span>");
         await printSlow(`👹 Der ${monster.name} nutzt die Schatten für einen Hinterhalt!`);
@@ -611,6 +611,9 @@ export async function teamKampf(helden, monster, imDunkeln = false) {
                 await Story.levelUpMenu(held);
             }
         }
+        // Quest-Check nach dem Kampf (Kills tracken)
+        await Story.checkQuests(helden, { type: 'kill', monster: monster, ebene: ebene });
+        
         return true;
     }
     await printSlow("\n💀 Eure gesamte Gruppe wurde ausgelöscht... GAME OVER.");

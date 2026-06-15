@@ -243,7 +243,9 @@ async function schwarzeTafel(helden) {
         console.log("\n--- 📜 DIE SCHWARZE TAFEL ---");
         QUEST_POOL.forEach((q, i) => {
             const istAngenommen = helden.some(h => h.activeQuests.some(aq => aq.id === q.id));
-            console.log(`${i + 1}. ${q.title} ${istAngenommen ? "[AKTIV]" : ""}`);
+            const istAbgeschlossen = helden.some(h => h.completedQuests.includes(q.id));
+            let status = istAbgeschlossen ? "[ABGESCHLOSSEN]" : (istAngenommen ? "[AKTIV]" : "");
+            console.log(`${i + 1}. ${q.title} ${status}`);
             console.log(`   - ${q.desc} (Belohnung: ${q.reward.gold} Gold, ${q.reward.xp} XP)`);
         });
         console.log("0. Tafel verlassen");
@@ -256,15 +258,85 @@ async function schwarzeTafel(helden) {
             if (idx >= 0 && idx < QUEST_POOL.length) {
                 const q = QUEST_POOL[idx];
                 const bereitsAngenommen = helden.some(h => h.activeQuests.some(aq => aq.id === q.id));
+                const bereitsAbgeschlossen = helden.some(h => h.completedQuests.includes(q.id));
                 
-                if (bereitsAngenommen) {
+                if (bereitsAbgeschlossen) {
+                    await printSlow("❌ Diesen Auftrag habt ihr bereits erledigt.");
+                } else if (bereitsAngenommen) {
                     await printSlow("❌ Diesen Auftrag verfolgt ihr bereits.");
                 } else {
                     helden.forEach(h => h.activeQuests.push({...q, progress: 0}));
                     await printSlow(`✅ Ihr habt den Auftrag angenommen: <span class="rare-item">${q.title}</span>!`);
+                    // Sofort-Check falls Bedingungen bereits erfüllt (z.B. Items im Inventar)
+                    await checkQuests(helden, { type: 'inventory' });
                 }
             } else {
                 console.log("Ungültige Wahl.");
+            }
+        }
+    }
+}
+
+async function checkQuests(helden, context = {}) {
+    for (const h of helden) {
+        for (let i = h.activeQuests.length - 1; i >= 0; i--) {
+            const q = h.activeQuests[i];
+            let done = false;
+
+            // Quest 1: Jagdfieber (10 Wald-Kills auf Ebene 1)
+            if (q.id === 1 && context.type === 'kill' && context.ebene === 1) {
+                q.progress = (q.progress || 0) + 1;
+                if (q.progress >= 10) done = true;
+            }
+            
+            // Quest 2: Ersatzteile (3 Mechanischeteile im Inventar)
+            if (q.id === 2) {
+                const teile = h.inventar.filter(it => it.name === "Mechanischeteile").length;
+                if (teile >= 3) {
+                    let entfernt = 0;
+                    for (let j = h.inventar.length - 1; j >= 0 && entfernt < 3; j--) {
+                        if (h.inventar[j].name === "Mechanischeteile") {
+                            h.inventar.splice(j, 1);
+                            entfernt++;
+                        }
+                    }
+                    done = true;
+                }
+            }
+
+            // Quest 3: Königsmörder (Skelett-König)
+            if (q.id === 3 && context.type === 'kill' && context.monster && context.monster.name.includes("Skelett-König")) {
+                done = true;
+            }
+
+            // Quest 4: Der Alchemist (5 Pflanzenteile)
+            if (q.id === 4) {
+                const teile = h.inventar.filter(it => it.name === "Pflanzenteile").length;
+                if (teile >= 5) {
+                    let entfernt = 0;
+                    for (let j = h.inventar.length - 1; j >= 0 && entfernt < 5; j--) {
+                        if (h.inventar[j].name === "Pflanzenteile") {
+                            h.inventar.splice(j, 1);
+                            entfernt++;
+                        }
+                    }
+                    done = true;
+                }
+            }
+
+            if (done) {
+                h.gold += q.reward.gold;
+                h.xp += q.reward.xp;
+                h.completedQuests.push(q.id);
+                h.activeQuests.splice(i, 1);
+                await printSlow(`\n✅ <span class="hp-gain">AUFTRAG ERFÜLLT: ${q.title}!</span>`);
+                await printSlow(`💰 Belohnung: ${q.reward.gold} Gold und ${q.reward.xp} XP erhalten.`);
+                
+                if (h.check_levelup()) {
+                    await printSlow(`\n🌟 LEVEL UP für ${h.name}! Level ${h.level}!`, 'level-up-animation');
+                    await levelUpMenu(h);
+                }
+                updateUI(helden);
             }
         }
     }
@@ -1122,4 +1194,4 @@ async function feenBegegnung(helden) {
     updateUI(helden);
 }
 
-export { schatzFinden, shopBesuch, tavernenBesuch, bossLootGeben, levelUpMenu, synergienPruefen, craftingMenue, schwarzeTafel, raetselPhase, secretEbeneIntro, vorraeteNutzen, bardenLied, feenBegegnung, raetselMeisterBegegnung };
+export { schatzFinden, shopBesuch, tavernenBesuch, bossLootGeben, levelUpMenu, synergienPruefen, craftingMenue, schwarzeTafel, raetselPhase, secretEbeneIntro, vorraeteNutzen, bardenLied, feenBegegnung, raetselMeisterBegegnung, checkQuests };

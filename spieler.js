@@ -36,6 +36,7 @@ export default class Spieler {
         this.grund_gesch = 0; // Neues Attribut: Geschicklichkeit
         this.hasGedankenschaerfe = false; // Passive Fähigkeit für Magier
         this.grund_will = 0;
+        this.completedQuests = []; // Verfolgt abgeschlossene Quests
         this.achievements = []; // Array für freigeschaltete Achievements
 
         const rasseLower = rasse.toLowerCase().trim();

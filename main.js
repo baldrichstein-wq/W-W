@@ -184,12 +184,14 @@ async function spielStarten() {
         const wahl = await question(promptMsg);
         if (wahl === "1") {
             await Story.shopBesuch(helden);
+            await Story.checkQuests(helden, { type: 'inventory' });
         } else if (wahl === "2") {
             amEingang = false;
         } else if (wahl === "3") {
             await Story.schwarzeTafel(helden);
         } else if (wahl === "4" && canCraft) {
             await Story.craftingMenue(helden);
+            await Story.checkQuests(helden, { type: 'inventory' });
         } else if (wahl === "5" && hasBarde && !bardenLiedGespielt) {
             await Story.bardenLied(helden);
             bardenLiedGespielt = true;
@@ -215,40 +217,45 @@ async function spielStarten() {
         11: "Dungon-Hoelle.png",
         12: "Dungon-Himmel.png",
         13: "Dungon-Dunkelheit.png",
-        14: "Dungon-endboss.png"
+        14: "Dungon-endboss.png",
+        15: "Dungon-Burg.png"
     };
 
-    for (let ebene = 1; ebene <= 14; ebene++) {
+    for (let ebene = 1; ebene <= 15; ebene++) {
         // Hintergrundbild setzen
         if (ebeneBilder[ebene]) {
             if (logPanel) logPanel.style.backgroundImage = `url('img/${ebeneBilder[ebene]}')`;
         }
 
-        if (ebene === 1) {
-            await printSlow(`\n🌲 EBENE 1: Der flüsternde Wald 🌲`);
-        } else if (ebene === 2) {
-            await printSlow(`\n🏚️ EBENE 2: Die verfallenen Ruinen 🏚️`);
-        } else if (ebene === 3) {
-            await printSlow(`\n🪦 EBENE 3: Der vergessene Friedhof 🪦`);
-        } else if (ebene === 4) {
-            await printSlow(`\n💎 EBENE 4: Die strahlenden Kristallhöhlen 💎`);
-        } else if (ebene === 5) {
-            await printSlow(`\n❄️ EBENE 5: Die gefrorenen Einöden ❄️`);
-        } else if (ebene === 6) {
-            await printSlow(`\n🔥 EBENE 6: Die brodelnden Magmaflüsse 🔥`);
-        } else if (ebene === 7) {
-            await printSlow(`\n✨ EBENE 7: Die himmlischen Sphären ✨`);
-        } else if (ebene === 8) {
-            await printSlow(`\n🌋 EBENE 8: Der Thron des Weltenfressers 🌋`);
-        } else if (ebene === 13) {
-            await printSlow(`\n🌑 EBENE 13: Die absolute Dunkelheit 🌑`);
-        } else {
-            await printSlow(`\n🏰 EBENE ${ebene} 🏰`);
+        switch (ebene) {
+            case 1:  await printSlow(`\n🌲 EBENE 1: Der flüsternde Wald 🌲`); break;
+            case 2:  await printSlow(`\n🏚️ EBENE 2: Die verfallenen Ruinen 🏚️`); break;
+            case 3:  await printSlow(`\n🪦 EBENE 3: Der vergessene Friedhof 🪦`); break;
+            case 4:  await printSlow(`\n☣️ EBENE 4: Der modrige Sumpf ☣️`); break;
+            case 5:  await printSlow(`\n🍄 EBENE 5: Die giftigen Pilzwälder 🍄`); break;
+            case 6:  await printSlow(`\n💧 EBENE 6: Die überfluteten Kavernen 💧`); break;
+            case 7:  await printSlow(`\n🌀 EBENE 7: Das endlose Labyrinth 🌀`); break;
+            case 8:  await printSlow(`\n💎 EBENE 8: Die strahlenden Kristallhöhlen 💎`); break;
+            case 9:  await printSlow(`\n❄️ EBENE 9: Die gefrorenen Einöden ❄️`); break;
+            case 10: await printSlow(`\n🔥 EBENE 10: Die brodelnden Magmaflüsse 🔥`); break;
+            case 11: await printSlow(`\n👿 EBENE 11: Die Pforten der Hölle 👿`); break;
+            case 12: await printSlow(`\n✨ EBENE 12: Die himmlischen Sphären ✨`); break;
+            case 13: await printSlow(`\n🌑 EBENE 13: Die absolute Dunkelheit 🌑`); break;
+            case 14: await printSlow(`\n🌋 EBENE 14: Der Aufstieg zum Gipfel 🌋`); break;
+            case 15: 
+                const castleSound = document.getElementById('castle-entrance-sound');
+                if (castleSound) {
+                    castleSound.currentTime = 0;
+                    castleSound.play().catch(e => console.log("Burg-Sound konnte nicht abgespielt werden:", e));
+                }
+                await printSlow(`\n🏰 EBENE 15: Die majestätische Burg 🏰`); 
+                break;
+            default: await printSlow(`\n🏰 EBENE ${ebene} 🏰`); break;
         }
         
         // Die Labyrinthebene (7) generiert deutlich mehr Räume (15-25).
-        // Der Endboss (14) hat nur einen Raum.
-        const raumAnzahl = (ebene === 14) ? 1 : (ebene === 7 ? randomRange(15, 25) : randomRange(7, 15));
+        // Der Endboss (15) hat nur einen Raum.
+        const raumAnzahl = (ebene === 15) ? 1 : (ebene === 7 ? randomRange(15, 25) : randomRange(7, 15));
 
         let raetselMeisterErschienen = false;
         for (let raum = 1; raum <= raumAnzahl; raum++) {
@@ -301,7 +308,7 @@ async function spielStarten() {
                 }
             }
 
-            if (ebene === 14) {
+            if (ebene === 15) {
                 await printSlow("Die Realität selbst scheint hier zu zerreißen. Vor euch liegt nur noch ein gewaltiger Abgrund, in dem das Ende aller Welten auf euch wartet...");
                 continue;
             }
@@ -402,7 +409,7 @@ async function spielStarten() {
                     10 * ebene,
                     resistenzen
                 );
-                if (!await Combat.teamKampf(helden, monster, imDunkeln)) return; // Game Over Abbruch
+                if (!await Combat.teamKampf(helden, monster, imDunkeln, ebene)) return; // Game Over Abbruch
             } else { // 30% Chance auf Schatz
                 if (Math.random() < 0.5) {
                     // Mimik-Chance auf der Labyrinth-Ebene (Ebene 7)
@@ -410,10 +417,11 @@ async function spielStarten() {
                         await printSlow("\n📦 Ihr entdeckt eine prachtvolle Truhe in einer dunklen Ecke des Labyrinths.");
                         await printSlow("Doch als ihr die Hand nach dem Schloss ausstreckt, verwandelt sich das Holz in klebriges Fleisch und ein Maul voller Zähne schnappt zu! <span class='log-critical'>MIMIK-ALARM!</span>");
                         const mimic = new Monster("Labyrinth-Mimik", 110, 10 + ebene, 14, 250, 150, { Feuer: 1.5, Schatten: 0.5 });
-                        if (!await Combat.teamKampf(helden, mimic, imDunkeln)) return;
+                        if (!await Combat.teamKampf(helden, mimic, imDunkeln, ebene)) return;
                     } else {
                         await Story.schatzFinden(helden);
                         helden.forEach(h => h.hp = Math.max(1, h.hp)); // Truhen-Fallen fix
+                        await Story.checkQuests(helden, { type: 'inventory' });
                     }
                 } else {
                     await Story.feenBegegnung(helden);
@@ -438,6 +446,7 @@ async function spielStarten() {
                     
                     if (canCraft && wahl === 'c') {
                         await Story.craftingMenue(helden);
+                        await Story.checkQuests(helden, { type: 'inventory' });
                     } else if (barde && wahl === 'l') {
                         const fähigkeit = barde.abilities.find(a => a.name === "Lied des Lichts");
                         if (barde.ap >= fähigkeit.ap_kosten) {
@@ -506,7 +515,7 @@ async function spielStarten() {
         }
 
         let targetMonster;
-        if (ebene === 14) {
+        if (ebene === 15) {
             const lastChampion = JSON.parse(localStorage.getItem('dungeon_champion'));
             
             if (lastChampion) {
@@ -567,7 +576,7 @@ async function spielStarten() {
             );
         }
 
-        if (!await Combat.teamKampf(helden, targetMonster, imDunkelnBoss)) return; // Game Over Abbruch
+        if (!await Combat.teamKampf(helden, targetMonster, imDunkelnBoss, ebene)) return; // Game Over Abbruch
 
         // Barden-Buff Entfernung nach Ebene 1
         if (ebene === 1 && bardenLiedGespielt) {
@@ -596,7 +605,7 @@ async function spielStarten() {
                     if (geloest) {
                         await Story.secretEbeneIntro();
                         const secretBoss = new Monster("Leeren-Wächter", 400, 20, 20, 2000, 5000, { Energie: 1.5, Physisch: 0.5 });
-                        if (!await Combat.teamKampf(helden, secretBoss, false)) return; // In der Leere braucht man keine Fackel (eigenes Licht)
+                        if (!await Combat.teamKampf(helden, secretBoss, false, ebene)) return; // In der Leere braucht man keine Fackel (eigenes Licht)
                         await printSlow(`\n🌟 <span class="rare-item">UNGLAUBLICH! Ihr habt das wahre Ende des Dungeons bezwungen!</span>`);
 
                         // --- DER ROSA ORK EVENT ---
@@ -679,6 +688,7 @@ async function spielStarten() {
 
         await Story.bossLootGeben(helden);
         await Story.shopBesuch(helden, true);
+        await Story.checkQuests(helden, { type: 'inventory' });
         updateUI(helden, null, null, ebene, "Sieg", "✓");
 
         await printSlow(`\n🌟 Ebene ${ebene} abgeschlossen! Die Treppe nach unten ist frei.`);
@@ -691,6 +701,7 @@ async function spielStarten() {
                 
                 if (canCraft && wahl === 'c') {
                     await Story.craftingMenue(helden);
+                    await Story.checkQuests(helden, { type: 'inventory' });
                 } else if (wahl === 'v') {
                     await Story.vorraeteNutzen(helden);
                 } else {
