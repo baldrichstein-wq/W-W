@@ -220,7 +220,15 @@ export function updateUI(helden, monster = null, monsterStatus = null, ebene = n
                 : "keine";
 
             const questListe = h.activeQuests.length > 0 
-                ? h.activeQuests.map(q => q.title).join(", ") 
+                ? h.activeQuests.map(q => {
+                    let current = q.progress || 0;
+                    // Für Sammel-Quests den aktuellen Inventar-Stand prüfen
+                    if (q.item) {
+                        current = h.inventar.filter(it => it.name === q.item).length;
+                    }
+                    const goal = q.goal || 1;
+                    return `<span class="tooltip">${q.title} (${current}/${goal})<span class="tooltiptext"><strong>${q.title}</strong><br>${q.desc}</span></span>`;
+                }).join(", ") 
                 : "keine";
 
             const ausruestung = [

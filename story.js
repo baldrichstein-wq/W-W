@@ -286,16 +286,16 @@ async function checkQuests(helden, context = {}) {
             // Quest 1: Jagdfieber (10 Wald-Kills auf Ebene 1)
             if (q.id === 1 && context.type === 'kill' && context.ebene === 1) {
                 q.progress = (q.progress || 0) + 1;
-                if (q.progress >= 10) done = true;
+                if (q.progress >= q.goal) done = true;
             }
             
             // Quest 2: Ersatzteile (3 Mechanischeteile im Inventar)
             if (q.id === 2) {
-                const teile = h.inventar.filter(it => it.name === "Mechanischeteile").length;
-                if (teile >= 3) {
+                const teile = h.inventar.filter(it => it.name === q.item).length;
+                if (teile >= q.goal) {
                     let entfernt = 0;
-                    for (let j = h.inventar.length - 1; j >= 0 && entfernt < 3; j--) {
-                        if (h.inventar[j].name === "Mechanischeteile") {
+                    for (let j = h.inventar.length - 1; j >= 0 && entfernt < q.goal; j--) {
+                        if (h.inventar[j].name === q.item) {
                             h.inventar.splice(j, 1);
                             entfernt++;
                         }
@@ -311,11 +311,11 @@ async function checkQuests(helden, context = {}) {
 
             // Quest 4: Der Alchemist (5 Pflanzenteile)
             if (q.id === 4) {
-                const teile = h.inventar.filter(it => it.name === "Pflanzenteile").length;
-                if (teile >= 5) {
+                const teile = h.inventar.filter(it => it.name === q.item).length;
+                if (teile >= q.goal) {
                     let entfernt = 0;
-                    for (let j = h.inventar.length - 1; j >= 0 && entfernt < 5; j--) {
-                        if (h.inventar[j].name === "Pflanzenteile") {
+                    for (let j = h.inventar.length - 1; j >= 0 && entfernt < q.goal; j--) {
+                        if (h.inventar[j].name === q.item) {
                             h.inventar.splice(j, 1);
                             entfernt++;
                         }
