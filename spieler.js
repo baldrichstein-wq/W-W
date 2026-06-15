@@ -34,7 +34,9 @@ export default class Spieler {
         this.grund_int = 0;
         this.grund_stealth = 0;
         this.grund_gesch = 0; // Neues Attribut: Geschicklichkeit
+        this.hasGedankenschaerfe = false; // Passive Fähigkeit für Magier
         this.grund_will = 0;
+        this.achievements = []; // Array für freigeschaltete Achievements
 
         const rasseLower = rasse.toLowerCase().trim();
         const klasseLower = klasse.toLowerCase().trim();
@@ -151,6 +153,7 @@ export default class Spieler {
             this.def_bonus = this.grund_def + this.rasse_def +1;
             this.grund_cha = 2;
             this.grund_gesch = 0;
+            this.hasGedankenschaerfe = true; // Magier erhalten Gedankenschärfe
             this.ausgeruestete_ruestung = new Item("Stoffrobe", "Ruestung", 10, null, "Eine einfache Robe, die den Fluss des Manas nicht behindert.");
             this.ausgeruestete_waffe = new Item("Zauberstab", "Waffe", 8, null, "Fokussiert die arkanenen Energien des Trägers.");
             this.abilities = [

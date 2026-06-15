@@ -273,6 +273,7 @@ header h1 {
 
 .badge-buff { border-color: #2ecc71; color: #2ecc71; box-shadow: 0 0 5px rgba(46, 204, 113, 0.3); }
 .badge-debuff { border-color: #e74c3c; color: #e74c3c; box-shadow: 0 0 5px rgba(231, 76, 60, 0.3); }
+.badge-achievement { border-color: #f1c40f; color: #f1c40f; box-shadow: 0 0 5px rgba(241, 196, 15, 0.3); }
 
 
 /* Tooltip-System */

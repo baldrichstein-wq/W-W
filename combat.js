@@ -441,6 +441,11 @@ export async function teamKampf(helden, monster, imDunkeln = false) {
                         schadenTotal = ability.schaden + (held.atk_bonus * 3);
                     }
 
+                    // Sonderlogik für Arkane Überladung (Skaliert mit Intelligenz)
+                    if (ability.name === "Arkane Überladung") {
+                        schadenTotal = ability.schaden + (held.grund_int * 4);
+                    }
+
                     monster.hp -= schadenTotal;
                     monster.lastDmg = schadenTotal;
                     held.totalDamageDealt += schadenTotal;
@@ -506,6 +511,20 @@ export async function teamKampf(helden, monster, imDunkeln = false) {
                     held.totalDamageTaken += ability.hp_kosten;
                     held.damageSources["Eigen-Schaden (Fähigkeit)"] = (held.damageSources["Eigen-Schaden (Fähigkeit)"] || 0) + ability.hp_kosten;
                     await printSlow(`🩸 ${held.name} zahlt ${ability.hp_kosten} HP für die Kraft der Fähigkeit!`);
+                }
+
+                // Passive Fähigkeit: Gedankenschärfe (Magier)
+                if (held.klasse.toLowerCase() === "magier" && held.hasGedankenschaerfe) {
+                    // Prüfen, ob es sich um einen Intelligenz-skalierten Zauber handelt (hier: Arkane Überladung)
+                    // In einem komplexeren System könnte man ein 'scalesWith' Attribut in der Fähigkeit definieren.
+                    if (ability.name === "Arkane Überladung") {
+                        const gedankenschaerfeChance = Math.min(1.0, 0.25 + (held.grund_int * 0.025)); // 25% Basis + 2.5% pro INT-Punkt, max 100%
+                        if (Math.random() < gedankenschaerfeChance) {
+                            const refundedAP = Math.floor((ability.ap_kosten || 0) * 0.5); // 50% der AP-Kosten zurückerstatten
+                            held.ap = Math.min(held.max_ap, held.ap + refundedAP);
+                            await printSlow(`✨ <span class="effect-ap">${held.name}s Gedankenschärfe aktiviert!</span> ${refundedAP} AP wurden zurückgewonnen.`);
+                        }
+                    }
                 }
             }
 

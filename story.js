@@ -407,7 +407,8 @@ const KLASSEN_ABILITIES = {
         { name: "Zeitstopp", ap_kosten: 45, schlaf_dauer: 2 },
         { name: "Spiegelbild", ap_kosten: 20, def_buff: 8 },
         { name: "Desintegration", ap_kosten: 35, execute_threshold: 15 },
-        { name: "Elementarsturm", ap_kosten: 50, schaden: 60, element: "Energie" }
+        { name: "Elementarsturm", ap_kosten: 50, schaden: 60, element: "Energie" },
+        { name: "Arkane Überladung", ap_kosten: 30, schaden: 15, element: "Energie" }
     ],
     "schurke": [
         { name: "Giftiger Dolch", ap_kosten: 15, schaden: 15, verwirrt: 1, element: "Gift" },
@@ -692,6 +693,12 @@ async function levelUpMenu(held) {
     }
 
     await printSlow("Alle Punkte wurden erfolgreich investiert.");
+
+    // Achievement-Check für "Arkaner Meister"
+    if (held.klasse.toLowerCase() === "magier" && held.grund_int >= 30 && !held.achievements.includes("Arkaner Meister")) {
+        held.achievements.push("Arkaner Meister");
+        await printSlow(`\n✨ <span class="hp-gain">🏆 ERRUNGENSCHAFT FREIGESCHALTET: ARKANER MEISTER!</span> (${held.name} hat eine Intelligenz von 30 erreicht und seine Gedankenschärfe perfektioniert!)`);
+    }
     // Im Anschluss eine neue Fähigkeit wählen lassen
     await faehigkeitWaehlen(held);
 }

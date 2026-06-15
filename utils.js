@@ -45,6 +45,11 @@ export function formatAbilityDesc(ab, held = null) {
         displayedDmg = `${ab.schaden + (held.atk_bonus * 3)} (STR-Bonus inkl.)`;
     }
 
+    // Sonderlogik für Arkane Überladung (Skalierung anzeigen)
+    if (held && ab.name === "Arkane Überladung") {
+        displayedDmg = `${ab.schaden + (held.grund_int * 4)} (INT-Bonus inkl.)`;
+    }
+
     if (displayedDmg) parts.push(`💥 ${displayedDmg} Dmg`);
     if (ab.element) parts.push(`[${ab.element}]`);
     if (ab.heilung) parts.push(`💚 ${ab.heilung} HP`);
@@ -210,6 +215,10 @@ export function updateUI(helden, monster = null, monsterStatus = null, ebene = n
                 return `<span class="tooltip">${ab.name}<span class="tooltiptext"><strong>${ab.name}</strong><br>${desc}</span></span>`;
             }).join(", ") || "keine";
             
+            const achievementListe = h.achievements.length > 0 
+                ? h.achievements.map(ach => `<span class="rare-item">${ach}</span>`).join(", ") 
+                : "keine";
+
             const questListe = h.activeQuests.length > 0 
                 ? h.activeQuests.map(q => q.title).join(", ") 
                 : "keine";
@@ -270,7 +279,12 @@ export function updateUI(helden, monster = null, monsterStatus = null, ebene = n
             if (h.hatBardenBuff) pEffects.push(`<div class="status-badge badge-buff" title="Barden-Segen: +5 HP, +1 ATK, +10% Gold">🎵 Buff</div>`);
             if (h.bardenLichtDauer > 0) pEffects.push(`<div class="status-badge badge-buff" title="Magisches Licht: Erhellt dunkle Orte (${h.bardenLichtDauer} R.)">🌟 Licht</div>`);
             if (h.heilerLichtDauer > 0) pEffects.push(`<div class="status-badge badge-buff" title="Heiliges Leuchten: Erhellt dunkle Orte (${h.heilerLichtDauer} R.)">✨ Licht</div>`);
+            if (h.hasGedankenschaerfe) pEffects.push(`<div class="status-badge badge-buff" title="Gedankenschärfe: Chance auf AP-Rückerstattung bei Intelligenz-Zaubern">🧠 Gedankenschärfe</div>`);
             
+            h.achievements.forEach(ach => {
+                pEffects.push(`<div class="status-badge badge-achievement" title="Errungenschaft: ${ach}">🏆 ${ach}</div>`);
+            });
+
             if (pEffects.length > 0) playerStatusHtml = `<div class="status-container">${pEffects.join("")}</div>`;
 
             statusDiv.innerHTML = `
@@ -293,6 +307,7 @@ export function updateUI(helden, monster = null, monsterStatus = null, ebene = n
                 🛡️ RK: ${h.ruestung_klasse()}<br>
                 <hr style="border: 0; border-top: 1px solid var(--border-color); margin: 5px 0;">
                 <div style="font-size: 0.85em;">
+                    <strong>Erfolge:</strong> ${achievementListe}<br>
                     <strong>Fähigkeiten:</strong> ${abilityListe}<br>
                     <strong>Ausrüstung:</strong> ${ausruestung}<br>
                     <strong>Gegenstände:</strong> ${inventarListe}<br>
