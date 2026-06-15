@@ -1,17 +1,103 @@
 import Item from './item.js';
-import { printSlow, question, wuerfelD20, randomRange, updateUI, formatAbilityDesc } from './utils.js';
+import { printSlow, question, wuerfelD20, randomRange, updateUI, formatAbilityDesc, triggerGoldAnimation } from './utils.js';
 
 let schluesselGefunden = false;
+ 
+let hofnarr = {
+    name: "Pippin der Lustige", 
+    hp: 60, 
+    max_hp: 60, 
+    active: false, 
+    completed: false,
+    duoConfusions: 0 // Zähler für das Comedy-Duo Achievement
+};
+
+const JESTER_JOKES = [
+    "Warum gehen Skelette nicht tanzen? Sie haben niemanden zum Mitnehmen!",
+    "Was ist ein Keks unter einem Baum? Ein schattiges Plätzchen.",
+    "Wie nennt man einen dicken Schriftsteller? Kugelschreiber.",
+    "Was macht ein Clown im Büro? Faxen.",
+    "Warum sind Geister so schlechte Lügner? Man kann sie direkt durchschauen.",
+    "Was ist grün und klopft an die Tür? Ein Klopfsalat.",
+    "Was ist das Lieblingsessen von Vampiren? Ein Alphabet-Suppe ohne 'L' - weil sie kein Licht mögen?",
+    "Warum können Piraten keinen Kreis berechnen? Weil sie Pi raten.",
+    "Was ist ein kleiner Hund, der zaubern kann? Ein Labrakadabrador.",
+    "Wie nennt man ein Kaninchen im Fitnessstudio? Pumpernickel.",
+    "Was sitzt im Wald und schmollt? Ein Reh-Genschirm.",
+    "Was ist gelb und kann schießen? Eine Banone.",
+    "Warum fliegen Vögel im Winter in den Süden? Weil es zum Laufen zu weit ist.",
+    "Was ist die Lieblingsmusik von Anglern? Der Barsch-Chor.",
+    "Wie nennt man ein verschwundenes Rindvieh? Ox-gon.",
+    "Was ist orange und wandert durch den Wald? Eine Wanderine.",
+    "Warum tragen Fische keine Brillen? Weil sie in der Schule immer schwänzen.",
+    "Was macht ein Pferd im Laden? Es kauft Äpfel.",
+    "Was ist weiß und stört beim Essen? Eine Lawine.",
+    "Warum sind Zwerge immer so glücklich? Weil jeder Grashalm ihnen Komplimente macht.",
+    "Was ist braun, süß und läuft durch den Wald? Ein Schokoreh.",
+    "Wie nennt man einen Hund, der am Strand liegt? Eine Hot Dog.",
+    "Was ist ein Brot, das im Wald lebt? Ein Schwarzbrot-Bär.",
+    "Was ist blau und steht am Straßenrand? Eine Blaubeere.",
+    "Warum gehen Ameisen nicht in die Kirche? Weil sie In-Sekten sind.",
+    "Was ist rot und sitzt auf dem Klo? Eine Klomate.",
+    "Wie nennt man einen Bumerang, der nicht zurückkommt? Stock.",
+    "Was ist klein, grün und dreieckig? Ein kleines grünes Dreieck.",
+    "Warum haben Elefanten rote Augen? Damit sie sich im Kirschbaum verstecken können.",
+    "Hast du schon mal einen Elefanten im Kirschbaum gesehen? Nein? Siehst du, wie gut sie sich verstecken!",
+    "Was ist der Unterschied zwischen einem Joghurt und einem Mathematiker? Der Joghurt hat eine lebende Kultur.",
+    "Was macht ein Mathematiker im Garten? Wurzeln ziehen.",
+    "Was ist weiß und hüpft durch den Wald? Ein Jumpignon.",
+    "Warum sind PC-Spiele im Mittelalter so schwer? Wegen der vielen Lags in der Rüstung.",
+    "Wie nennt man einen Ritter mit einer Grippe? Blechschaden.",
+    "Was ist das Gegenteil von Reformhaus? Reh-hinterm-Haus.",
+    "Warum können Geister so gut Fußball spielen? Weil sie den Ball durchlassen.",
+    "Was ist die Lieblingssportart von Schafen? Määäh-rathlon.",
+    "Wie nennt man eine intelligente Toilette? Klugscheißer.",
+    "Was ist schwarz-weiß und sitzt im Gefängnis? Ein Knast-Zebra.",
+    "Warum sind Orks so schlechte Gärtner? Weil sie alles kurz und klein schlagen.",
+    "Was ist die Lieblingsspeise von Helden? Heldensalat.",
+    "Wie nennt man ein helles Monster? Ein Leuchtfeuer.",
+    "Was macht ein Drache, wenn er wütend ist? Er kocht vor Wut.",
+    "Warum haben Hexen Besen? Weil Staubsauger zu laut sind.",
+    "Was ist ein Cow-boy ohne Pferd? Ein Sattelschlepper.",
+    "Wie nennt man einen dicken Drachen? Ein Pfund-Speier.",
+    "Was macht ein Skelett im Fitnessstudio? Es trainiert seine Knochen.",
+    "Was ist ein runder Ritter? Sir Cumference.",
+    "Warum hassen Programmierer die Natur? Zu viele Bugs!"
+];
 
 const SPECIALIZATIONS = {
-    "krieger": ["Paladin", "Berserker"],
-    "magier": ["Erzmagier", "Nekromant"],
-    "schurke": ["Assassine", "Schattenläufer"],
-    "heiler": ["Hohepriester", "Inquisitor"],
-    "verteidiger": ["Wächter", "Ritter"],
-    "barde": ["Minnesänger", "Troubadour"],
-    "tueftler": ["Maschinist", "Erfinder"],
-    "alchemist": ["Meister-Alchemist", "Mutator"]
+    "krieger": [
+        { name: "Paladin", passiveBonus: { type: "damage_reduction_bonus", value: 2 } }, // +2 flache Schadensreduktion
+        { name: "Berserker", passiveBonus: { type: "atk_bonus", value: 3 } } // +3 ATK
+    ],
+    "magier": [
+        { name: "Erzmagier", passiveBonus: { type: "ap_regen_modifier", value: 2 } }, // +2 AP-Regeneration pro Runde
+        { name: "Nekromant", passiveBonus: { type: "max_hp", value: 20 } } // +20 Max HP
+    ],
+    "schurke": [
+        { name: "Assassine", passiveBonus: { type: "crit_threshold_modifier", value: -1 } }, // Kritischer Treffer auf 19+ (wenn Basis 20)
+        { name: "Schattenläufer", passiveBonus: { type: "grund_stealth", value: 5 } } // +5 Stealth
+    ],
+    "heiler": [
+        { name: "Hohepriester", passiveBonus: { type: "healing_output_bonus", value: 0.15 } }, // +15% ausgehende Heilung
+        { name: "Inquisitor", passiveBonus: { type: "atk_bonus", value: 2 } } // +2 ATK
+    ],
+    "verteidiger": [
+        { name: "Wächter", passiveBonus: { type: "damage_reduction_bonus", value: 3 } }, // +3 flache Schadensreduktion
+        { name: "Ritter", passiveBonus: { type: "def_bonus", value: 3 } } // +3 RK
+    ],
+    "barde": [
+        { name: "Minnesänger", passiveBonus: { type: "buff_duration_bonus", value: 1 } }, // +1 Runde Buff-Dauer
+        { name: "Troubadour", passiveBonus: { type: "debuff_duration_bonus", value: 1 } } // +1 Runde Debuff-Dauer
+    ],
+    "tueftler": [
+        { name: "Maschinist", passiveBonus: { type: "material_efficiency_bonus", value: 0.10 } }, // 10% Chance, Materialien nicht zu verbrauchen
+        { name: "Erfinder", passiveBonus: { type: "crafting_success_bonus", value: -2 } } // -2 auf Crafting-DC (erleichtert Erfolg)
+    ],
+    "alchemist": [
+        { name: "Meister-Alchemist", passiveBonus: { type: "healing_output_bonus", value: 0.20 } }, // +20% ausgehende Heilung
+        { name: "Mutator", passiveBonus: { type: "hp_regen_bonus", value: 5 } } // +5 HP-Regeneration pro Runde
+    ]
 };
 
 const SHOP_WAREN = {
@@ -266,6 +352,10 @@ async function schwarzeTafel(helden) {
                     await printSlow("❌ Diesen Auftrag verfolgt ihr bereits.");
                 } else {
                     helden.forEach(h => h.activeQuests.push({...q, progress: 0}));
+                    if (q.id === 6) {
+                        hofnarr.active = true;
+                        hofnarr.hp = hofnarr.max_hp;
+                    }
                     await printSlow(`✅ Ihr habt den Auftrag angenommen: <span class="rare-item">${q.title}</span>!`);
                     // Sofort-Check falls Bedingungen bereits erfüllt (z.B. Items im Inventar)
                     await checkQuests(helden, { type: 'inventory' });
@@ -287,6 +377,11 @@ async function checkQuests(helden, context = {}) {
             if (q.id === 1 && context.type === 'kill' && context.ebene === 1) {
                 q.progress = (q.progress || 0) + 1;
                 if (q.progress >= q.goal) done = true;
+                if (q.progress >= q.goal) {
+                    done = true;
+                } else {
+                    await printSlow(`📜 Quest-Fortschritt (${q.title}): ${q.progress}/${q.goal} Kills erreicht.`);
+                }
             }
             
             // Quest 2: Ersatzteile (3 Mechanischeteile im Inventar)
@@ -301,6 +396,9 @@ async function checkQuests(helden, context = {}) {
                         }
                     }
                     done = true;
+                } else if (context.type === 'inventory' && teile !== q.progress) {
+                    q.progress = teile;
+                    if (teile > 0) await printSlow(`📜 Quest-Fortschritt (${q.title}): ${teile}/${q.goal} ${q.item} gesammelt.`);
                 }
             }
 
@@ -321,6 +419,39 @@ async function checkQuests(helden, context = {}) {
                         }
                     }
                     done = true;
+                } else if (context.type === 'inventory' && teile !== q.progress) {
+                    q.progress = teile;
+                    if (teile > 0) await printSlow(`📜 Quest-Fortschritt (${q.title}): ${teile}/${q.goal} ${q.item} gesammelt.`);
+                }
+            }
+
+            // Quest 5: Der verlorene Ring (Goldener Siegelring finden)
+            if (q.id === 5) {
+                const hatRing = h.inventar.some(it => it.name === q.item);
+                if (hatRing) {
+                    done = true; // Ring wird nicht entfernt, da er für die Secret Ebene gebraucht wird
+                }
+            }
+
+            // Quest 6: Ein komischer Kauz (Wird durch Interaktion mit dem König abgeschlossen)
+            if (q.id === 6 && context.type === 'quest_complete' && context.questId === 6) {
+                done = true;
+            }
+            // Quest 7: Gegen die Finsternis (5 Fackeln sammeln)
+            if (q.id === 7) {
+                const teile = h.inventar.filter(it => it.name === q.item).length;
+                if (teile >= q.goal) {
+                    let entfernt = 0;
+                    for (let j = h.inventar.length - 1; j >= 0 && entfernt < q.goal; j--) {
+                        if (h.inventar[j].name === q.item) {
+                            h.inventar.splice(j, 1);
+                            entfernt++;
+                        }
+                    }
+                    done = true;
+                } else if (context.type === 'inventory' && teile !== q.progress) {
+                    q.progress = teile;
+                    if (teile > 0) await printSlow(`📜 Quest-Fortschritt (${q.title}): ${teile}/${q.goal} ${q.item} gesammelt.`);
                 }
             }
 
@@ -330,6 +461,16 @@ async function checkQuests(helden, context = {}) {
                 h.completedQuests.push(q.id);
                 h.activeQuests.splice(i, 1);
                 await printSlow(`\n✅ <span class="hp-gain">AUFTRAG ERFÜLLT: ${q.title}!</span>`);
+                triggerGoldAnimation();
+                
+                // Quest-Benachrichtigung im UI aufblinken lassen
+                const progressUi = document.getElementById('dungeon-progress-ui');
+                if (progressUi) {
+                    progressUi.classList.remove('quest-flash-active');
+                    void progressUi.offsetWidth; // Force Reflow um die Animation neu zu starten
+                    progressUi.classList.add('quest-flash-active');
+                }
+
                 await printSlow(`💰 Belohnung: ${q.reward.gold} Gold und ${q.reward.xp} XP erhalten.`);
                 
                 if (h.check_levelup()) {
@@ -431,11 +572,19 @@ async function craftingMenue(helden) {
                     const anz = parseInt(anzInput);
                     
                     if (!isNaN(anz) && anz > 0 && anz <= maxHerstellbar) {
+                        const dc = 10 + (held.crafting_success_bonus || 0); // DC wird durch Bonus reduziert
                         let erfolge = 0;
                         let patzer = 0;
-                        const dc = 10;
                         for (let i = 0; i < anz; i++) {
-                            verbraucheMaterialien(held, rezept.materialien);
+                            let materialsConsumed = true;
+                            if (held.material_efficiency_bonus > 0 && Math.random() < held.material_efficiency_bonus) {
+                                await printSlow(`♻️ ${held.name}s Materialeffizienz verhindert den Verbrauch von Materialien für ${rezept.name}!`);
+                                materialsConsumed = false;
+                            }
+                            if (materialsConsumed) {
+                                verbraucheMaterialien(held, rezept.materialien);
+                            }
+                            
                             const wurf = wuerfelD20();
                             if (wurf + held.grund_int >= dc) {
                                 held.inventar.push(new Item(rezept.name, "Spezial", 0, null, "Ein handgefertigtes Werkzeug."));
@@ -570,25 +719,57 @@ const KLASSEN_ABILITIES = {
         { name: "Zeitkrümmung", ap_kosten: 50, ap_regen: 20, schlaf_dauer: 1 },
         { name: "Kometeneinschlag", ap_kosten: 60, schaden: 85, element: "Feuer" }
     ],
+    "nekromant": [
+        { name: "Schattenbeschwörung", ap_kosten: 40, schaden: 35, element: "Schatten" },
+        { name: "Lebensentzug", ap_kosten: 30, schaden: 25, heilung: 20, element: "Schatten" }
+    ],
     "assassine": [
         { name: "Todesstoß", ap_kosten: 35, schaden: 100, execute_threshold: 30 },
         { name: "Schattenfluch", ap_kosten: 20, verwirrt: 3, element: "Schatten" }
+    ],
+    "schattenläufer": [
+        { name: "Schattenschlag", ap_kosten: 20, schaden: 30, element: "Schatten" },
+        { name: "Nebelschleier", ap_kosten: 15, def_buff: 8 }
     ],
     "hohepriester": [
         { name: "Avatar des Lichts", ap_kosten: 50, heilung: 100, belebt: 1 },
         { name: "Heilige Aura", ap_kosten: 30, def_buff: 10, ap_regen: 5 }
     ],
+    "inquisitor": [
+        { name: "Glaubenseifer", ap_kosten: 25, atk_buff: 12 },
+        { name: "Ketzerbann", ap_kosten: 20, schaden: 35, element: "Heilig" }
+    ],
     "wächter": [
         { name: "Unsterblichkeit", ap_kosten: 45, def_buff: 30, heilung: 20 },
         { name: "Schild der Vergeltung", ap_kosten: 30, schaden: 30, def_buff: 10 }
+    ],
+    "ritter": [
+        { name: "Ehrenhafter Stoß", ap_kosten: 20, schaden: 35 },
+        { name: "Eiserne Disziplin", ap_kosten: 15, def_buff: 12 }
+    ],
+    "minnesänger": [
+        { name: "Lied der Sehnsucht", ap_kosten: 30, heilung: 40 },
+        { name: "Heldenepos", ap_kosten: 25, atk_buff: 8 }
+    ],
+    "troubadour": [
+        { name: "Spottlied", ap_kosten: 20, verwirrt: 2 },
+        { name: "Reim-Attacke", ap_kosten: 15, schaden: 25, element: "Schall" }
     ],
     "maschinist": [
         { name: "Belagerungsmodus", ap_kosten: 0, material_kosten: "Belagerungs-Kern", schaden: 70, element: "Physisch" },
         { name: "Drohnen-Schwarm", ap_kosten: 0, material_kosten: "Drohnen-Steuerung", schaden: 40, verwirrt: 2 }
     ],
+    "erfinder": [
+        { name: "Automaton", ap_kosten: 0, material_kosten: "Mechanischeteile", schaden: 35 },
+        { name: "Energie-Zelle", ap_kosten: 0, material_kosten: "Maschinenoel", ap_regen: 20 }
+    ],
     "meister-alchemist": [
         { name: "Panacea", ap_kosten: 0, material_kosten: "Panacea", heilung: 80, ap_regen: 20 },
         { name: "Ultima-Bombe", ap_kosten: 0, material_kosten: "Ultima-Bombe", schaden: 90, element: "Energie" }
+    ],
+    "mutator": [
+        { name: "Adrenalin-Serum", ap_kosten: 0, material_kosten: "Bestienteile", atk_buff: 15 },
+        { name: "Regenerations-Mutagen", ap_kosten: 0, material_kosten: "Pflanzenteile", heilung: 50 }
     ]
 };
 
@@ -646,11 +827,13 @@ async function raetselMeisterBegegnung(helden) {
             h.gold += goldPlus;
             h.xp += xpPlus;
             h.hp = Math.min(h.max_hp, h.hp + 15);
-            if (h.check_levelup()) {
+            const levelsGained = h.check_levelup();
+            if (levelsGained > 0) {
                 await printSlow(`\n🌟 LEVEL UP für ${h.name}! Level ${h.level}!`, 'level-up-animation');
-                await levelUpMenu(h);
+                await levelUpMenu(h, levelsGained);
             }
         }
+        triggerGoldAnimation();
         await printSlow(`🎁 Die Gruppe erhält <span class="hp-gain">${goldPlus} Gold, ${xpPlus} XP</span> und regeneriert <span class="hp-gain">15 HP</span>!`);
     } else {
         await printSlow(`\n💨 <span class="effect-lifesteal">'Leider falsch! Die Antwort war: ${r.a}. Bereitet euch auf meine Strafe vor!'</span>`);
@@ -719,9 +902,12 @@ async function secretEbeneIntro() {
     await printSlow("Vor euch schwebt der **Leeren-Wächter**, das wahre Ende dieses Dungeons.");
 }
 
-async function levelUpMenu(held) {
-    let skillPunkte = 5;
+async function levelUpMenu(held, levelsGained = 1) {
+    let skillPunkte = 5 * levelsGained;
     await printSlow(`\n✨ --- LEVEL UP: ${held.name} (Level ${held.level}) ---`);
+    if (levelsGained > 1) {
+        await printSlow(`Beeindruckend! Ihr seid gleich <span class="rare-item">${levelsGained} Stufen</span> auf einmal aufgestiegen!`);
+    }
     await printSlow(`Ihr erhaltet <span class="rare-item">${skillPunkte} Skill-Punkte</span> zum freien Verteilen auf eure Attribute!`);
 
     const attribute = {
@@ -765,6 +951,93 @@ async function levelUpMenu(held) {
     }
 
     await printSlow("Alle Punkte wurden erfolgreich investiert.");
+
+    // Spezialisierungs-Auswahl ab Level 15
+    const basisKlasse = held.klasse.toLowerCase();
+    if (held.level >= 15 && SPECIALIZATIONS[basisKlasse]) {
+        const optionen = SPECIALIZATIONS[basisKlasse];
+        await printSlow(`\n🌟 <span class="rare-item">${held.name}</span> hat eine neue Stufe der Meisterschaft erreicht!`);
+        await printSlow(`Wählt einen Pfad, um eure Kräfte zu spezialisieren:`);
+
+        optionen.forEach((opt, i) => console.log(`${i + 1}. ${opt}`));
+
+        let wahlIdx = -1;
+        if (held.isKI) {
+            wahlIdx = randomRange(0, optionen.length - 1);
+        } else {
+            const wahl = await question(`Eure Wahl (1-${optionen.length}): `);
+            wahlIdx = parseInt(wahl) - 1;
+            if (isNaN(wahlIdx) || wahlIdx < 0 || wahlIdx >= optionen.length) wahlIdx = 0;
+        }
+
+        const neueKlasse = optionen[wahlIdx];
+        held.klasse = neueKlasse;
+        await printSlow(`✨ Unglaublich! ${held.name} ist nun ein <span class="rare-item">${neueKlasse}</span>!`);
+        await printSlow(`Neue, mächtigere Fähigkeiten stehen euch nun beim nächsten Lernen zur Verfügung.`);
+
+        // Passive Boni anwenden
+        const chosenSpecialization = SPECIALIZATIONS[basisKlasse].find(s => s.name === neueKlasse);
+        if (chosenSpecialization && chosenSpecialization.passiveBonus) {
+            const bonus = chosenSpecialization.passiveBonus;
+            switch (bonus.type) {
+                case "crit_threshold_modifier":
+                    held.crit_threshold_modifier += bonus.value;
+                    await printSlow(`📈 ${held.name} erhält einen passiven Bonus: Kritische Treffer sind nun leichter zu erzielen!`);
+                    break;
+                case "ap_regen_modifier":
+                    held.ap_regen_modifier += bonus.value;
+                    await printSlow(`✨ ${held.name} regeneriert nun zusätzlich ${bonus.value} AP pro Runde!`);
+                    break;
+                case "atk_bonus":
+                    held.atk_bonus += bonus.value;
+                    await printSlow(`⚔️ ${held.name} erhält einen passiven Bonus: +${bonus.value} ATK!`);
+                    break;
+                case "def_bonus":
+                    held.def_bonus += bonus.value;
+                    await printSlow(`🛡️ ${held.name} erhält einen passiven Bonus: +${bonus.value} RK!`);
+                    break;
+                case "max_hp":
+                    held.max_hp += bonus.value;
+                    held.hp += bonus.value; // Heilt auch um den neuen Max-HP-Wert
+                    await printSlow(`❤️ ${held.name} erhält einen passiven Bonus: +${bonus.value} Max HP!`);
+                    break;
+                case "healing_output_bonus":
+                    held.healing_output_bonus += bonus.value;
+                    await printSlow(`💚 ${held.name}s Heilzauber und Tränke sind nun um ${bonus.value * 100}% effektiver!`);
+                    break;
+                case "damage_reduction_bonus":
+                    held.damage_reduction_bonus += bonus.value;
+                    await printSlow(`🛡️ ${held.name} erleidet nun ${bonus.value} weniger Schaden pro Treffer!`);
+                    break;
+                case "buff_duration_bonus":
+                    held.buff_duration_bonus += bonus.value;
+                    await printSlow(`⏳ ${held.name}s Buffs halten nun ${bonus.value} Runde(n) länger!`);
+                    break;
+                case "debuff_duration_bonus":
+                    held.debuff_duration_bonus += bonus.value;
+                    await printSlow(`⏳ ${held.name}s Debuffs halten nun ${bonus.value} Runde(n) länger!`);
+                    break;
+                case "crafting_success_bonus":
+                    held.crafting_success_bonus += bonus.value;
+                    await printSlow(`🛠️ ${held.name} ist nun geschickter beim Handwerken (Crafting-DC um ${Math.abs(bonus.value)} reduziert)!`);
+                    break;
+                case "material_efficiency_bonus":
+                    held.material_efficiency_bonus += bonus.value;
+                    await printSlow(`♻️ ${held.name} hat nun eine ${bonus.value * 100}% Chance, Materialien beim Crafting nicht zu verbrauchen!`);
+                    break;
+                case "grund_stealth":
+                    held.grund_stealth += bonus.value;
+                    await printSlow(`👤 ${held.name} ist nun noch verstohlener (+${bonus.value} Stealth)!`);
+                    break;
+                case "hp_regen_bonus":
+                    held.hp_regen_bonus += bonus.value;
+                    await printSlow(`❤️ ${held.name} regeneriert nun zusätzlich ${bonus.value} HP pro Runde!`);
+                    break;
+                default:
+                    await printSlow(`Ein unbekannter passiver Bonus wurde für ${held.name} angewendet.`);
+            }
+        }
+    }
 
     // Achievement-Check für "Arkaner Meister"
     if (held.klasse.toLowerCase() === "magier" && held.grund_int >= 30 && !held.achievements.includes("Arkaner Meister")) {
@@ -865,6 +1138,7 @@ async function schatzFinden(helden) {
         let goldFund = randomRange(1, 50);
         if (aktiver.hatBardenBuff) goldFund = Math.floor(goldFund * 1.1);
         aktiver.gold += goldFund;
+        triggerGoldAnimation();
         await printSlow(`💎 Erfolg! ${aktiver.name} öffnet die Truhe und findet ${goldFund} Gold!`);
 
         for (const h of helden) {
@@ -1177,9 +1451,10 @@ async function feenBegegnung(helden) {
                     h.xp += anzahl * 15;
                     await printSlow(`✨ Die Fee flüstert ${h.name} Wissen zu. <span class='rare-item'>+${anzahl * 15} XP!</span>`);
                     
-                    if (h.check_levelup()) {
+                    const levelsGained = h.check_levelup();
+                    if (levelsGained > 0) {
                         await printSlow(`\n🌟 LEVEL UP für ${h.name}! Level ${h.level}!`, 'level-up-animation');
-                        await levelUpMenu(h);
+                        await levelUpMenu(h, levelsGained);
                     }
                 } else {
                     await printSlow("❌ Du hast nicht genug Gold für so viel Wissen.");
@@ -1194,4 +1469,101 @@ async function feenBegegnung(helden) {
     updateUI(helden);
 }
 
-export { schatzFinden, shopBesuch, tavernenBesuch, bossLootGeben, levelUpMenu, synergienPruefen, craftingMenue, schwarzeTafel, raetselPhase, secretEbeneIntro, vorraeteNutzen, bardenLied, feenBegegnung, raetselMeisterBegegnung, checkQuests };
+async function castleInteraction(helden) {
+    await printSlow("\n🏰 Ihr betretet die majestätische Burg. Goldene Banner wehen im Wind und Wachen salutieren.");
+    await printSlow("Ein freundlicher Diener führt euch in den Thronsaal, wo König Theron auf euch wartet.");
+
+    let interacting = true;
+    while (interacting) {
+        await printSlow("\n--- IM THRONSAAL DER BURG ---");
+        console.log("1. Mit König Theron sprechen");
+        console.log("2. Die Burg erkunden (Shop/Taverne)");
+        console.log("0. Das Spiel beenden (Siegerehrung)");
+
+        const wahl = await question("Was möchtet ihr tun? ");
+
+        if (wahl === "1") {
+            await printSlow("\n👑 König Theron: 'Seid gegrüßt, Helden! Eure Taten sind legendär.'");
+            
+            // Quest "Ein komischer Kauz" abgeben
+            const jesterQuestActive = helden[0].activeQuests.some(q => q.id === 6);
+            const jesterQuestCompleted = helden[0].completedQuests.includes(6);
+
+            if (jesterQuestActive && hofnarr.active && hofnarr.hp > 0 && !jesterQuestCompleted) {
+                await printSlow(`\n🤡 ${hofnarr.name} springt vor den König: "Eure Majestät! Ich bin zurück! Und diese Helden haben mich sicher hierher gebracht!"`);
+                await printSlow("👑 König Theron: 'Ah, mein lieber Pippin! Ich hatte die Hoffnung schon fast aufgegeben. Ihr habt meine Erwartungen übertroffen, tapfere Helden!'");
+                
+                // Trigger quest completion for all heroes
+                for (const h of helden) {
+                    const questToComplete = h.activeQuests.find(q => q.id === 6);
+                    if (questToComplete) {
+                        await checkQuests([h], { type: 'quest_complete', questId: 6 }); // Pass single hero for checkQuests
+                    }
+                }
+                hofnarr.completed = true; // Mark Pippin's quest as completed globally
+                await printSlow(`\n👑 König Theron: 'Als Zeichen meiner Dankbarkeit, nehmt diese Belohnung!'`);
+            } else if (jesterQuestCompleted) {
+                await printSlow("👑 König Theron: 'Pippin ist in Sicherheit, dank euch. Euer Ruhm eilt euch voraus.'");
+            } else {
+                await printSlow("👑 König Theron: 'Ich habe gehört, ihr seid auf der Suche nach Abenteuern. Vielleicht kann ich euch bald einen Auftrag geben.'");
+            }
+        } else if (wahl === "2") {
+            await shopBesuch(helden); // Shop in der Burg
+            await tavernenBesuch(helden); // Taverne in der Burg
+        } else if (wahl === "0") {
+            interacting = false;
+            // Finales Spielende mit Rangliste
+            console.log("\n" + "★".repeat(50));
+            await printSlow("🏆 SIEG! Der Thron des Dungeons wurde erobert!");
+            
+            // Ranking erstellen
+            const sieger = [...helden].sort((a, b) => 
+                (b.totalDamageDealt - b.totalDamageTaken) - (a.totalDamageDealt - a.totalDamageTaken)
+            );
+            
+            await printSlow("\n👑 DAS SIEGERTREPPCHEN 👑");
+            for (let i = 0; i < sieger.length; i++) {
+                const h = sieger[i];
+                const medal = i === 0 ? "🥇" : (i === 1 ? "🥈" : "🥉");
+                await printSlow(`${medal} Platz ${i+1}: <span class="rare-item">${h.name}</span> (Level ${h.level})`);
+                await printSlow(`   ⚔️ Schaden Ausgeteilt: ${h.totalDamageDealt} | 🩸 Schaden Erlitten: ${h.totalDamageTaken}`);
+                let maxSource = "Keine";
+                let maxDmg = 0;
+                for (const [source, dmg] of Object.entries(h.damageSources)) {
+                    if (dmg > maxDmg) { maxDmg = dmg; maxSource = source; }
+                }
+                if (maxDmg > 0) await printSlow(`   💀 Meiste Pein durch: ${maxSource} (${maxDmg} Dmg)`);
+                if (h.totalDamageTaken === 0) { await printSlow(`   ✨ <span class="hp-gain">🏆 ERRUNGENSCHAFT: UNANTASTBAR!</span> (${h.name} hat das gesamte Abenteuer ohne einen einzigen Kratzer überstanden!)`); }
+                if (h.totalDamageDealt < 100) { await printSlow(`   🕊️ <span class="hp-gain">🏆 ERRUNGENSCHAFT: PAZIFIST!</span> (${h.name} hat den Sieg mit minimaler Gewalt errungen!)`); }
+            }
+            const champion = sieger[0];
+            localStorage.setItem('dungeon_champion', JSON.stringify({ name: champion.name, level: champion.level, klasse: champion.klasse }));
+            const history = JSON.parse(localStorage.getItem('dungeon_history')) || [];
+            history.push({ name: champion.name, level: champion.level, klasse: champion.klasse, xp: champion.xp, datum: new Date().toLocaleDateString() });
+            localStorage.setItem('dungeon_history', JSON.stringify(history));
+            await printSlow(`\n⚠️ Eine dunkle Macht ergreift Besitz von ${champion.name}... Er wird als nächster Wächter zurückkehren.`);
+            await printSlow("\nDie restlichen Überlebenden verlassen den Dungeon durch das goldene Portal.");
+            const namen = helden.length > 1 ? helden.slice(0, -1).map(h => h.name).join(", ") + " und " + helden[helden.length - 1].name : helden[0].name;
+            await printSlow(`${namen} werden als Retter des Reiches in die Geschichte eingehen!`);
+            console.log("★".repeat(50));
+            
+            const endWahl = await question("\nWas möchtet ihr tun?\n1. Ein neues Abenteuer beginnen\n2. Das Spiel beenden\nWahl: ");
+            if (endWahl === "1") {
+                location.reload();
+            } else {
+                document.body.innerHTML = `
+                    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; background: #1a0f0a; color: #d4af37; font-family: 'Cinzel', serif; text-align: center; padding: 40px;">
+                        <h1 style="color: #b22222; font-size: 3.5em; margin-bottom: 20px; text-shadow: 0 0 20px rgba(178, 34, 34, 0.5);">DANKE FÜR'S SPIELEN!</h1>
+                        <p style="font-size: 1.8em; line-height: 1.6; max-width: 800px; color: #f5e6d3;">Eure Taten in der Burg wurden in die Chroniken der Welt aufgenommen. Danke, dass ihr das Spiel gespielt habt!</p>
+                        <div style="margin-top: 50px; border-top: 1px solid #d4af37; padding-top: 20px; width: 200px;">
+                            <button onclick="location.reload()" style="background: none; border: 1px solid #d4af37; color: #d4af37; padding: 10px 20px; cursor: pointer; font-family: 'Cinzel';">Hauptmenü</button>
+                        </div>
+                    </div>`;
+            }
+        } else {
+            await printSlow("Ungültige Wahl.");
+        }
+    }
+}
+
+export { hofnarr, JESTER_JOKES, schatzFinden, shopBesuch, tavernenBesuch, bossLootGeben, levelUpMenu, synergienPruefen, craftingMenue, schwarzeTafel, raetselPhase, secretEbeneIntro, vorraeteNutzen, bardenLied, feenBegegnung, raetselMeisterBegegnung, checkQuests, castleInteraction };

@@ -1,4 +1,4 @@
-import { question, randomRange, printSlow, wuerfelD20, updateUI, formatAbilityDesc } from './utils.js';
+import { question, randomRange, printSlow, wuerfelD20, updateUI, formatAbilityDesc, triggerGoldAnimation } from './utils.js';
 import * as Story from './story.js';
 
 async function spielerZug(spieler, monster_name, monster_hp, helden) {
@@ -316,6 +316,42 @@ export async function teamKampf(helden, monster, imDunkeln = false, ebene = null
             }
         });
         updateUI(helden, monster, monsterStatus);
+        
+        // HP-Regeneration durch Spezialisierungs-Bonus
+        helden.filter(h => h.hp > 0 && h.hp_regen_bonus > 0).forEach(held => {
+            held.hp = Math.min(held.max_hp, held.hp + held.hp_regen_bonus);
+            console.log(`<span class="hp-gain">❤️ ${held.name} regeneriert ${held.hp_regen_bonus} HP durch passiven Bonus.</span> (Aktuell: ${held.hp}/${held.max_hp})`);
+        });
+
+        // Pippin erzählt einen Witz zu Beginn jeder Runde
+        if (Story.hofnarr.active && !Story.hofnarr.completed && Story.hofnarr.hp > 0) {
+            const witz = Story.JESTER_JOKES[randomRange(0, Story.JESTER_JOKES.length - 1)];
+            await printSlow(`\n🤡 <span class="buff-text">${Story.hofnarr.name}: "${witz}"</span>`);
+
+            let confusionChance = 0.25; // Basis 25% Chance
+            const hasBard = helden.some(h => h.klasse.toLowerCase() === "barde" && h.hp > 0);
+            if (hasBard) {
+                confusionChance += 0.15; // +15% wenn ein Barde in der Gruppe ist
+                await printSlow(`🎶 Die Anwesenheit des Barden verstärkt Pippins Witz!`);
+            }
+            // Fähigkeit: Witzige Ablenkung
+            if (Math.random() < confusionChance) {
+                monsterStatus.verwirrt = Math.max(monsterStatus.verwirrt, 1);
+                await printSlow(`🌀 Der ${monster.name} ist von Pippins Humor so <span class="badge-debuff">verwirrt</span>, dass er seine Deckung vergisst!`);
+                
+                // Achievement-Check: Comedy-Duo
+                if (hasBard) {
+                    Story.hofnarr.duoConfusions++;
+                    if (Story.hofnarr.duoConfusions === 50) {
+                        helden.forEach(h => {
+                            if (!h.achievements.includes("Comedy-Duo")) h.achievements.push("Comedy-Duo");
+                        });
+                        await printSlow(`\n✨ <span class="hp-gain">🏆 ERRUNGENSCHAFT FREIGESCHALTET: COMEDY-DUO!</span>\nPippin und der Barde haben gemeinsam 50 Monster in den Wahnsinn getrieben!`);
+                    }
+                }
+                updateUI(helden, monster, monsterStatus);
+            }
+        }
 
         for (const held of helden) {
             if (held.hp <= 0) continue;
@@ -331,7 +367,7 @@ export async function teamKampf(helden, monster, imDunkeln = false, ebene = null
                 const { roll, natural } = wert;
                 // Kritische Trefferchance basierend auf Geschicklichkeit
                 // Jede 5 Punkte Geschicklichkeit reduzieren den benötigten natürlichen Wurf für einen kritischen Treffer um 1, bis zu einem Minimum von 15.
-                const critThreshold = Math.max(15, 20 - Math.floor(held.grund_gesch / 5)); 
+                const critThreshold = Math.max(15, 20 - Math.floor(held.grund_gesch / 5) + (held.crit_threshold_modifier || 0)); 
                 const isCrit = natural >= critThreshold;
                 const isFumble = natural === 1;
 
@@ -469,6 +505,10 @@ export async function teamKampf(helden, monster, imDunkeln = false, ebene = null
                 }
                 if (ability.heilung && targetHeld) {
                     targetHeld.hp = Math.min(targetHeld.max_hp, targetHeld.hp + ability.heilung);
+                    let actualHealing = ability.heilung;
+                    if (held.healing_output_bonus > 0) {
+                        actualHealing = Math.floor(actualHealing * (1 + held.healing_output_bonus));
+                    }
                     await printSlow(`💚 ${targetHeld.name} regeneriert ${ability.heilung} HP.`);
                 }
                 if (ability.atk_buff) {
@@ -495,15 +535,31 @@ export async function teamKampf(helden, monster, imDunkeln = false, ebene = null
                     await printSlow(`💀 GNADENSTOSS! ${monster.name} wurde hingerichtet.`);
                 }
                 if (ability.belebt && targetHeld) {
-                    targetHeld.hp = 10;
-                    await printSlow(`☀️ ${targetHeld.name} wurde von den Toten zurückgeholt!`);
+                    let revivedHp = 10;
+                    if (held.healing_output_bonus > 0) {
+                        revivedHp = Math.floor(revivedHp * (1 + held.healing_output_bonus));
+                    }
+                    targetHeld.hp = revivedHp;
+                    await printSlow(`☀️ ${targetHeld.name} wurde von den Toten zurückgeholt und hat ${revivedHp} HP!`);
                 }
                 if (ability.schlaf_dauer) {
-                    monsterStatus.schlaf = ability.schlaf_dauer;
+                    let duration = ability.schlaf_dauer;
+                    if (held.debuff_duration_bonus > 0) {
+                        duration += held.debuff_duration_bonus;
+                    }
+                    monsterStatus.schlaf = duration;
                     await printSlow(`💤 ${monster.name} ist eingeschlafen!`);
                 }
                 if (ability.verwirrt) {
                     monsterStatus.verwirrt = ability.verwirrt;
+                    await printSlow(`🌀 ${monster.name} ist verwirrt!`);
+                }
+                if (ability.verwirrt) {
+                    let duration = ability.verwirrt;
+                    if (held.debuff_duration_bonus > 0) {
+                        duration += held.debuff_duration_bonus;
+                    }
+                    monsterStatus.verwirrt = duration;
                     await printSlow(`🌀 ${monster.name} ist verwirrt!`);
                 }
                 if (ability.hp_kosten) {
@@ -595,6 +651,7 @@ export async function teamKampf(helden, monster, imDunkeln = false, ebene = null
         const goldBetrag = hasBuff ? Math.floor(monster.gold * 1.1) : monster.gold;
 
         await printSlow(`\n🎉 Sieg über den ${monster.name}! Jeder Held erhält ${monster.xp} XP und ${goldBetrag} Gold.`);
+        triggerGoldAnimation();
         for (const held of helden) {
             held.xp += monster.xp;
             held.gold += (held.hatBardenBuff ? Math.floor(monster.gold * 1.1) : monster.gold);
@@ -606,9 +663,10 @@ export async function teamKampf(helden, monster, imDunkeln = false, ebene = null
                 await printSlow(`\n✨ <span class="rare-item">${held.name} steht an der Schwelle zu neuer Macht!</span>`);
             }
 
-            if (held.check_levelup()) {
+            const levelsGained = held.check_levelup();
+            if (levelsGained > 0) {
                 await printSlow(`\n🌟 LEVEL UP für ${held.name}! Level ${held.level}!`, 'level-up-animation');
-                await Story.levelUpMenu(held);
+                await Story.levelUpMenu(held, levelsGained);
             }
         }
         // Quest-Check nach dem Kampf (Kills tracken)

@@ -36,6 +36,16 @@ export default class Spieler {
         this.grund_gesch = 0; // Neues Attribut: Geschicklichkeit
         this.hasGedankenschaerfe = false; // Passive Fähigkeit für Magier
         this.grund_will = 0;
+        // Neue passive Bonus-Eigenschaften für Spezialisierungen
+        this.crit_threshold_modifier = 0; // Reduziert den benötigten natürlichen Wurf für einen kritischen Treffer (z.B. -1 bedeutet Krit auf 19+)
+        this.ap_regen_modifier = 0; // Bonus AP-Regeneration pro Runde
+        this.crafting_success_bonus = 0; // Bonus auf den Crafting-Wurf (reduziert DC)
+        this.material_efficiency_bonus = 0; // Chance, Materialien beim Crafting nicht zu verbrauchen (0.0 - 1.0)
+        this.debuff_duration_bonus = 0; // Bonus auf die Dauer von Debuffs, die der Spieler anwendet (in Runden)
+        this.buff_duration_bonus = 0; // Bonus auf die Dauer von Buffs, die der Spieler anwendet (in Runden)
+        this.healing_output_bonus = 0; // Multiplikator für die ausgehende Heilung (z.B. 0.15 für +15%)
+        this.damage_reduction_bonus = 0; // Flache Schadensreduktion pro Treffer
+        this.hp_regen_bonus = 0; // Bonus HP-Regeneration pro Runde
         this.completedQuests = []; // Verfolgt abgeschlossene Quests
         this.achievements = []; // Array für freigeschaltete Achievements
 
@@ -361,16 +371,19 @@ export default class Spieler {
     }
 
     check_levelup() {
-        if (this.xp >= this.xp_needed) {
+        let levelsGained = 0;
+        while (this.xp >= this.xp_needed) {
             this.level += 1;
             this.xp -= this.xp_needed;
             this.xp_needed = Math.floor(this.xp_needed * 1.5);
-            // Nur Heilung, Steigerungen passieren im Skill-Menü
-            this.hp = this.max_hp; // Full HP on level up
-            this.ap = this.max_ap; // AP regenerieren beim Level-Up
-            return true;
+            levelsGained++;
         }
-        return false;
+        if (levelsGained > 0) {
+            this.hp = this.max_hp;
+            this.ap = this.max_ap;
+            return levelsGained; // Gibt die Anzahl der gewonnenen Level zurück
+        }
+        return 0;
     }
 
     zeige_status() {

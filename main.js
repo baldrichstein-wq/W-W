@@ -76,10 +76,6 @@ async function spielStarten() {
     const logPanel = document.getElementById('log-panel');
     if (logPanel) logPanel.style.backgroundImage = "url('img/Dungon-Eingang.png')";
 
-    console.log("=".repeat(50));
-    console.log("   DUNGEONS");
-    console.log("=".repeat(50));
-
     const rassenListe = [
         "Mensch", "Ork", "Zwerg", "Elf", "Goblin"
     ];
@@ -147,7 +143,16 @@ async function spielStarten() {
 
     // Dynamische Erstellung der Spieler-Karten in der UI basierend auf der Teamgröße
     const statsPanel = document.getElementById('stats-panel');
+    let rightPanel = document.getElementById('right-panel');
+    if (!rightPanel) {
+        rightPanel = document.createElement('div');
+        rightPanel.id = 'right-panel';
+        document.getElementById('game-container').appendChild(rightPanel);
+    }
+
     statsPanel.innerHTML = ''; // Vorherige Platzhalter leeren
+    rightPanel.innerHTML = '';
+
     helden.forEach((h, i) => {
         const card = document.createElement('div');
         card.className = 'player-card';
@@ -156,7 +161,13 @@ async function spielStarten() {
             <h3>${h.name}</h3>
             <div id="p${i+1}-status" class="status-text">Held wird bereitgemacht...</div>
         `;
-        statsPanel.appendChild(card);
+        
+        // Verteilung: Erste Hälfte links, zweite Hälfte rechts
+        if (i < Math.ceil(helden.length / 2)) {
+            statsPanel.appendChild(card);
+        } else {
+            rightPanel.appendChild(card);
+        }
     });
 
     // Prüfe auf Klassensynergien, bevor das Abenteuer startet
@@ -255,7 +266,7 @@ async function spielStarten() {
         
         // Die Labyrinthebene (7) generiert deutlich mehr Räume (15-25).
         // Der Endboss (15) hat nur einen Raum.
-        const raumAnzahl = (ebene === 15) ? 1 : (ebene === 7 ? randomRange(15, 25) : randomRange(7, 15));
+        const raumAnzahl = (ebene === 14) ? 1 : (ebene === 15 ? randomRange(3, 5) : (ebene === 7 ? randomRange(15, 25) : randomRange(7, 15)));
 
         let raetselMeisterErschienen = false;
         for (let raum = 1; raum <= raumAnzahl; raum++) {
@@ -264,6 +275,11 @@ async function spielStarten() {
 
             const brauchtFackel = [3, 7, 13].includes(ebene);
             let imDunkeln = brauchtFackel;
+
+            if (ebene === 15) { // Ebene 15 ist friedlich
+                await Story.castleInteraction(helden);
+                continue; // Keine Monster, keine Schatzsuche, keine Rätselmeister
+            }
 
             if (brauchtFackel) {
                 // Erst prüfen, ob ein Barde magisches Licht aktiv hat
@@ -306,11 +322,6 @@ async function spielStarten() {
                     }
                 }
                 }
-            }
-
-            if (ebene === 15) {
-                await printSlow("Die Realität selbst scheint hier zu zerreißen. Vor euch liegt nur noch ein gewaltiger Abgrund, in dem das Ende aller Welten auf euch wartet...");
-                continue;
             }
 
             // Spezial-Logik für Sackgassen in der Labyrinthebene (Ebene 7)
@@ -515,7 +526,7 @@ async function spielStarten() {
         }
 
         let targetMonster;
-        if (ebene === 15) {
+        if (ebene === 14) { // Endboss ist jetzt auf Ebene 14
             const lastChampion = JSON.parse(localStorage.getItem('dungeon_champion'));
             
             if (lastChampion) {
@@ -529,7 +540,7 @@ async function spielStarten() {
                 await question("Drückt Enter, um das Schicksal der Welt zu entscheiden...");
                 targetMonster = new Monster("Weltenfresser (BOSS)", 220, 14, 18, 500, 1000, { Feuer: 0.8, Eis: 0.8, Blitz: 0.8, Säure: 0.8, Gift: 0.8, Energie: 0.8, Physisch: 0.8, Heilig: 0.8, Schall: 0.8 }); // Resistent gegen alle Elemente
             }
-        } else {
+        } else if (ebene < 14) { // Mini-Bosse auf Ebenen 1-13
             await printSlow(`\n⚠️ Achtung! Der Wächter von Ebene ${ebene} stellt sich euch in den Weg!`);
             const miniBossNamen = ebene === 1
                 ? ["Uralter Waldschrat", "Schattenritter", "Feuer-Elementar", "Untoter Hauptmann", "Gorgone", "Eisen-Golem", "Knochen-Drache"]
@@ -576,7 +587,7 @@ async function spielStarten() {
             );
         }
 
-        if (!await Combat.teamKampf(helden, targetMonster, imDunkelnBoss, ebene)) return; // Game Over Abbruch
+        if (ebene < 15 && !await Combat.teamKampf(helden, targetMonster, imDunkelnBoss, ebene)) return; // Game Over Abbruch (Ebene 15 hat keinen Boss)
 
         // Barden-Buff Entfernung nach Ebene 1
         if (ebene === 1 && bardenLiedGespielt) {
@@ -591,7 +602,7 @@ async function spielStarten() {
             await printSlow("\n🎶 Der Nachhall des Bardenliedes verblasst... Der Buff ist abgelaufen.");
         }
 
-        if (ebene === 14) {
+        if (ebene === 14) { // Secret Ebene Logik nach Ebene 14 (Boss)
             // --- SECRET EBENE LOGIK ---
             const hatSiegel = helden.some(h => h.inventar.some(it => it.name === "Goldener Siegelring"));
             
@@ -618,7 +629,7 @@ async function spielStarten() {
                 }
             }
 
-            await printSlow("\n✨ Ein gleißendes Portal öffnet sich und zieht euch zurück in die Welt des Lichts...");
+            await printSlow("\n✨ Ein gleißendes Portal öffnet sich und zieht euch zurück in die Welt des Lichts... zur Burg!");
             await question("Drückt Enter, um zur Siegerehrung zu gelangen...");
 
             console.log("\n" + "★".repeat(50));
@@ -683,30 +694,38 @@ async function spielStarten() {
                 : helden[0].name;
             await printSlow(`${namen} werden als Retter des Reiches in die Geschichte eingehen!`);
             console.log("★".repeat(50));
-            return; // Spiel erfolgreich beendet
+            
+            const endWahl = await question("\nWas möchtet ihr tun?\n1. Ein neues Abenteuer beginnen\n2. Das Spiel beenden\nWahl: ");
+            if (endWahl === "1") {
+                location.reload();
+            } else {
+                document.body.innerHTML = `
+                    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; background: #1a0f0a; color: #d4af37; font-family: 'Cinzel', serif; text-align: center; padding: 40px;">
+                        <h1 style="color: #b22222; font-size: 3.5em; margin-bottom: 20px; text-shadow: 0 0 20px rgba(178, 34, 34, 0.5);">DANKE FÜR'S SPIELEN!</h1>
+                        <p style="font-size: 1.8em; line-height: 1.6; max-width: 800px; color: #f5e6d3;">Eure Taten in der Burg wurden in die Chroniken der Welt aufgenommen. Danke, dass ihr das Spiel gespielt habt!</p>
+                        <div style="margin-top: 50px; border-top: 1px solid #d4af37; padding-top: 20px; width: 200px;">
+                            <button onclick="location.reload()" style="background: none; border: 1px solid #d4af37; color: #d4af37; padding: 10px 20px; cursor: pointer; font-family: 'Cinzel';">Hauptmenü</button>
+                        </div>
+                    </div>`;
+            }
+            return; 
         }
+        // Loot und Shop nach Mini-Bossen (Ebenen 1-13)
+        if (ebene < 14) { 
+            await Story.bossLootGeben(helden);
+            await Story.shopBesuch(helden, true);
+            await Story.checkQuests(helden, { type: 'inventory' });
+            updateUI(helden, null, null, ebene, "Sieg", "✓");
 
-        await Story.bossLootGeben(helden);
-        await Story.shopBesuch(helden, true);
-        await Story.checkQuests(helden, { type: 'inventory' });
-        updateUI(helden, null, null, ebene, "Sieg", "✓");
-
-        await printSlow(`\n🌟 Ebene ${ebene} abgeschlossen! Die Treppe nach unten ist frei.`);
-        if (ebene < 14) {
+            await printSlow(`\n🌟 Ebene ${ebene} abgeschlossen! Die Treppe nach unten ist frei.`);
             let interaktion = true;
-            while (interaktion) {
+            while (interaktion) { // Interaktionsschleife für normale Ebenen
                 const canCraft = helden.some(h => ["tueftler", "alchemist"].includes(h.klasse.toLowerCase()));
                 const msg = canCraft ? "\n(C) Crafting | (V) Vorräte | (Enter) Nächste Ebene: " : "\n(V) Vorräte nutzen | (Enter) Nächste Ebene: ";
                 const wahl = (await question(msg)).toLowerCase();
-                
-                if (canCraft && wahl === 'c') {
-                    await Story.craftingMenue(helden);
-                    await Story.checkQuests(helden, { type: 'inventory' });
-                } else if (wahl === 'v') {
-                    await Story.vorraeteNutzen(helden);
-                } else {
-                    interaktion = false;
-                }
+                if (canCraft && wahl === 'c') { await Story.craftingMenue(helden); await Story.checkQuests(helden, { type: 'inventory' }); }
+                else if (wahl === 'v') { await Story.vorraeteNutzen(helden); }
+                else { interaktion = false; }
                 updateUI(helden, null, null, ebene, "Vorbereitung", "Abstieg");
             }
         }

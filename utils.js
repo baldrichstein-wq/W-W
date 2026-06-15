@@ -1,3 +1,4 @@
+import { hofnarr } from './story.js';
 // Brücke zwischen Konsole und Browser-UI
 // Umleitung von console.log in das Game Log Panel
 const originalLog = console.log;
@@ -123,13 +124,83 @@ export function randomRange(min, max) {
     return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
+const rassenIcons = {
+    "mensch": "👤",
+    "ork": "👹",
+    "zwerg": "⚒️",
+    "elf": "🧝",
+    "goblin": "🐸"
+};
+
+const klassenIcons = {
+    "krieger": "⚔️",
+    "magier": "🧙",
+    "schurke": "🔪",
+    "heiler": "⚕️",
+    "verteidiger": "🛡️",
+    "tueftler": "⚙️",
+    "alchemist": "⚗️",
+    "barde": "🎶",
+    "paladin": "⚜️",
+    "berserker": "🩸",
+    "erzmagier": "🔮",
+    "assassine": "🗡️"
+};
+
 export function wuerfelD20() {
     return randomRange(1, 20);
+}
+
+export function triggerGoldAnimation() {
+    const coinCount = 15;
+    for (let i = 0; i < coinCount; i++) {
+        const coin = document.createElement('div');
+        coin.className = 'gold-coin';
+        coin.innerHTML = '●';
+        
+        // Startposition in der unteren Bildschirmmitte (nahe dem Input)
+        const startX = window.innerWidth / 2;
+        const startY = window.innerHeight - 100;
+        
+        coin.style.left = `${startX}px`;
+        coin.style.top = `${startY}px`;
+        
+        // Zufällige Flugbahn
+        const dx = (Math.random() - 0.5) * 800; // Links oder Rechts
+        const dy = -(Math.random() * 500 + 150); // Nach oben
+        
+        coin.style.setProperty('--dx', `${dx}px`);
+        coin.style.setProperty('--dy', `${dy}px`);
+        
+        const duration = 0.6 + Math.random() * 0.7;
+        coin.style.animation = `coin-fly ${duration}s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards`;
+        
+        document.body.appendChild(coin);
+        setTimeout(() => coin.remove(), duration * 1000);
+    }
 }
 
 let lastEbene = "-";
 let lastRaum = "-";
 let lastMax = "-";
+
+const ebenenDetails = {
+    1: { name: "Der flüsternde Wald", icon: "🌲" },
+    2: { name: "Die verfallenen Ruinen", icon: "🏚️" },
+    3: { name: "Der vergessene Friedhof", icon: "🪦" },
+    4: { name: "Der modrige Sumpf", icon: "☣️" },
+    5: { name: "Die giftigen Pilzwälder", icon: "🍄" },
+    6: { name: "Die überfluteten Kavernen", icon: "💧" },
+    7: { name: "Das endlose Labyrinth", icon: "🌀" },
+    8: { name: "Die strahlenden Kristallhöhlen", icon: "💎" },
+    9: { name: "Die gefrorenen Einöden", icon: "❄️" },
+    10: { name: "Die brodelnden Magmaflüsse", icon: "🔥" },
+    11: { name: "Die pforten der Hölle", icon: "👿" },
+    12: { name: "Die himmlischen Sphären", icon: "✨" },
+    13: { name: "Die absolute Dunkelheit", icon: "🌑" },
+    14: { name: "Der Aufstieg zum Gipfel", icon: "🌋" },
+    15: { name: "Die majestätische Burg", icon: "🏰" }
+};
 
 export function updateUI(helden, monster = null, monsterStatus = null, ebene = null, raum = null, raumAnzahl = null) {
     const criticalHpSound = document.getElementById('critical-hp-sound');
@@ -165,8 +236,32 @@ export function updateUI(helden, monster = null, monsterStatus = null, ebene = n
         const isComplete = progressPercent === 100;
         const completeClass = isComplete ? 'progress-complete' : '';
 
+        // Calculate total completed quests
+        let totalCompletedQuests = 0;
+        helden.forEach(h => {
+            totalCompletedQuests += h.completedQuests.length;
+        });
+
+        // Pippin UI Anzeige
+        let jesterHtml = "";
+        if (hofnarr.active && !hofnarr.completed && hofnarr.hp > 0) {
+            const jHpPercent = (hofnarr.hp / hofnarr.max_hp) * 100;
+            jesterHtml = `
+                <div style="margin-top: 10px; padding: 5px; border: 1px dashed var(--accent-color); background: rgba(0,0,0,0.2);">
+                    <small>🤡 Begleiter: ${hofnarr.name}</small>
+                    <div class="progress-bar" style="height: 6px;">
+                        <div class="progress-fill hp-fill" style="width: ${jHpPercent}%"></div>
+                    </div>
+                    <small style="font-size: 0.7em;">HP: ${hofnarr.hp}/${hofnarr.max_hp}</small>
+                </div>
+            `;
+        } else if (hofnarr.active && hofnarr.hp <= 0) {
+            jesterHtml = `<div style="color: var(--header-color); font-size: 0.7em; margin-top: 5px;">💀 Pippin wurde besiegt.</div>`;
+        }
+
+        const details = ebenenDetails[lastEbene] || { name: `Ebene ${lastEbene}`, icon: "🏰" };
         progressDiv.innerHTML = `
-            <h3 style="margin:0; font-size: 1.2em; color:var(--accent-color);">🏰 EBENE ${lastEbene}</h3>
+            <h3 style="margin:0; font-size: 1.1em; color:var(--accent-color);">${details.icon} ${details.name.toUpperCase()}</h3>
             <div style="margin-top:5px; font-family: 'Cinzel', serif; font-size: 0.9em;">📍 Raum: ${lastRaum} / ${lastMax}</div>
             <div class="progress-bar" style="margin-top: 8px; height: 8px; background-color: rgba(0,0,0,0.4); border: 1px solid var(--border-color);">
                 <div class="progress-fill ${completeClass}" style="width: ${progressPercent}%; background: linear-gradient(to right, #d4af37, #f2c057); box-shadow: 0 0 5px rgba(212, 175, 55, 0.5); transition: width 0.5s ease-in-out;"></div>
@@ -296,7 +391,9 @@ export function updateUI(helden, monster = null, monsterStatus = null, ebene = n
             if (pEffects.length > 0) playerStatusHtml = `<div class="status-container">${pEffects.join("")}</div>`;
 
             statusDiv.innerHTML = `
-                <strong>${h.name}</strong> (${h.klasse}) - <span class="rare-item">Lvl ${h.level}</span><br>
+                <strong>${h.name}</strong> 
+                ${rassenIcons[h.rasse.toLowerCase()] || '❓'} ${klassenIcons[h.klasse.toLowerCase()] || '❓'} 
+                - <span class="rare-item">Lvl ${h.level}</span><br>
                 ${playerStatusHtml}
                 💰 Gold: ${h.gold} | ⚔️ ATK: ${h.atk_bonus}<br>
                 <div class="bar-container">
