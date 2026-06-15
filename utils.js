@@ -35,6 +35,16 @@ export function formatAbilityDesc(ab, held = null) {
         displayedDmg = held.ruestung_klasse() + held.atk_bonus;
     }
 
+    // Sonderlogik für Präzisionsschlag (Skalierung anzeigen)
+    if (held && ab.name === "Präzisionsschlag") {
+        displayedDmg = `${ab.schaden + (held.grund_gesch * 2)} (GES-Bonus inkl.)`;
+    }
+
+    // Sonderlogik für Waffengewalt (Skalierung anzeigen)
+    if (held && ab.name === "Waffengewalt") {
+        displayedDmg = `${ab.schaden + (held.atk_bonus * 3)} (STR-Bonus inkl.)`;
+    }
+
     if (displayedDmg) parts.push(`💥 ${displayedDmg} Dmg`);
     if (ab.element) parts.push(`[${ab.element}]`);
     if (ab.heilung) parts.push(`💚 ${ab.heilung} HP`);

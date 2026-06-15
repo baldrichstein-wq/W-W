@@ -394,7 +394,8 @@ const KLASSEN_ABILITIES = {
         { name: "Berserker-Modus", ap_kosten: 25, atk_buff: 12, def_buff: -5 },
         { name: "Schildwall", ap_kosten: 20, def_buff: 10 },
         { name: "Drachenhieb", ap_kosten: 30, schaden: 35, element: "Feuer" },
-        { name: "Unaufhaltsam", ap_kosten: 0, heilung: 15, ap_regen: 5 }
+        { name: "Unaufhaltsam", ap_kosten: 0, heilung: 15, ap_regen: 5 },
+        { name: "Waffengewalt", ap_kosten: 20, schaden: 10, element: "Physisch" }
     ],
     "magier": [
         { name: "Meteor", ap_kosten: 40, schaden: 50, element: "Feuer" },
@@ -418,7 +419,8 @@ const KLASSEN_ABILITIES = {
         { name: "Nierenhieb", ap_kosten: 18, schlaf_dauer: 1 },
         { name: "Adrenalinrausch", ap_kosten: 0, ap_regen: 10 },
         { name: "Ausweidertanz", ap_kosten: 30, schaden: 32 },
-        { name: "Meisterschütze", ap_kosten: 22, schaden: 28 }
+        { name: "Meisterschütze", ap_kosten: 22, schaden: 28 },
+        { name: "Präzisionsschlag", ap_kosten: 20, schaden: 12, element: "Physisch" }
     ],
     "heiler": [
         { name: "Heiliger Regen", ap_kosten: 25, heilung: 30, element: "Heilig" },
@@ -645,30 +647,51 @@ async function secretEbeneIntro() {
 }
 
 async function levelUpMenu(held) {
+    let skillPunkte = 5;
     await printSlow(`\n✨ --- LEVEL UP: ${held.name} (Level ${held.level}) ---`);
+    await printSlow(`Ihr erhaltet <span class="rare-item">${skillPunkte} Skill-Punkte</span> zum freien Verteilen auf eure Attribute!`);
 
-    if (held.isKI) {
-        const wahl = randomRange(1, 4);
-        if (wahl === 1) { held.max_hp += 10; held.hp = held.max_hp; await printSlow(`🤖 ${held.name} steigert Konstitution (+10 Max HP).`); }
-        else if (wahl === 2) { held.atk_bonus += 2; await printSlow(`🤖 ${held.name} steigert Stärke (+2 ATK).`); }
-        else if (wahl === 3) { held.def_bonus += 2; await printSlow(`🤖 ${held.name} steigert Verteidigung (+2 RK).`); }
-        else { held.max_ap += 10; held.ap = held.max_ap; await printSlow(`🤖 ${held.name} steigert Fokus (+10 Max AP).`); }
-    } else {
-        console.log("Wähle ein Attribut zum Steigern:");
-        console.log(`1. Konstitution (+10 Max HP | Aktuell: ${held.max_hp})`);
-        console.log(`2. Stärke (+2 ATK Bonus | Aktuell: ${held.atk_bonus})`);
-        console.log(`3. Verteidigung (+2 RK Bonus | Aktuell: ${held.def_bonus})`);
-        console.log(`4. Fokus (+10 Max AP | Aktuell: ${held.max_ap})`);
+    const attribute = {
+        "1": { name: "Konstitution", prop: "max_hp", gain: 5, label: "+5 Max HP" },
+        "2": { name: "Stärke", prop: "atk_bonus", gain: 1, label: "+1 ATK" },
+        "3": { name: "Verteidigung", prop: "def_bonus", gain: 1, label: "+1 RK" },
+        "4": { name: "Fokus", prop: "max_ap", gain: 5, label: "+5 Max AP" },
+        "5": { name: "Geschicklichkeit", prop: "grund_gesch", gain: 1, label: "+1 GES" }, // Neues Attribut
+        "6": { name: "Charisma", prop: "grund_cha", gain: 1, label: "+1 CHA" },
+        "7": { name: "Intelligenz", prop: "grund_int", gain: 1, label: "+1 INT" }
+    };
 
-        const wahl = await question("Wahl (1-4): ");
-        if (wahl === "1") { held.max_hp += 10; held.hp = held.max_hp; }
-        else if (wahl === "2") { held.atk_bonus += 2; }
-        else if (wahl === "3") { held.def_bonus += 2; }
-        else if (wahl === "4") { held.max_ap += 10; held.ap = held.max_ap; }
-        else { await printSlow("Ungültige Wahl, du erhältst automatisch +10 Max HP."); held.max_hp += 10; held.hp = held.max_hp; }
-        await printSlow("Attribut erfolgreich gesteigert!");
+    while (skillPunkte > 0) {
+        if (held.isKI) {
+            const keys = Object.keys(attribute);
+            const wahl = keys[randomRange(0, keys.length - 1)];
+            const attr = attribute[wahl];
+            held[attr.prop] += attr.gain;
+            if (attr.prop === "max_hp") held.hp += attr.gain;
+            if (attr.prop === "max_ap") held.ap += attr.gain;
+            skillPunkte--;
+            await printSlow(`🤖 ${held.name} investiert in ${attr.name}.`);
+        } else {
+            console.log(`\nVerfügbare Punkte: ${skillPunkte}`);
+            Object.entries(attribute).forEach(([key, attr]) => {
+                console.log(`${key}. ${attr.name} (${attr.label} | Aktuell: ${held[attr.prop]})`);
+            });
+
+            const wahl = await question("Was möchtest du steigern? ");
+            const attr = attribute[wahl];
+            if (attr) {
+                held[attr.prop] += attr.gain;
+                if (attr.prop === "max_hp") held.hp += attr.gain;
+                if (attr.prop === "max_ap") held.ap += attr.gain;
+                skillPunkte--;
+                await printSlow(`✅ ${attr.name} gesteigert!`);
+            } else {
+                await printSlow("❌ Ungültige Wahl.");
+            }
+        }
     }
 
+    await printSlow("Alle Punkte wurden erfolgreich investiert.");
     // Im Anschluss eine neue Fähigkeit wählen lassen
     await faehigkeitWaehlen(held);
 }

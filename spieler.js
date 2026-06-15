@@ -33,6 +33,7 @@ export default class Spieler {
         this.grund_cha = 0;
         this.grund_int = 0;
         this.grund_stealth = 0;
+        this.grund_gesch = 0; // Neues Attribut: Geschicklichkeit
         this.grund_will = 0;
 
         const rasseLower = rasse.toLowerCase().trim();
@@ -50,6 +51,7 @@ export default class Spieler {
         this.rasse_cha = 0;
         this.rasse_int = 0;
         this.rasse_stealth = 0;
+        this.rasse_gesch = 0; // Rassenbonus für Geschicklichkeit
         this.rasse_will = 0;
 
         if (rasseLower === "ork") {
@@ -59,7 +61,7 @@ export default class Spieler {
             this.rasse_ap = 0;
             this.rasse_mp = 0;
             this.rasse_sp = 0;
-            this.rasse_ini = 0;
+            this.rasse_ini = -1; // Orks sind langsamer
             this.rasse_gesch = 0;
             this.rasse_cha = 0;
             this.rasse_int = 0;
@@ -72,7 +74,7 @@ export default class Spieler {
             this.rasse_ap = 0;
             this.rasse_mp = 0;
             this.rasse_sp = 0;
-            this.rasse_ini = 0;
+            this.rasse_ini = 2; // Goblins sind flinker
             this.rasse_gesch = 0;
             this.rasse_cha = 0;
             this.rasse_int = 0;
@@ -85,7 +87,7 @@ export default class Spieler {
             this.rasse_ap = 0;
             this.rasse_mp = 0;
             this.rasse_sp = 0;
-            this.rasse_ini = 0;
+            this.rasse_ini = -2; // Zwerge sind behäbiger
             this.rasse_gesch = 0;
             this.rasse_cha = 0;
             this.rasse_int = 0;
@@ -98,7 +100,7 @@ export default class Spieler {
             this.rasse_ap = 0;
             this.rasse_mp = 0;
             this.rasse_sp = 0;
-            this.rasse_ini = 0;
+            this.rasse_ini = 1;
             this.rasse_gesch = 0;
             this.rasse_cha = 0;
             this.rasse_int = 0;
@@ -111,7 +113,7 @@ export default class Spieler {
             this.rasse_ap = 0;
             this.rasse_mp = 0;
             this.rasse_sp = 0;
-            this.rasse_ini = 0;
+            this.rasse_ini = 3; // Elfen sind sehr agil
             this.rasse_gesch = 0;
             this.rasse_cha = 0;
             this.rasse_int = 0;
@@ -130,6 +132,7 @@ export default class Spieler {
             this.atk_bonus = this.grund_atk + this.rasse_atk +3;
             this.def_bonus = this.grund_def + this.rasse_def +7;
             this.grund_cha = 0;
+            this.grund_gesch = 0;
             this.ausgeruestete_ruestung = new Item("Kettenhemd", "Ruestung", 14, null, "Standard-Schutz für Soldaten.");
             this.ausgeruestete_waffe = new Item("Eisenschwert", "Waffe", 6, null, "Ein solides Schwert aus geschmiedetem Eisen.");
             this.ausgeruestete_schild = new Item("Holzschild", "Schild", 2, null, "Ein einfacher Schild aus verstärktem Holz.");
@@ -147,6 +150,7 @@ export default class Spieler {
             this.atk_bonus = this.grund_atk + this.rasse_atk +4;
             this.def_bonus = this.grund_def + this.rasse_def +1;
             this.grund_cha = 2;
+            this.grund_gesch = 0;
             this.ausgeruestete_ruestung = new Item("Stoffrobe", "Ruestung", 10, null, "Eine einfache Robe, die den Fluss des Manas nicht behindert.");
             this.ausgeruestete_waffe = new Item("Zauberstab", "Waffe", 8, null, "Fokussiert die arkanenen Energien des Trägers.");
             this.abilities = [
@@ -163,6 +167,7 @@ export default class Spieler {
             this.atk_bonus = this.grund_atk +this.rasse_atk +5;
             this.def_bonus = this.grund_def + this.rasse_def +0;
             this.grund_cha = 1;
+            this.grund_gesch = 3; // Schurken sind geschickt
             this.ausgeruestete_ruestung = new Item("Lederrüstung", "Ruestung", 12);
             this.ausgeruestete_waffe = new Item("Dolch", "Waffe", 4);
             this.abilities = [
@@ -179,6 +184,7 @@ export default class Spieler {
             this.atk_bonus = this.grund_atk + this.rasse_atk + 0;
             this.def_bonus = this.grund_def + this.rasse_def + 5;
             this.grund_cha = 0;
+            this.grund_gesch = 0;
             this.ausgeruestete_ruestung = new Item("Plattenpanzer", "Ruestung", 16);
             this.ausgeruestete_waffe = new Item("Keule", "Waffe", 4);
             this.ausgeruestete_schild = new Item("Turmschild", "Schild", 4);
@@ -196,6 +202,7 @@ export default class Spieler {
             this.atk_bonus = this.grund_atk + this.rasse_atk + 0;
             this.def_bonus = this.grund_def + this.rasse_def +1;
             this.grund_cha = 2;
+            this.grund_gesch = 0;
             this.ausgeruestete_ruestung = new Item("Stoffrobe", "Ruestung", 10);
             this.ausgeruestete_waffe = new Item("Heilerstab", "Waffe", 3);
             this.abilities = [
@@ -212,6 +219,7 @@ export default class Spieler {
             this.atk_bonus = this.grund_atk + this.rasse_atk + 2;
             this.def_bonus = this.grund_def + this.rasse_def +1;
             this.grund_cha = 6;
+            this.grund_gesch = 0;
             this.ausgeruestete_ruestung = new Item("Stoffrobe", "Ruestung", 10);
             this.ausgeruestete_waffe = new Item("Laute", "Waffe", 4);
             this.abilities = [
@@ -228,6 +236,7 @@ export default class Spieler {
             this.atk_bonus = this.grund_atk + this.rasse_atk + 3;
             this.def_bonus = this.grund_def + this.rasse_def + 3;
             this.grund_cha = 1;
+            this.grund_gesch = 2;
             this.grund_int = 3;
             this.ausgeruestete_ruestung = new Item("Lederrüstung", "Ruestung", 12);
             this.ausgeruestete_waffe = new Item("Schraubenschlüssel", "Waffe", 5);
@@ -248,6 +257,7 @@ export default class Spieler {
             this.atk_bonus = this.grund_atk + this.rasse_atk + 2;
             this.def_bonus = this.grund_def + this.rasse_def + 3;
             this.grund_cha = 1;
+            this.grund_gesch = 1;
             this.grund_int = 4;
             this.ausgeruestete_ruestung = new Item("Lederschürze", "Ruestung", 11);
             this.ausgeruestete_waffe = new Item("Wurfbombe", "Waffe", 7);
@@ -268,12 +278,14 @@ export default class Spieler {
             this.max_hp = this.grund_hp + this.rasse_hp;
             this.atk_bonus = this.grund_atk + this.rasse_atk;
             this.def_bonus = this.grund_def + this.rasse_def;
+            this.grund_gesch = 0;
             this.grund_cha = 0;
             this.inventar.push(new Item("Altes Brot", "Gegenstand", 1));
         }
         
         // Korrektur des Typo und Initialisierung der AP
         this.grund_ap = 30; // Erhöht auf 30 (vorher 20)
+        this.grund_gesch += this.rasse_gesch; // Add racial bonus to base dexterity
         this.max_sp = 100; // Sicherstellen, dass Ultimates 100 benötigen
         this.max_ap = this.grund_ap + this.rasse_ap;
         this.grund_cha += this.rasse_cha;

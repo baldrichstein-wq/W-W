@@ -329,7 +329,10 @@ export async function teamKampf(helden, monster, imDunkeln = false) {
                 held.sp = Math.min(held.max_sp, held.sp + 10);
 
                 const { roll, natural } = wert;
-                const isCrit = natural === 20;
+                // Kritische Trefferchance basierend auf Geschicklichkeit
+                // Jede 5 Punkte Geschicklichkeit reduzieren den benötigten natürlichen Wurf für einen kritischen Treffer um 1, bis zu einem Minimum von 15.
+                const critThreshold = Math.max(15, 20 - Math.floor(held.grund_gesch / 5)); 
+                const isCrit = natural >= critThreshold;
                 const isFumble = natural === 1;
 
                 if (isFumble) {
@@ -418,6 +421,24 @@ export async function teamKampf(helden, monster, imDunkeln = false) {
                     // Sonderlogik für Schildschlag/Schildstoß (RK + ATK)
                     if (ability.name === "Schildschlag" || ability.name === "Schildstoß") {
                         schadenTotal = held.ruestung_klasse() + held.atk_bonus;
+                    }
+
+                    // Sonderlogik für Präzisionsschlag (Skaliert mit GES + erhöhter Crit-Schaden)
+                    if (ability.name === "Präzisionsschlag") {
+                        const critWurf = wuerfelD20();
+                        const critThreshold = Math.max(15, 20 - Math.floor(held.grund_gesch / 5));
+                        const istCrit = critWurf >= critThreshold;
+                        
+                        schadenTotal = ability.schaden + (held.grund_gesch * 2);
+                        if (istCrit) {
+                            schadenTotal = Math.floor(schadenTotal * 2.5); // 2.5x Crit-Schaden
+                            await printSlow(`<span class="log-critical">🎯 PRÄZISIONS-VOLTREFFER! 🎯</span>`);
+                        }
+                    }
+
+                    // Sonderlogik für Waffengewalt (Skaliert stark mit Stärke/ATK)
+                    if (ability.name === "Waffengewalt") {
+                        schadenTotal = ability.schaden + (held.atk_bonus * 3);
                     }
 
                     monster.hp -= schadenTotal;
