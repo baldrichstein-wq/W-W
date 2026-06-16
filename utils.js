@@ -16,6 +16,10 @@ console.log = (...args) => { // This override is for general console.log calls, 
     logContainer.scrollTop = logContainer.scrollHeight;
 };
 
+export let config = {
+    textSpeed: 300
+};
+
 export async function printSlow(text, className = null) {
     const logContent = document.getElementById('game-log');
     const p = document.createElement('p');
@@ -24,7 +28,7 @@ export async function printSlow(text, className = null) {
     if (className) p.classList.add(className);
     logContent.appendChild(p);
     logContent.scrollTop = logContent.scrollHeight;
-    return new Promise(resolve => setTimeout(resolve, 300));
+    return new Promise(resolve => setTimeout(resolve, config.textSpeed));
 }
 
 export function formatAbilityDesc(ab, held = null) {
@@ -383,6 +387,7 @@ export function updateUI(helden, monster = null, monsterStatus = null, ebene = n
             if (h.bardenLichtDauer > 0) pEffects.push(`<div class="status-badge badge-buff" title="Magisches Licht: Erhellt dunkle Orte (${h.bardenLichtDauer} R.)">🌟 Licht</div>`);
             if (h.heilerLichtDauer > 0) pEffects.push(`<div class="status-badge badge-buff" title="Heiliges Leuchten: Erhellt dunkle Orte (${h.heilerLichtDauer} R.)">✨ Licht</div>`);
             if (h.hasGedankenschaerfe) pEffects.push(`<div class="status-badge badge-buff" title="Gedankenschärfe: Chance auf AP-Rückerstattung bei Intelligenz-Zaubern">🧠 Gedankenschärfe</div>`);
+            if (h.tavernBanRooms > 0) pEffects.push(`<div class="status-badge badge-debuff" title="Hausverbot: Der Wirt lässt dich nicht rein (Noch ${h.tavernBanRooms} Räume)">🚫 Verbannt</div>`);
             
             h.achievements.forEach(ach => {
                 pEffects.push(`<div class="status-badge badge-achievement" title="Errungenschaft: ${ach}">🏆 ${ach}</div>`);

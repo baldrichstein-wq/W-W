@@ -266,12 +266,29 @@ export async function teamKampf(helden, monster, imDunkeln = false, ebene = null
             const monster_wurf = m_roll + monster.atk;
             
             if (monster_wurf >= ziel.ruestung_klasse() || m_roll === 20) {
-                let schaden = randomRange(5, 12);
-                if (m_roll === 20) schaden *= 2;
-                ziel.hp = Math.max(0, ziel.hp - schaden);
-                ziel.totalDamageTaken += schaden;
-                ziel.damageSources[monster.name] = (ziel.damageSources[monster.name] || 0) + schaden;
-                await printSlow(`🩸 <span class="log-critical">HINTERHALT!</span> ${ziel.name} wird im Dunkeln überrascht und verliert ${schaden} HP!`);
+                // Ausweichmanöver-Check (Hinterhalt)
+                const dodgeRoll = wuerfelD20();
+                const dodgeThreshold = (m_roll === 20) ? 25 : 20; // Kritische Hinterhalte sind schwerer auszuweichen
+                if (dodgeRoll + ziel.grund_gesch >= dodgeThreshold) {
+                    await printSlow(`✨ <span class="hp-gain">AUSGEWICHEN!</span> ${ziel.name} entgeht dem Hinterhalt durch eine blitzschnelle Reaktion!`);
+                    // Schurken-Spezial: Gegenangriff bei erfolgreichem Ausweichen
+                    const istSchurke = ["schurke", "assassine", "schattenläufer"].includes(ziel.klasse.toLowerCase());
+                    if (istSchurke) {
+                        const waffen_schaden = ziel.ausgeruestete_waffe ? ziel.ausgeruestete_waffe.wert : 2;
+                        const gegenangriffSchaden = Math.max(1, Math.floor((randomRange(1, waffen_schaden) + ziel.level) / 2)); // Halber Schaden
+                        monster.hp -= gegenangriffSchaden;
+                        monster.lastDmg = gegenangriffSchaden;
+                        ziel.totalDamageDealt += gegenangriffSchaden;
+                        await printSlow(`🔪 ${ziel.name} nutzt die Gelegenheit für einen schnellen Gegenangriff und fügt dem ${monster.name} <span class="hp-gain">${gegenangriffSchaden} Schaden</span> zu!`);
+                    }
+                } else {
+                    let schaden = randomRange(5, 12);
+                    if (m_roll === 20) schaden *= 2;
+                    ziel.hp = Math.max(0, ziel.hp - schaden);
+                    ziel.totalDamageTaken += schaden;
+                    ziel.damageSources[monster.name] = (ziel.damageSources[monster.name] || 0) + schaden;
+                    await printSlow(`🩸 <span class="log-critical">HINTERHALT!</span> ${ziel.name} wird im Dunkeln überrascht und verliert ${schaden} HP!`);
+                }
             } else {
                 await printSlow(`🛡️ ${ziel.name} hört ein Rascheln und blockt den Angriff im Dunkeln gerade noch ab!`);
             }
@@ -296,6 +313,17 @@ export async function teamKampf(helden, monster, imDunkeln = false, ebene = null
         await printSlow(`(Das Monster skaliert mit ${numPlayers} Helden: HP: ${monster.hp}, ATK: ${monster.atk}, RK: ${monster.rk})`);
     }
     
+    // Apply global difficulty settings
+    const difficultyModifiers = GAME_BALANCE.DIFFICULTY_SETTINGS[GAME_SETTINGS.DIFFICULTY];
+    monster.hp = Math.floor(monster.hp * difficultyModifiers.monster_hp_multiplier);
+    monster.max_hp = monster.hp; // Update max_hp as well
+    monster.atk = Math.floor(monster.atk * difficultyModifiers.monster_atk_multiplier);
+    monster.rk = Math.floor(monster.rk * difficultyModifiers.monster_rk_multiplier);
+    monster.xp = Math.floor(monster.xp * difficultyModifiers.monster_xp_multiplier);
+    monster.gold = Math.floor(monster.gold * difficultyModifiers.monster_gold_multiplier);
+
+    await printSlow(`(Schwierigkeit: ${GAME_SETTINGS.DIFFICULTY.toUpperCase()} angewendet. Monsterwerte angepasst.)`);
+
     while (monster.hp > 0 && helden.some(h => h.hp > 0)) {
         // AP-Regeneration für alle lebenden Helden am Rundenanfang
         await printSlow("\n--- RUNDENBEGINN ---");
@@ -629,15 +657,33 @@ export async function teamKampf(helden, monster, imDunkeln = false, ebene = null
                 ];
                 await printSlow(monsterSprueche[randomRange(0, monsterSprueche.length - 1)]);
             } else if (monster_wurf >= ziel.ruestung_klasse() || m_isCrit) {
-                let schaden = randomRange(5, 12);
-                if (m_isCrit) {
-                    schaden *= 2;
-                    await printSlow(`<span class="log-critical">💀 KRITISCHER GEGNER-TREFFER! 💀</span>`);
+                    // Ausweichmanöver-Check (Regulärer Angriff)
+                    const dodgeRoll = wuerfelD20();
+                    const dodgeThreshold = m_isCrit ? 25 : 20; // Crits erfordern einen Wurf von 25+
+                    
+                    if (dodgeRoll + ziel.grund_gesch >= dodgeThreshold) {
+                        await printSlow(`✨ <span class="hp-gain">AUSGEWICHEN!</span> ${ziel.name} macht einen geschmeidigen Seitenschritt und lässt den Angriff ins Leere laufen! (Wurf: ${dodgeRoll} + GES: ${ziel.grund_gesch})`);
+                        // Schurken-Spezial: Gegenangriff bei erfolgreichem Ausweichen
+                        const istSchurke = ["schurke", "assassine", "schattenläufer"].includes(ziel.klasse.toLowerCase());
+                        if (istSchurke) {
+                            const waffen_schaden = ziel.ausgeruestete_waffe ? ziel.ausgeruestete_waffe.wert : 2;
+                            const gegenangriffSchaden = Math.max(1, Math.floor((randomRange(1, waffen_schaden) + ziel.level) / 2)); // Halber Schaden
+                            monster.hp -= gegenangriffSchaden;
+                            monster.lastDmg = gegenangriffSchaden;
+                            ziel.totalDamageDealt += gegenangriffSchaden;
+                            await printSlow(`🔪 ${ziel.name} nutzt die Gelegenheit für einen schnellen Gegenangriff und fügt dem ${monster.name} <span class="hp-gain">${gegenangriffSchaden} Schaden</span> zu!`);
+                        }
+                    } else {
+                        let schaden = randomRange(5, 12);
+                        if (m_isCrit) {
+                            schaden *= 2;
+                            await printSlow(`<span class="log-critical">💀 KRITISCHER GEGNER-TREFFER! 💀</span>`);
+                        }
+                        ziel.hp = Math.max(0, ziel.hp - schaden);
+                        ziel.totalDamageTaken += schaden;
+                        ziel.damageSources[monster.name] = (ziel.damageSources[monster.name] || 0) + schaden;
+                        await printSlow(`🩸 ${m_isCrit ? "KRIT! " : ""}${ziel.name} wird getroffen und verliert ${schaden} HP!`);
                 }
-                ziel.hp = Math.max(0, ziel.hp - schaden);
-                ziel.totalDamageTaken += schaden;
-                ziel.damageSources[monster.name] = (ziel.damageSources[monster.name] || 0) + schaden;
-                await printSlow(`🩸 ${m_isCrit ? "KRIT! " : ""}${ziel.name} wird getroffen und verliert ${schaden} HP!`);
             } else {
                 await printSlow(`🛡️ ${ziel.name} blockt den Angriff erfolgreich ab!`);
             }

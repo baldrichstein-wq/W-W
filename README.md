@@ -48,6 +48,13 @@ Sobald ein Held Stufe 15 erreicht, kann er eine Meisterschaft wählen:
 *   **Skalierende Fähigkeiten:** Talente wie *Waffengewalt* (Stärke) oder *Arkane Überladung* (Intelligenz) werden mit deinen Stats mächtiger.
 *   **Team-Synergien:** Bestimmte Klassenkombinationen schalten mächtige Team-Fähigkeiten frei (z.B. Krieger + Heiler = "Heiliger Ansturm").
 *   **Krit-System:** Geschicklichkeit senkt die Schwelle für kritische Treffer (bis zu 15+).
+*   **Ausweichmanöver:** Helden mit hoher Geschicklichkeit können feindlichen Angriffen komplett ausweichen.
+*   **Schurken-Gegenangriff:** Schurken können nach einem erfolgreichen Ausweichmanöver einen schnellen Gegenangriff mit halbem Schaden ausführen.
+
+### 5. Tavernen-Aktivitäten & Glücksspiel
+*   **Würfelspiel:** Setze dein Gold gegen den Wirt aufs Spiel.
+*   **Schurken-Spezial (Schummeln):** Charaktere wie Schurken oder Assassinen können versuchen, das Spiel mittels Geschicklichkeit zu manipulieren. 
+*   **Konsequenzen:** Ein misslungener Betrug führt zu empfindlichen Geldstrafen und einem zeitweiligen **Hausverbot**, das die lebenswichtige Regeneration in der Taverne blockiert.
 
 ### 5. UI & Atmosphäre
 *   **3-Spalten-Layout:** Helden-Statuskarten links und rechts, die Story und das Geschehen im Zentrum.
@@ -55,6 +62,10 @@ Sobald ein Held Stufe 15 erreicht, kann er eine Meisterschaft wählen:
 *   **Icons:** Rassen und Klassen werden durch Emojis dargestellt für maximale Übersichtlichkeit.
 
 ## 🛠️ Letzte Änderungen (Patch-Notes)
+*   **Schummel-System:** Schurken können nun beim Würfeln schummeln (skaliert mit Geschicklichkeit).
+*   **Hausverbot-Mechanik:** Wer beim Betrug erwischt wird, verliert Gold und wird für 3 Räume aus der Taverne verbannt.
+*   **Ausweich-Mechanik:** Geschicklichkeit ermöglicht es Helden, feindlichen Angriffen auszuweichen.
+*   **Schurken-Gegenangriff:** Schurken führen nach erfolgreichem Ausweichen einen Gegenangriff aus.
 *   **Ebene 15 & Endgame:** Ebene 14 ist nun das Boss-Finale. Ebene 15 ist eine friedliche Burg mit König Theron, einem Shop und einer Taverne.
 *   **Dankesseite:** Nach dem Sieg kann zwischen einem Neustart oder dem Beenden des Spiels gewählt werden (inkl. dedizierter "Danke"-Seite).
 *   **Quest-Persistence:** Quests werden nun korrekt als [ABGESCHLOSSEN] markiert und geben Gold sowie XP.

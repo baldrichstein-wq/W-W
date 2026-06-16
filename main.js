@@ -1,37 +1,49 @@
 import Spieler from './spieler.js';
 import Monster from './monster.js'; 
 import * as Combat from './combat.js';
-import { question, randomRange, printSlow, wuerfelD20, updateUI } from './utils.js';
+import { question, randomRange, printSlow, wuerfelD20, updateUI, config, formatAbilityDesc } from './utils.js';
 import * as Story from './story.js';
+import { RASSEN_LISTE, KLASSEN_LISTE, CLASS_INFO, STARTING_ABILITIES } from './config.js';
 
 // --- META LOGIC ---
 function zeigeHallOfFame() {
     const modal = document.getElementById('hof-modal');
     const listContainer = document.getElementById('hof-list');
-    const history = JSON.parse(localStorage.getItem('dungeon_history')) || [];
+    
+    if (!modal || !listContainer) {
+        console.error("Ruhmeshalle-Modal oder Liste nicht gefunden!");
+        return;
+    }
+
+    let history = [];
+    try {
+        history = JSON.parse(localStorage.getItem('dungeon_history')) || [];
+    } catch (e) {
+        history = [];
+    }
     
     listContainer.innerHTML = '';
     modal.style.display = 'block';
 
     if (history.length === 0) {
         listContainer.innerHTML = '<p style="text-align:center;">Noch keine Legenden verzeichnet...</p>';
-    } else {
+    } else if (Array.isArray(history)) {
         history.sort((a, b) => {
-            const scoreA = (a.level || 0) * 1000 + (a.xp || 0);
-            const scoreB = (b.level || 0) * 1000 + (b.xp || 0);
+            const scoreA = (parseInt(a.level) || 0) * 1000 + (parseInt(a.xp) || 0);
+            const scoreB = (parseInt(b.level) || 0) * 1000 + (parseInt(b.xp) || 0);
             return scoreB - scoreA;
         });
         history.forEach((h, i) => {
-            const medal = i === 0 ? "🥇" : (i === 1 ? "🥈" : "🥉");
+            const medal = i === 0 ? "🥇 " : (i === 1 ? "🥈 " : (i === 2 ? "🥉 " : ""));
             const entry = document.createElement('div');
             entry.className = 'hof-entry';
             entry.innerHTML = `
                 <div>
-                    <span style="font-size: 1.2em;">${medal} ${i + 1}.</span> 
-                    <strong class="rare-item">${h.name}</strong> (${h.klasse})
+                    <span style="font-size: 1.2em;">${medal}${i + 1}.</span> 
+                    <strong class="rare-item">${h.name}</strong> (${h.klasse || 'Held'})
                 </div>
                 <div style="text-align: right;">
-                    Level ${h.level}<br><small>${h.datum}</small>
+                    Level ${h.level || 1} | ⚔️ ${h.dmg || 0} Schaden<br><small>${h.datum || '-'}</small>
                 </div>
             `;
             listContainer.appendChild(entry);
@@ -50,13 +62,22 @@ function resetChampion() {
 // Event Listener für Meta-Buttons
 document.addEventListener('DOMContentLoaded', () => {
     const hofBtn = document.getElementById('hof-btn');
+    const startHofBtn = document.getElementById('start-hof-btn');
+    const settingsBtn = document.getElementById('settings-btn');
     const resetBtn = document.getElementById('reset-btn');
-    const modal = document.getElementById('hof-modal');
-    const closeBtn = document.querySelector('.close-modal');
+    const hofModal = document.getElementById('hof-modal');
+    const settingsModal = document.getElementById('settings-modal');
+    const closeHof = document.querySelector('#hof-modal .close-modal');
+    const closeSettings = document.getElementById('close-settings');
     const brightnessSlider = document.getElementById('bg-brightness');
+    const speedSlider = document.getElementById('text-speed');
+    const speedVal = document.getElementById('text-speed-val');
+    const volumeSlider = document.getElementById('master-volume');
     const gameLog = document.getElementById('game-log');
 
     if (hofBtn) hofBtn.addEventListener('click', zeigeHallOfFame);
+    if (startHofBtn) startHofBtn.addEventListener('click', zeigeHallOfFame);
+    if (settingsBtn) settingsBtn.addEventListener('click', () => settingsModal.style.display = 'block');
     if (resetBtn) resetBtn.addEventListener('click', resetChampion);
     
     if (brightnessSlider && gameLog) {
@@ -66,74 +87,105 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    if (closeBtn) closeBtn.onclick = () => modal.style.display = 'none';
-    window.onclick = (e) => { if (e.target === modal) modal.style.display = 'none'; };
+    if (speedSlider && speedVal) {
+        speedSlider.addEventListener('input', (e) => {
+            config.textSpeed = parseInt(e.target.value);
+            speedVal.textContent = `${e.target.value}ms`;
+        });
+    }
+
+    if (volumeSlider) {
+        volumeSlider.addEventListener('input', (e) => {
+            const vol = e.target.value / 100;
+            const audios = document.querySelectorAll('audio');
+            audios.forEach(a => a.volume = vol);
+        });
+    }
+
+    if (closeHof) closeHof.onclick = () => hofModal.style.display = 'none';
+    if (closeSettings) closeSettings.onclick = () => settingsModal.style.display = 'none';
+    window.onclick = (e) => { 
+        if (e.target === hofModal) hofModal.style.display = 'none';
+        if (e.target === settingsModal) settingsModal.style.display = 'none';
+    };
 });
 
 // --- ENGINE ---
-async function spielStarten() {
-    // Hintergrundbild im Story-Feld setzen
+function updateClassPreview(playerNum, klasse) {
+    const previewDiv = document.getElementById(`p${playerNum}-class-preview`);
+    if (!previewDiv) return;
+    const info = CLASS_INFO[klasse];
+    if (info) {
+        previewDiv.innerHTML = `<span style="font-size: 1.4em;">${info.icon}</span> <span>${info.desc}</span>`;
+    }
+
+    const abilitiesDiv = document.getElementById(`p${playerNum}-abilities`);
+    if (abilitiesDiv) {
+        const classAbilities = STARTING_ABILITIES[klasse.toLowerCase()] || [];
+        if (classAbilities.length > 0) {
+            abilitiesDiv.innerHTML = `<strong>Startfähigkeiten:</strong><br>` +
+                classAbilities.map(ab => `<span class="ability-item tooltip">${ab.name}<span class="tooltiptext"><strong>${ab.name}</strong><br>${formatAbilityDesc(ab)}</span></span>`).join(", ");
+        } else {
+            abilitiesDiv.innerHTML = 'Keine Startfähigkeiten.';
+        }
+    }
+}
+
+function initCharCreator() {
+    const countSelect = document.getElementById('player-count-select');
+    const formsContainer = document.getElementById('player-forms-container');
+    
+    for(let i=1; i<=4; i++) {
+        let opt = document.createElement('option');
+        opt.value = i;
+        opt.textContent = i === 1 ? "1 Held (+ KI-Gefährte)" : `${i} Helden`;
+        countSelect.appendChild(opt);
+    }
+
+    const renderForms = () => {
+        formsContainer.innerHTML = '';
+        const count = parseInt(countSelect.value);
+        for(let i=1; i<=count; i++) {
+            const div = document.createElement('div');
+            div.className = 'char-form-row';
+            div.style.flexDirection = 'column'; 
+            div.innerHTML = `
+                <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap; justify-content: center;">
+                    <strong style="color: var(--accent-color)">Held ${i}:</strong>
+                    <input type="text" id="p${i}-name" placeholder="Name" class="meta-btn" style="background: var(--bg-color); cursor: text;">
+                    <select id="p${i}-rasse" class="meta-btn">
+                        ${RASSEN_LISTE.map(r => `<option value="${r}">${r}</option>`).join('')}
+                    </select>
+                    <select id="p${i}-klasse" class="meta-btn class-select" data-player="${i}">
+                        ${KLASSEN_LISTE.map(k => `<option value="${k}">${k}</option>`).join('')}
+                    </select>
+                </div>
+                <div id="p${i}-class-preview" class="class-preview"></div>
+                <div id="p${i}-abilities" class="class-abilities"></div>
+            `;
+            formsContainer.appendChild(div);
+        }
+
+        formsContainer.querySelectorAll('.class-select').forEach(select => {
+            select.addEventListener('change', (e) => updateClassPreview(e.target.dataset.player, e.target.value));
+            updateClassPreview(select.dataset.player, select.value);
+        });
+    };
+
+    countSelect.addEventListener('change', renderForms);
+    renderForms();
+}
+
+async function spielStarten(helden) {
     const logPanel = document.getElementById('log-panel');
     if (logPanel) logPanel.style.backgroundImage = "url('img/Dungon-Eingang.png')";
 
-    const rassenListe = [
-        "Mensch", "Ork", "Zwerg", "Elf", "Goblin"
-    ];
-    
-    const klassenListe = [
-        "Krieger", "Magier", "Schurke", "Heiler", 
-        "Verteidiger", "Tueftler", "Alchemist", "Barde"
-    ];
-
-    async function charakterErstellen(spielerNummer) {
-        const name = await question(`Spieler ${spielerNummer} - Name deines Helden: `);
-        
-        console.log("\nVerfügbare Rassen:");
-        const rassenString = rassenListe.map((r, i) => `${i + 1}. ${r}`).join(" | ");
-        console.log(rassenString + "\n");
-        
-        const rasseWahl = await question("Wahl (Nummer): ");
-        const rasseIndex = parseInt(rasseWahl) - 1;
-        const rasse = (rasseIndex >= 0 && rasseIndex < rassenListe.length) 
-            ? rassenListe[rasseIndex] 
-            : "Mensch";
-        
-        console.log("\nVerfügbare Klassen:");
-        const klassenString = klassenListe.map((k, i) => `${i + 1}. ${k}`).join(" | ");
-        console.log(klassenString + "\n");
-        
-        const wahl = await question("Wahl (Nummer): ");
-        const index = parseInt(wahl) - 1;
-        const klasse = (index >= 0 && index < klassenListe.length) 
-            ? klassenListe[index] 
-            : "Schurke";
-            
-        return new Spieler(name, rasse, klasse);
-    }
-
-    // Spieleranzahl abfragen
-    let numPlayers;
-    while (true) {
-        const input = await question("Wie viele Helden treten die Reise an? (1-4): ");
-        numPlayers = parseInt(input);
-        if (!isNaN(numPlayers) && numPlayers >= 1 && numPlayers <= 4) break; 
-        console.log("Ungültige Eingabe. Bitte wähle eine Zahl zwischen 1 und 4.");
-    }
-
-    const helden = [];
-    for (let i = 1; i <= numPlayers; i++) {
-        const p = await charakterErstellen(i);
-        p.traenke = 2;
-        helden.push(p);
-        console.log("-".repeat(30));
-    }
-
     // KI-Gefährte hinzufügen, wenn nur 1 Spieler spielt
-    if (numPlayers === 1) {
+    if (helden.length === 1) {
         const kiNamen = ["Bofur", "Xena", "Aragorn", "Gimli", "Legolas"];
         const kiName = kiNamen[randomRange(0, kiNamen.length - 1)] + " (KI)";
-        const kiRasse = rassenListe[randomRange(0, rassenListe.length - 1)];
-        const kiKlasse = klassenListe[randomRange(0, klassenListe.length - 1)];
+        const kiRasse = RASSEN_LISTE[randomRange(0, RASSEN_LISTE.length - 1)];
+        const kiKlasse = KLASSEN_LISTE[randomRange(0, KLASSEN_LISTE.length - 1)];
         const kiGefaehrte = new Spieler(kiName, kiRasse, kiKlasse);
         kiGefaehrte.traenke = 2;
         kiGefaehrte.isKI = true; // Markierung für das Kampfsystem
@@ -270,6 +322,8 @@ async function spielStarten() {
 
         let raetselMeisterErschienen = false;
         for (let raum = 1; raum <= raumAnzahl; raum++) {
+            // Hausverbot-Ticker für jeden Helden verringern
+            helden.forEach(h => { if (h.tavernBanRooms > 0) h.tavernBanRooms--; });
             updateUI(helden, null, null, ebene, raum, raumAnzahl);
             await printSlow(`\n--- Ebene ${ebene} | Raum ${raum}/${raumAnzahl} ---`);
 
@@ -682,6 +736,7 @@ async function spielStarten() {
                 level: champion.level,
                 klasse: champion.klasse,
                 xp: champion.xp,
+                dmg: champion.totalDamageDealt,
                 datum: new Date().toLocaleDateString()
             });
             localStorage.setItem('dungeon_history', JSON.stringify(history));
@@ -734,5 +789,40 @@ async function spielStarten() {
 
 // Spiel starten
 document.addEventListener('DOMContentLoaded', () => {
-    spielStarten().catch(err => console.error("Kritischer Fehler beim Spielstart:", err));
+    const startBtn = document.getElementById('start-game-btn');
+    const startScreen = document.getElementById('start-screen');
+    const charCreator = document.getElementById('char-creator-screen');
+    const confirmCharsBtn = document.getElementById('confirm-chars-btn');
+    const header = document.querySelector('header');
+    const gameContainer = document.getElementById('game-container');
+
+    initCharCreator();
+
+    if (startBtn) {
+        startBtn.addEventListener('click', () => {
+            startScreen.classList.add('hidden');
+            charCreator.classList.remove('hidden');
+        });
+    }
+
+    if (confirmCharsBtn) {
+        confirmCharsBtn.addEventListener('click', () => {
+            const helden = [];
+            const count = parseInt(document.getElementById('player-count-select').value);
+            
+            for(let i=1; i<=count; i++) {
+                const name = document.getElementById(`p${i}-name`).value || `Held ${i}`;
+                const rasse = document.getElementById(`p${i}-rasse`).value;
+                const klasse = document.getElementById(`p${i}-klasse`).value;
+                const p = new Spieler(name, rasse, klasse);
+                p.traenke = 2;
+                helden.push(p);
+            }
+
+            charCreator.classList.add('hidden');
+            header.classList.remove('hidden');
+            gameContainer.classList.remove('hidden');
+            spielStarten(helden).catch(err => console.error("Kritischer Fehler beim Spielstart:", err));
+        });
+    }
 });
