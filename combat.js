@@ -1,5 +1,6 @@
 import { question, randomRange, printSlow, wuerfelD20, updateUI, formatAbilityDesc, triggerGoldAnimation } from './utils.js';
 import * as Story from './story.js';
+import { GAME_BALANCE, GAME_SETTINGS } from './config.js';
 
 async function spielerZug(spieler, monster_name, monster_hp, helden) {
     if (spieler.isVerwirrt && Math.random() < 0.4) {
