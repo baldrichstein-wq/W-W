@@ -10,8 +10,15 @@ W-W ist ein textbasiertes Rollenspiel mit grafischen Elementen, in dem du eine G
 *   **Freie Attributsverteilung:** Pro Levelaufstieg erhält jeder Held **5 Skill-Punkte**.
 *   **Vielseitige Statuswerte:** Skaliere Konstitution (HP), Stärke (ATK), Verteidigung (RK), Fokus (AP), Geschicklichkeit (Krit-Chance), Charisma (Shop-Rabatte) und Intelligenz (Crafting-Erfolg).
 *   **Multi-Level-Support:** Erhältst du genug XP für mehrere Level gleichzeitig, kannst du alle Punkte in einem Rutsch verteilen.
+*   **Sprachunterstützung:** Das Spiel bietet volle Lokalisierung in **Deutsch und Englisch**.
 
-### 2. Spezialisierungen (Ab Level 15)
+### 2. Team-Management & KI
+*   **Flexible Gruppengröße:** Spiele mit 1 bis 4 Helden.
+*   **KI-Gefährte:** Wenn du dich entscheidest, allein zu spielen, schließt sich dir automatisch ein zufällig generierter **KI-Gefährte** an, der dich im Kampf unterstützt.
+*   **Automatisierung:** KI-Helden rüsten automatisch bessere Ausrüstung aus und verwalten ihre Ressourcen (AP/HP) intelligent.
+*   **Schwierigkeitsgrade:** Wähle zwischen **Easy, Normal und Hard**, was die Werte der Monster und die Belohnungen direkt beeinflusst.
+
+### 3. Spezialisierungen (Ab Level 15)
 Sobald ein Held Stufe 15 erreicht, kann er eine Meisterschaft wählen:
 *   **Krieger:** Paladin (Schadenreduktion) oder Berserker (+ATK).
 *   **Magier:** Erzmagier (AP-Regen) oder Nekromant (+HP).
@@ -39,19 +46,20 @@ Sobald ein Held Stufe 15 erreicht, kann er eine Meisterschaft wählen:
 | **Alchemist** | Meister-Alchemist | +20% Heilungseffektivität (Tränke/Salben) |
 | | Mutator | +5 HP-Regeneration pro Runde |
 
-### 3. Quest- & Belohnungssystem
+### 4. Quest- & Belohnungssystem
 *   **Die Schwarze Tafel:** Nimm Aufträge wie "Jagdfieber", "Der Alchemist" oder die legendäre Suche nach dem "Goldenen Siegelring" an.
 *   **Escort-Quest:** Begleite den Hofnarren **Pippin** in die Burg. Er hat eigene HP, erzählt über 50 Witze und verwirrt Monster im Kampf (besonders effektiv mit einem Barden!).
 *   **Dynamisches UI:** Quest-Fortschritt wird direkt in den Heldenkarten angezeigt; beim Abschluss blinkt das Panel grün auf und Goldmünzen fliegen über den Bildschirm.
+*   **Geheimnisse:** Der "Goldene Siegelring" ermöglicht den Zugang zu einer **Secret Ebene** nach dem Sieg über den Endboss.
 
-### 4. Kampfsystem & Synergien
+### 5. Kampfsystem & Synergien
 *   **Skalierende Fähigkeiten:** Talente wie *Waffengewalt* (Stärke) oder *Arkane Überladung* (Intelligenz) werden mit deinen Stats mächtiger.
 *   **Team-Synergien:** Bestimmte Klassenkombinationen schalten mächtige Team-Fähigkeiten frei (z.B. Krieger + Heiler = "Heiliger Ansturm").
 *   **Krit-System:** Geschicklichkeit senkt die Schwelle für kritische Treffer (bis zu 15+).
 *   **Ausweichmanöver:** Helden mit hoher Geschicklichkeit können feindlichen Angriffen komplett ausweichen.
 *   **Schurken-Gegenangriff:** Schurken können nach einem erfolgreichen Ausweichmanöver einen schnellen Gegenangriff mit halbem Schaden ausführen.
 
-### 5. Tavernen-Aktivitäten & Glücksspiel
+### 6. Tavernen-Aktivitäten & Glücksspiel
 *   **Würfelspiel:** Setze dein Gold gegen den Wirt aufs Spiel.
 *   **Schurken-Spezial (Schummeln):** Charaktere wie Schurken oder Assassinen können versuchen, das Spiel mittels Geschicklichkeit zu manipulieren. 
 *   **Konsequenzen:** Ein misslungener Betrug führt zu empfindlichen Geldstrafen und einem zeitweiligen **Hausverbot**, das die lebenswichtige Regeneration in der Taverne blockiert.
@@ -62,13 +70,16 @@ Sobald ein Held Stufe 15 erreicht, kann er eine Meisterschaft wählen:
 *   **Icons:** Rassen und Klassen werden durch Emojis dargestellt für maximale Übersichtlichkeit.
 
 ## 🛠️ Letzte Änderungen (Patch-Notes)
+*   **Internationalisierung:** System für Sprachumschaltung (DE/EN) integriert.
+*   **KI-Partner:** Solo-Spieler erhalten nun einen KI-Gefährten mit eigener Logik.
+*   **Schwierigkeits-System:** Globale Modifikatoren für HP, ATK und Loot implementiert.
 *   **Schummel-System:** Schurken können nun beim Würfeln schummeln (skaliert mit Geschicklichkeit).
 *   **Hausverbot-Mechanik:** Wer beim Betrug erwischt wird, verliert Gold und wird für 3 Räume aus der Taverne verbannt.
 *   **Ausweich-Mechanik:** Geschicklichkeit ermöglicht es Helden, feindlichen Angriffen auszuweichen.
 *   **Schurken-Gegenangriff:** Schurken führen nach erfolgreichem Ausweichen einen Gegenangriff aus.
 *   **Ebene 15 & Endgame:** Ebene 14 ist nun das Boss-Finale. Ebene 15 ist eine friedliche Burg mit König Theron, einem Shop und einer Taverne.
 *   **Dankesseite:** Nach dem Sieg kann zwischen einem Neustart oder dem Beenden des Spiels gewählt werden (inkl. dedizierter "Danke"-Seite).
-*   **Quest-Persistence:** Quests werden nun korrekt als [ABGESCHLOSSEN] markiert und geben Gold sowie XP.
+*   **Quest-System:** Quests werden nun korrekt als [ABGESCHLOSSEN] markiert; Items für Quests werden bei Abgabe verbraucht.
 *   **Pippins Update:** Der Hofnarr wurde als globaler Begleiter mit Witze-Logik und Synergie-Achievement ("Comedy-Duo") integriert.
 *   **UI-Polishing:** Hinzufügen von Tooltips für Items und Fähigkeiten sowie einer Gold-Animation bei Belohnungen.
 *   **Stat-Fixes:** Korrektur der Skill-Logik und Integration von Geschicklichkeit in die Kampfberechnung.

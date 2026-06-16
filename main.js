@@ -930,6 +930,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const confirmCharsBtn = document.getElementById('confirm-chars-btn');
     const header = document.querySelector('header');
     const gameContainer = document.getElementById('game-container');
+    const hofBtn = document.getElementById('hof-btn');
+    const resetBtn = document.getElementById('reset-btn');
 
     initCharCreator();
 
