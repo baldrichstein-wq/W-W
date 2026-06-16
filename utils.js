@@ -1,4 +1,5 @@
 import { hofnarr } from './story.js';
+import { translations } from './translations.js';
 // Brücke zwischen Konsole und Browser-UI
 // Umleitung von console.log in das Game Log Panel
 const originalLog = console.log;
@@ -17,8 +18,38 @@ console.log = (...args) => { // This override is for general console.log calls, 
 };
 
 export let config = {
-    textSpeed: 300
+    textSpeed: 300,
+    goldAnimations: true,
+    brightness: 25, // Standardwert für den Helligkeits-Slider
+    language: 'de'
 };
+
+// Funktion zum Laden der Konfiguration aus dem localStorage
+function loadConfigFromLocalStorage() {
+    try {
+        const storedConfig = localStorage.getItem('game_settings');
+        if (storedConfig) {
+            const parsedConfig = JSON.parse(storedConfig);
+            // Bestehende Konfiguration mit geladenen Werten überschreiben/ergänzen
+            config = { ...config, ...parsedConfig };
+        }
+    } catch (e) {
+        console.error("Fehler beim Laden der Einstellungen aus localStorage:", e);
+    }
+}
+
+// Funktion zum Speichern der Konfiguration im localStorage
+export function saveConfigToLocalStorage() {
+    localStorage.setItem('game_settings', JSON.stringify(config));
+}
+
+// Konfiguration sofort beim Laden des Moduls laden
+loadConfigFromLocalStorage();
+
+export function t(key) {
+    const lang = config.language || 'de';
+    return translations[lang]?.[key] || translations['de']?.[key] || key;
+}
 
 export async function printSlow(text, className = null) {
     const logContent = document.getElementById('game-log');
@@ -55,25 +86,25 @@ export function formatAbilityDesc(ab, held = null) {
         displayedDmg = `${ab.schaden + (held.grund_int * 4)} (INT-Bonus inkl.)`;
     }
 
-    if (displayedDmg) parts.push(`💥 ${displayedDmg} Dmg`);
+    if (displayedDmg) parts.push(`💥 ${displayedDmg} ${t('stat_dmg')}`);
     if (ab.element) parts.push(`[${ab.element}]`);
-    if (ab.heilung) parts.push(`💚 ${ab.heilung} HP`);
-    if (ab.atk_buff) parts.push(`⚔️ ${ab.atk_buff > 0 ? '+' : ''}${ab.atk_buff} ATK`);
-    if (ab.def_buff) parts.push(`🛡️ ${ab.def_buff > 0 ? '+' : ''}${ab.def_buff} RK`);
-    if (ab.schlaf_dauer) parts.push(`💤 Schlaf (${ab.schlaf_dauer} R.)`);
-    if (ab.verwirrt) parts.push(`🌀 Verwirrt (${ab.verwirrt} R.)`);
-    if (ab.niederhalten) parts.push(`⛓️ Immobilisiert (${ab.niederhalten} R.)`);
-    if (ab.execute_threshold) parts.push(`💀 Kill < ${ab.execute_threshold}%`);
-    if (ab.ap_regen) parts.push(`✨ +${ab.ap_regen} AP`);
-    if (ab.hp_kosten) parts.push(`🩸 -${ab.hp_kosten} HP`);
-    if (ab.belebt) parts.push(`☀️ Reanimation`);
-    if (ab.licht) parts.push(`🌟 Licht (${ab.licht} R.)`);
+    if (ab.heilung) parts.push(`💚 ${ab.heilung} ${t('hp')}`);
+    if (ab.atk_buff) parts.push(`⚔️ ${ab.atk_buff > 0 ? '+' : ''}${ab.atk_buff} ${t('atk')}`);
+    if (ab.def_buff) parts.push(`🛡️ ${ab.def_buff > 0 ? '+' : ''}${ab.def_buff} ${t('rk')}`);
+    if (ab.schlaf_dauer) parts.push(`💤 ${t('stat_sleep')} (${ab.schlaf_dauer} ${t('stat_rounds')})`);
+    if (ab.verwirrt) parts.push(`🌀 ${t('stat_confused')} (${ab.verwirrt} ${t('stat_rounds')})`);
+    if (ab.niederhalten) parts.push(`⛓️ ${t('stat_immobilized')} (${ab.niederhalten} ${t('stat_rounds')})`);
+    if (ab.execute_threshold) parts.push(`💀 ${t('stat_kill')} < ${ab.execute_threshold}%`);
+    if (ab.ap_regen) parts.push(`✨ +${ab.ap_regen} ${t('ap')}`);
+    if (ab.hp_kosten) parts.push(`🩸 -${ab.hp_kosten} ${t('hp')}`);
+    if (ab.belebt) parts.push(`☀️ ${t('stat_reanimation')}`);
+    if (ab.licht) parts.push(`🌟 ${t('stat_light')} (${ab.licht} ${t('stat_rounds')})`);
     if (ab.licht_atk) parts.push(`🎯 ATK: +${ab.licht_atk}`);
     if (ab.licht_def) parts.push(`🛡️ RK: +${ab.licht_def}`);
-    if (ab.abschrecken) parts.push(`✨ Vertreibt Untote (${ab.abschrecken}%)`);
-    if (ab.stealth_buff) parts.push(`👤 +${ab.stealth_buff} Stealth`);
-    if (ab.schaden_reduktion) parts.push(`🛡️ -${ab.schaden_reduktion} Dmg erlitten`);
-    if (ab.bonus_schaden) parts.push(`⚔️ +${ab.bonus_schaden} Bonus-Dmg`);
+    if (ab.abschrecken) parts.push(`✨ ${t('stat_undead_flee')} (${ab.abschrecken}%)`);
+    if (ab.stealth_buff) parts.push(`👤 +${ab.stealth_buff} ${t('stat_stealth')}`);
+    if (ab.schaden_reduktion) parts.push(`🛡️ -${ab.schaden_reduktion} ${t('stat_dmg_reduction')}`);
+    if (ab.bonus_schaden) parts.push(`⚔️ +${ab.bonus_schaden} ${t('stat_bonus_dmg')}`);
     return parts.length > 0 ? parts.join(" ") : "Spezialeffekt";
 }
 
@@ -156,6 +187,9 @@ export function wuerfelD20() {
 }
 
 export function triggerGoldAnimation() {
+    // Animation nur ausführen, wenn in den Einstellungen aktiviert
+    if (!config.goldAnimations) return;
+
     const coinCount = 15;
     for (let i = 0; i < coinCount; i++) {
         const coin = document.createElement('div');

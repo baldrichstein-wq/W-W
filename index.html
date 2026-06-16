@@ -36,8 +36,8 @@
         <p>Ein kooperatives Browser-RPG</p>
         <div id="meta-controls">
             <button id="hof-btn" class="meta-btn">🏆 Ruhmeshalle</button>
-            <button id="settings-btn" class="meta-btn" title="Einstellungen">⚙️</button>
             <button id="reset-btn" class="meta-btn">♻️ Boss zurücksetzen</button>
+            <button id="settings-btn" class="meta-btn" title="Einstellungen">⚙️</button>
         </div>
     </header>
 
@@ -94,6 +94,18 @@
             <div class="settings-group">
                 <label for="master-volume">🔊 Lautstärke:</label>
                 <input type="range" id="master-volume" min="0" max="100" value="50">
+            </div>
+            <div class="settings-group" style="flex-direction: row; justify-content: space-between; align-items: center;">
+                <label for="language-select">🌐 Sprache / Language / Langue:</label>
+                <select id="language-select" class="meta-btn">
+                    <option value="de">Deutsch</option>
+                    <option value="en">English</option>
+                    <option value="fr">Français</option>
+                </select>
+            </div>
+            <div class="settings-group" style="flex-direction: row; justify-content: space-between; align-items: center;">
+                <label for="gold-animations-toggle">💰 Gold-Animationen:</label>
+                <input type="checkbox" id="gold-animations-toggle" checked style="width: 25px; height: 25px; cursor: pointer;">
             </div>
         </div>
     </div>

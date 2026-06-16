@@ -668,7 +668,7 @@ header h1 {
 .modal {
     display: none;
     position: fixed;
-    z-index: 2000;
+    z-index: 6000; /* Höher als Startbildschirm (5000) */
     left: 0;
     top: 0;
     width: 100%;
@@ -693,11 +693,17 @@ header h1 {
 .close-modal {
     color: var(--accent-color);
     position: absolute;
-    top: 10px;
-    right: 20px;
-    font-size: 35px;
+    top: 15px;
+    left: 20px; /* Pfeil nach links verschieben */
+    font-size: 28px;
     font-weight: bold;
     cursor: pointer;
+    transition: transform 0.2s;
+}
+
+.close-modal:hover {
+    transform: translateX(-5px);
+    color: var(--btn-hover);
 }
 
 .hof-title {

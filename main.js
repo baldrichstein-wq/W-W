@@ -1,23 +1,102 @@
 import Spieler from './spieler.js';
 import Monster from './monster.js'; 
 import * as Combat from './combat.js';
-import { question, randomRange, printSlow, wuerfelD20, updateUI, config, formatAbilityDesc } from './utils.js';
+import { question, randomRange, printSlow, wuerfelD20, updateUI, config, formatAbilityDesc, saveConfigToLocalStorage, t } from './utils.js';
 import * as Story from './story.js';
 import { RASSEN_LISTE, KLASSEN_LISTE, CLASS_INFO, STARTING_ABILITIES } from './config.js';
 
 // --- META LOGIC ---
+function updateLanguageUI() {
+    // Update Static UI Elements
+    const startTitle = document.querySelector('.start-content h1');
+    if (startTitle) startTitle.textContent = t('title');
+    
+    const startSub = document.querySelector('.start-content p');
+    if (startSub && startSub.textContent.includes('RPG')) startSub.textContent = t('subtitle');
+
+    const startBtn = document.getElementById('start-game-btn');
+    if (startBtn) startBtn.textContent = t('start_btn');
+
+    const startHofBtn = document.getElementById('start-hof-btn');
+    if (startHofBtn) startHofBtn.textContent = t('hof_btn');
+
+    const headerTitle = document.querySelector('header h1');
+    if (headerTitle) headerTitle.textContent = t('title');
+
+    const headerSub = document.querySelector('header p');
+    if (headerSub) headerSub.textContent = t('subtitle');
+
+    const hofBtn = document.getElementById('hof-btn');
+    if (hofBtn) hofBtn.textContent = t('hof_btn');
+
+    const resetBtn = document.getElementById('reset-btn');
+    if (resetBtn) resetBtn.textContent = t('boss_reset_btn');
+
+    const settingsTitle = document.querySelector('#settings-modal .hof-title');
+    if (settingsTitle) settingsTitle.textContent = t('settings_title');
+
+    const charCreatorTitle = document.querySelector('#char-creator-screen .hof-title');
+    if (charCreatorTitle) charCreatorTitle.textContent = t('gather_heroes_title');
+
+    const playerCountLabel = document.querySelector('#player-count-setup label');
+    if (playerCountLabel) playerCountLabel.textContent = t('player_count_label');
+
+    const confirmCharsBtn = document.getElementById('confirm-chars-btn');
+    if (confirmCharsBtn) confirmCharsBtn.textContent = t('confirm_chars_btn');
+
+    const inputLabel = document.getElementById('input-query');
+    if (inputLabel && (inputLabel.textContent === "Spiel lädt..." || inputLabel.textContent === t('input_loading'))) inputLabel.textContent = t('input_loading');
+
+    const submitBtn = document.getElementById('submit-btn');
+    if (submitBtn) submitBtn.textContent = t('submit_btn');
+
+    const settingsLabels = document.querySelectorAll('#settings-modal label');
+    settingsLabels.forEach(l => {
+        const forAttr = l.getAttribute('for');
+        if (forAttr === 'bg-brightness') l.textContent = t('brightness_label');
+        if (forAttr === 'text-speed') l.textContent = t('text_speed_label');
+        if (forAttr === 'master-volume') l.textContent = t('volume_label');
+        if (forAttr === 'language-select') l.textContent = t('language_label');
+        if (forAttr === 'gold-animations-toggle') l.textContent = t('gold_anim_label');
+    });
+
+    // Refresh Character Creator dropdowns if initialized
+    const countSelect = document.getElementById('player-count-select');
+    if (countSelect) {
+        const currentCount = countSelect.value;
+        countSelect.innerHTML = '';
+        for(let i=1; i<=4; i++) {
+            let opt = document.createElement('option');
+            opt.value = i;
+            opt.textContent = i === 1 ? t('hero_with_ai') : `${i} ${t('heroes')}`;
+            countSelect.appendChild(opt);
+        }
+        countSelect.value = currentCount;
+        countSelect.dispatchEvent(new Event('change'));
+    }
+}
+
 function zeigeHallOfFame() {
     const modal = document.getElementById('hof-modal');
     const listContainer = document.getElementById('hof-list');
-    
+    const closeBtn = document.querySelector('#hof-modal .close-modal');
+
     if (!modal || !listContainer) {
         console.error("Ruhmeshalle-Modal oder Liste nicht gefunden!");
         return;
     }
 
+    // Sicherstellen, dass das Schließ-Symbol ein Pfeil ist
+    if (closeBtn) {
+        closeBtn.innerHTML = '←'; 
+    }
+
     let history = [];
     try {
-        history = JSON.parse(localStorage.getItem('dungeon_history')) || [];
+        const stored = localStorage.getItem('dungeon_history');
+        history = JSON.parse(stored) || [];
+        // Zusätzliche Sicherheit: Falls JSON-Parsing kein Array zurückgibt
+        if (!Array.isArray(history)) history = [];
     } catch (e) {
         history = [];
     }
@@ -26,7 +105,12 @@ function zeigeHallOfFame() {
     modal.style.display = 'block';
 
     if (history.length === 0) {
-        listContainer.innerHTML = '<p style="text-align:center;">Noch keine Legenden verzeichnet...</p>';
+        listContainer.innerHTML = `
+            <div style="text-align:center; padding: 40px; color: var(--text-color); opacity: 0.8;">
+                <div style="font-size: 3em; margin-bottom: 15px;">📜</div>
+                <p>${t('hof_empty')}</p>
+                <p><small>${t('hof_empty_sub')}</small></p>
+            </div>`;
     } else if (Array.isArray(history)) {
         history.sort((a, b) => {
             const scoreA = (parseInt(a.level) || 0) * 1000 + (parseInt(a.xp) || 0);
@@ -43,16 +127,30 @@ function zeigeHallOfFame() {
                     <strong class="rare-item">${h.name}</strong> (${h.klasse || 'Held'})
                 </div>
                 <div style="text-align: right;">
-                    Level ${h.level || 1} | ⚔️ ${h.dmg || 0} Schaden<br><small>${h.datum || '-'}</small>
+                    ${t('level')} ${h.level || 1} | ⚔️ ${h.dmg || 0} ${t('damage')}<br><small>${h.datum || '-'}</small>
                 </div>
             `;
             listContainer.appendChild(entry);
+        });
+
+        // Schaltfläche zum manuellen Leeren der Historie am Ende der Liste hinzufügen
+        const clearContainer = document.createElement('div');
+        clearContainer.style.textAlign = 'center';
+        clearContainer.style.marginTop = '25px';
+        clearContainer.innerHTML = `<button id="clear-hof-action" class="meta-btn" style="border-color: var(--header-color); color: var(--header-color); width: 100%;">${t('clear_hof_action')}</button>`;
+        listContainer.appendChild(clearContainer);
+
+        document.getElementById('clear-hof-action').addEventListener('click', () => {
+            if (confirm(t('confirm_clear_hof'))) {
+                localStorage.removeItem('dungeon_history');
+                zeigeHallOfFame(); // Ansicht aktualisieren (zeigt dann den leeren Status)
+            }
         });
     }
 }
 
 function resetChampion() {
-    if (confirm("Möchtest du den gespeicherten Champion wirklich löschen? Der Weltenfresser wird als Endboss zurückkehren.")) {
+    if (confirm(t('confirm_reset'))) {
         localStorage.removeItem('dungeon_champion');
         localStorage.removeItem('dungeon_history');
         console.log("\n♻️ Champion-Daten gelöscht. Der Dungeon wurde zurückgesetzt.");
@@ -73,32 +171,63 @@ document.addEventListener('DOMContentLoaded', () => {
     const speedSlider = document.getElementById('text-speed');
     const speedVal = document.getElementById('text-speed-val');
     const volumeSlider = document.getElementById('master-volume');
+    const goldToggle = document.getElementById('gold-animations-toggle');
+    const langSelect = document.getElementById('language-select');
     const gameLog = document.getElementById('game-log');
 
     if (hofBtn) hofBtn.addEventListener('click', zeigeHallOfFame);
     if (startHofBtn) startHofBtn.addEventListener('click', zeigeHallOfFame);
     if (settingsBtn) settingsBtn.addEventListener('click', () => settingsModal.style.display = 'block');
     if (resetBtn) resetBtn.addEventListener('click', resetChampion);
-    
+
+    // Einstellungen aus der geladenen Konfiguration anwenden und Event-Listener hinzufügen
     if (brightnessSlider && gameLog) {
+        brightnessSlider.value = config.brightness; // UI-Slider auf geladenen Wert setzen
+        const initialOpacity = 1 - (config.brightness / 100);
+        gameLog.style.backgroundColor = `rgba(15, 10, 5, ${initialOpacity})`;
+
         brightnessSlider.addEventListener('input', (e) => {
-            const opacity = 1 - (e.target.value / 100);
-            gameLog.style.backgroundColor = `rgba(15, 10, 5, ${opacity})`;
+            const newBrightness = parseInt(e.target.value);
+            const newOpacity = 1 - (newBrightness / 100);
+            gameLog.style.backgroundColor = `rgba(15, 10, 5, ${newOpacity})`;
+            config.brightness = newBrightness; // Konfiguration aktualisieren
+            saveConfigToLocalStorage(); // Einstellungen speichern
         });
     }
 
     if (speedSlider && speedVal) {
+        speedSlider.value = config.textSpeed; // UI-Slider auf geladenen Wert setzen
+        speedVal.textContent = `${config.textSpeed}ms`;
         speedSlider.addEventListener('input', (e) => {
             config.textSpeed = parseInt(e.target.value);
             speedVal.textContent = `${e.target.value}ms`;
+            saveConfigToLocalStorage(); // Einstellungen speichern
         });
     }
 
     if (volumeSlider) {
+        // Lautstärke wird nicht in config gespeichert, nur direkt angewendet
         volumeSlider.addEventListener('input', (e) => {
             const vol = e.target.value / 100;
             const audios = document.querySelectorAll('audio');
             audios.forEach(a => a.volume = vol);
+        });
+    }
+
+    if (goldToggle) {
+        goldToggle.checked = config.goldAnimations; // UI-Checkbox auf geladenen Wert setzen
+        goldToggle.addEventListener('change', (e) => {
+            config.goldAnimations = e.target.checked;
+            saveConfigToLocalStorage(); // Einstellungen speichern
+        });
+    }
+
+    if (langSelect) {
+        langSelect.value = config.language;
+        langSelect.addEventListener('change', (e) => {
+            config.language = e.target.value;
+            saveConfigToLocalStorage();
+            updateLanguageUI();
         });
     }
 
@@ -108,6 +237,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (e.target === hofModal) hofModal.style.display = 'none';
         if (e.target === settingsModal) settingsModal.style.display = 'none';
     };
+    updateLanguageUI();
 });
 
 // --- ENGINE ---
@@ -116,17 +246,22 @@ function updateClassPreview(playerNum, klasse) {
     if (!previewDiv) return;
     const info = CLASS_INFO[klasse];
     if (info) {
-        previewDiv.innerHTML = `<span style="font-size: 1.4em;">${info.icon}</span> <span>${info.desc}</span>`;
+        const translatedDesc = t(`desc_${klasse.toLowerCase()}`);
+        previewDiv.innerHTML = `<span style="font-size: 1.4em;">${info.icon}</span> <span>${translatedDesc}</span>`;
     }
 
     const abilitiesDiv = document.getElementById(`p${playerNum}-abilities`);
     if (abilitiesDiv) {
         const classAbilities = STARTING_ABILITIES[klasse.toLowerCase()] || [];
         if (classAbilities.length > 0) {
-            abilitiesDiv.innerHTML = `<strong>Startfähigkeiten:</strong><br>` +
-                classAbilities.map(ab => `<span class="ability-item tooltip">${ab.name}<span class="tooltiptext"><strong>${ab.name}</strong><br>${formatAbilityDesc(ab)}</span></span>`).join(", ");
+            abilitiesDiv.innerHTML = `<strong>${t('start_abilities_label')}</strong><br>` +
+                classAbilities.map(ab => {
+                    const key = 'ab_' + ab.name.toLowerCase().replace(/ /g, '_').replace(/ä/g, 'ae').replace(/ö/g, 'oe').replace(/ü/g, 'ue').replace(/ß/g, 'ss');
+                    const translatedName = t(key);
+                    return `<span class="ability-item tooltip">${translatedName}<span class="tooltiptext"><strong>${translatedName}</strong><br>${formatAbilityDesc(ab)}</span></span>`;
+                }).join(", ");
         } else {
-            abilitiesDiv.innerHTML = 'Keine Startfähigkeiten.';
+            abilitiesDiv.innerHTML = t('no_abilities');
         }
     }
 }
@@ -138,7 +273,7 @@ function initCharCreator() {
     for(let i=1; i<=4; i++) {
         let opt = document.createElement('option');
         opt.value = i;
-        opt.textContent = i === 1 ? "1 Held (+ KI-Gefährte)" : `${i} Helden`;
+        opt.textContent = i === 1 ? t('hero_with_ai') : `${i} ${t('heroes')}`;
         countSelect.appendChild(opt);
     }
 
@@ -151,13 +286,13 @@ function initCharCreator() {
             div.style.flexDirection = 'column'; 
             div.innerHTML = `
                 <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap; justify-content: center;">
-                    <strong style="color: var(--accent-color)">Held ${i}:</strong>
+                    <strong style="color: var(--accent-color)">${t('hero')} ${i}:</strong>
                     <input type="text" id="p${i}-name" placeholder="Name" class="meta-btn" style="background: var(--bg-color); cursor: text;">
                     <select id="p${i}-rasse" class="meta-btn">
-                        ${RASSEN_LISTE.map(r => `<option value="${r}">${r}</option>`).join('')}
+                        ${RASSEN_LISTE.map(r => `<option value="${r}">${t('race_' + r.toLowerCase())}</option>`).join('')}
                     </select>
                     <select id="p${i}-klasse" class="meta-btn class-select" data-player="${i}">
-                        ${KLASSEN_LISTE.map(k => `<option value="${k}">${k}</option>`).join('')}
+                        ${KLASSEN_LISTE.map(k => `<option value="${k}">${t('class_' + k.toLowerCase())}</option>`).join('')}
                     </select>
                 </div>
                 <div id="p${i}-class-preview" class="class-preview"></div>
@@ -811,7 +946,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const count = parseInt(document.getElementById('player-count-select').value);
             
             for(let i=1; i<=count; i++) {
-                const name = document.getElementById(`p${i}-name`).value || `Held ${i}`;
+                const name = document.getElementById(`p${i}-name`).value || `${t('hero')} ${i}`;
                 const rasse = document.getElementById(`p${i}-rasse`).value;
                 const klasse = document.getElementById(`p${i}-klasse`).value;
                 const p = new Spieler(name, rasse, klasse);
@@ -822,6 +957,8 @@ document.addEventListener('DOMContentLoaded', () => {
             charCreator.classList.add('hidden');
             header.classList.remove('hidden');
             gameContainer.classList.remove('hidden');
+            if (hofBtn) hofBtn.classList.add('hidden'); // Ruhmeshalle-Button im Spiel ausblenden
+            if (resetBtn) resetBtn.classList.add('hidden'); // Boss zurücksetzen-Button im Spiel ausblenden
             spielStarten(helden).catch(err => console.error("Kritischer Fehler beim Spielstart:", err));
         });
     }
