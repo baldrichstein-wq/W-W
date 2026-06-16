@@ -14,6 +14,9 @@ function updateLanguageUI() {
     const startSub = document.querySelector('.start-content p');
     if (startSub && startSub.textContent.includes('RPG')) startSub.textContent = t('subtitle');
 
+    const startLangLabel = document.getElementById('start-lang-label');
+    if (startLangLabel) startLangLabel.textContent = t('language_label');
+
     const startBtn = document.getElementById('start-game-btn');
     if (startBtn) startBtn.textContent = t('start_btn');
 
@@ -173,6 +176,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const volumeSlider = document.getElementById('master-volume');
     const goldToggle = document.getElementById('gold-animations-toggle');
     const langSelect = document.getElementById('language-select');
+    const startLangSelect = document.getElementById('start-language-select');
     const gameLog = document.getElementById('game-log');
 
     if (hofBtn) hofBtn.addEventListener('click', zeigeHallOfFame);
@@ -206,11 +210,15 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     if (volumeSlider) {
-        // Lautstärke wird nicht in config gespeichert, nur direkt angewendet
+        volumeSlider.value = config.volume || 50;
+        const vol = (config.volume || 50) / 100;
+        document.querySelectorAll('audio').forEach(a => a.volume = vol);
+
         volumeSlider.addEventListener('input', (e) => {
             const vol = e.target.value / 100;
-            const audios = document.querySelectorAll('audio');
-            audios.forEach(a => a.volume = vol);
+            config.volume = parseInt(e.target.value);
+            saveConfigToLocalStorage();
+            document.querySelectorAll('audio').forEach(a => a.volume = vol);
         });
     }
 
@@ -222,11 +230,22 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    if (startLangSelect) {
+        startLangSelect.value = config.language;
+        startLangSelect.addEventListener('change', (e) => {
+            config.language = e.target.value;
+            saveConfigToLocalStorage();
+            if (langSelect) langSelect.value = config.language;
+            updateLanguageUI();
+        });
+    }
+
     if (langSelect) {
         langSelect.value = config.language;
         langSelect.addEventListener('change', (e) => {
             config.language = e.target.value;
             saveConfigToLocalStorage();
+            if (startLangSelect) startLangSelect.value = config.language;
             updateLanguageUI();
         });
     }
