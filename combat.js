@@ -63,23 +63,54 @@ async function spielerZug(spieler, monster_name, monster_hp, helden) {
             return ["fähigkeit", { ability: ultimate, targetHeld: null }];
         }
 
-        // 3. Priorität: Angriff
+        // KI-Logik für Fähigkeiten:
+        let chosenAbility = null;
+        const usableAbilities = spieler.abilities.filter(a => {
+            const hasEnoughAP = spieler.ap >= (a.ap_kosten || 0);
+            const hasEnoughMP = spieler.mp >= (a.mp_kosten || 0);
+            return hasEnoughAP && hasEnoughMP;
+        });
+
+        if (spieler.klasse.toLowerCase() === "barde") {
+            // Barden bevorzugen schadensverursachende MP-Fähigkeiten, dann andere MP-Fähigkeiten
+            const damagingMpAbilities = usableAbilities.filter(a => a.mp_kosten && a.schaden);
+            if (damagingMpAbilities.length > 0) {
+                chosenAbility = damagingMpAbilities[randomRange(0, damagingMpAbilities.length - 1)];
+            } else {
+                const anyMpAbilities = usableAbilities.filter(a => a.mp_kosten);
+                if (anyMpAbilities.length > 0) {
+                    chosenAbility = anyMpAbilities[randomRange(0, anyMpAbilities.length - 1)];
+                }
+            }
+        } else {
+            // Andere Klassen bevorzugen schadensverursachende AP-Fähigkeiten, dann unterstützende MP-Fähigkeiten
+            const damagingApAbilities = usableAbilities.filter(a => a.ap_kosten && a.schaden);
+            if (damagingApAbilities.length > 0) {
+                chosenAbility = damagingApAbilities[randomRange(0, damagingApAbilities.length - 1)];
+            } else {
+                const nonDamagingMpAbilities = usableAbilities.filter(a => a.mp_kosten && !a.schaden);
+                if (nonDamagingMpAbilities.length > 0) {
+                    chosenAbility = nonDamagingMpAbilities[randomRange(0, nonDamagingMpAbilities.length - 1)];
+                }
+            }
+        }
+
+        if (chosenAbility && Math.random() > 0.4) { // 60% Chance, eine Fähigkeit zu nutzen, wenn eine gefunden wurde
+            spieler.ap -= (chosenAbility.ap_kosten || 0);
+            spieler.mp -= (chosenAbility.mp_kosten || 0);
+            return ["fähigkeit", { ability: chosenAbility, targetHeld: null }];
+        }
+
+        // Fallback: Normaler Angriff
         const wurf = wuerfelD20();
         const gesamt_angriff = wurf + spieler.atk_bonus;
-
-        // KI nutzt zufällig eine Schadensfähigkeit, wenn genug AP da ist
-        const fähigkeit = spieler.abilities.find(a => a.schaden && (a.ap_kosten !== undefined) && spieler.ap >= a.ap_kosten);
-        if (fähigkeit && Math.random() > 0.6) {
-            spieler.ap -= fähigkeit.ap_kosten;
-            return ["fähigkeit", { ability: fähigkeit, targetHeld: null }];
-        }
 
         await printSlow(`⚔️ ${spieler.name} greift an! Wurf: ${wurf} (+${spieler.atk_bonus}) = ${gesamt_angriff}`);
         return ["angriff", { roll: gesamt_angriff, natural: wurf }];
     }
 
     while (true) {
-        console.log(`\n🎮 [ZUG VON ${spieler.name.toUpperCase()}] HP: ${spieler.hp}/${spieler.max_hp} | AP: ${spieler.ap}/${spieler.max_ap}`);
+        console.log(`\n🎮 [ZUG VON ${spieler.name.toUpperCase()}] HP: ${spieler.hp}/${spieler.max_hp} | AP: ${spieler.ap}/${spieler.max_ap} | MP: ${spieler.mp}/${spieler.max_mp}`);
         console.log("1. Angreifen");
         console.log("2. Heiltrank nutzen");
         console.log("3. Ausrüstung wechseln");
@@ -134,6 +165,11 @@ async function spielerZug(spieler, monster_name, monster_hp, helden) {
                     spieler.inventar.splice(originalIdx, 1);
                     await printSlow(`🍴 ${spieler.name} verbraucht ${sel.name} und heilt <span class="hp-gain">${sel.wert} HP</span>!`);
                     return ["heilung", 0];
+                } else if (sel.typ === "Mana-Gegenstand" && sel.wert > 0) {
+                    spieler.mp = Math.min(spieler.max_mp, spieler.mp + sel.wert);
+                    spieler.inventar.splice(originalIdx, 1);
+                    await printSlow(`🔮 ${spieler.name} nutzt ${sel.name} und regeneriert <span class="hp-gain">${sel.wert} MP</span>!`);
+                    return ["heilung", 0];
                 }
 
                 const erfolgName = spieler.ausruesten(originalIdx);
@@ -158,6 +194,10 @@ async function spielerZug(spieler, monster_name, monster_hp, helden) {
                     const count = spieler.inventar.filter(it => it.name === ab.material_kosten).length;
                     const warn = count === 0 ? ' <span class="effect-lifesteal">[FEHLT]</span>' : '';
                     info = `(Vorrat: ${count}x ${ab.material_kosten})${warn}`;
+                } else if (ab.mp_kosten && ab.ap_kosten) {
+                    info = `(MP: ${ab.mp_kosten}, AP: ${ab.ap_kosten})`;
+                } else if (ab.mp_kosten) {
+                    info = `(MP: ${ab.mp_kosten})`;
                 } else {
                     info = `(AP: ${ab.ap_kosten})`;
                 }
@@ -176,8 +216,12 @@ async function spielerZug(spieler, monster_name, monster_hp, helden) {
                         continue;
                     }
                 } else {
-                    if (spieler.ap < (ability.ap_kosten || 0)) {
-                        await printSlow("❌ Nicht genug Aktionspunkte (AP)!");
+                    const hatGenugAP = spieler.ap >= (ability.ap_kosten || 0);
+                    const hatGenugMP = spieler.mp >= (ability.mp_kosten || 0);
+                    
+                    if (!hatGenugAP || !hatGenugMP) {
+                        const ressource = !hatGenugAP ? "Aktionspunkte (AP)" : "Manapunkte (MP)";
+                        await printSlow(`❌ Nicht genug ${ressource}!`);
                         continue;
                     }
                 }
@@ -210,6 +254,7 @@ async function spielerZug(spieler, monster_name, monster_hp, helden) {
                     spieler.sp = 0;
                 } else {
                     spieler.ap -= (ability.ap_kosten || 0);
+                    spieler.mp -= (ability.mp_kosten || 0);
                 }
                 
                 return ["fähigkeit", { ability, targetHeld }];
@@ -300,7 +345,7 @@ export async function teamKampf(helden, monster, imDunkeln = false, ebene = null
         await printSlow(`\n⚔️ Ein mächtiger ${monster.name} (HP: ${monster.hp} | RK: ${monster.rk}) blockiert den Weg!`);
     }
 
-    let monsterStatus = { schlaf: 0, verwirrt: 0 };
+    let monsterStatus = { schlaf: 0, verwirrt: 0, subjugated: 0 };
 
     // Monsterwerte basierend auf Spieleranzahl skalieren
     const numPlayers = helden.length;
@@ -342,6 +387,13 @@ export async function teamKampf(helden, monster, imDunkeln = false, ebene = null
             // Unterdrücke die AP-Meldung für Klassen, die keine AP nutzen
             if (!["tueftler", "alchemist"].includes(held.klasse.toLowerCase())) {
                 console.log(`<span class="effect-ap">✨ ${held.name} regeneriert ${apRegen} AP.</span> (Aktuell: ${held.ap}/${held.max_ap})`);
+            }
+
+            // MP Regeneration
+            if (held.max_mp > 0) {
+                const mpRegen = 3 + Math.floor(held.grund_int / 2) + (held.mp_regen_modifier || 0);
+                held.mp = Math.min(held.max_mp, held.mp + mpRegen);
+                console.log(`<span class="mp-fill">🔮 ${held.name} regeneriert ${mpRegen} MP.</span>`);
             }
         });
         updateUI(helden, monster, monsterStatus);
@@ -540,6 +592,20 @@ export async function teamKampf(helden, monster, imDunkeln = false, ebene = null
                     }
                     await printSlow(`💚 ${targetHeld.name} regeneriert ${ability.heilung} HP.`);
                 }
+                if (ability.mp_restoration_team) {
+                    const bonus = (held.mp_regen_modifier || 0) * 2;
+                    const totalRestoration = ability.mp_restoration_team + bonus;
+                    helden.filter(h => h.hp > 0 && h.max_mp > 0).forEach(h => {
+                        h.mp = Math.min(h.max_mp, h.mp + totalRestoration);
+                    });
+                    await printSlow(`🎶 <span class="buff-text">${held.name} spielt ${ability.name}!</span> Die Gruppe regeneriert <span class="hp-gain">${totalRestoration} MP</span>.`);
+                }
+                if (ability.ap_restoration_team) {
+                    helden.filter(h => h.hp > 0).forEach(h => {
+                        h.ap = Math.min(h.max_ap, h.ap + ability.ap_restoration_team);
+                    });
+                    await printSlow(`✨ Die Energie der Gruppe kocht hoch! Alle regenerieren <span class="effect-ap">${ability.ap_restoration_team} AP</span>.`);
+                }
                 if (ability.atk_buff) {
                     if (held.klasse.toLowerCase() === "barde") {
                         helden.filter(h => h.hp > 0).forEach(h => h.atk_bonus += ability.atk_buff);
@@ -580,16 +646,20 @@ export async function teamKampf(helden, monster, imDunkeln = false, ebene = null
                     await printSlow(`💤 ${monster.name} ist eingeschlafen!`);
                 }
                 if (ability.verwirrt) {
-                    monsterStatus.verwirrt = ability.verwirrt;
-                    await printSlow(`🌀 ${monster.name} ist verwirrt!`);
-                }
-                if (ability.verwirrt) {
                     let duration = ability.verwirrt;
                     if (held.debuff_duration_bonus > 0) {
                         duration += held.debuff_duration_bonus;
                     }
                     monsterStatus.verwirrt = duration;
                     await printSlow(`🌀 ${monster.name} ist verwirrt!`);
+                }
+                if (ability.subjugated) {
+                    let duration = ability.subjugated;
+                    if (held.debuff_duration_bonus > 0) {
+                        duration += held.debuff_duration_bonus;
+                    }
+                    monsterStatus.subjugated = duration;
+                    await printSlow(`🧿 ${monster.name} wird von ${held.name} unterworfen und kämpft nun für euch!`);
                 }
                 if (ability.hp_kosten) {
                     held.hp = Math.max(0, held.hp - ability.hp_kosten);
@@ -634,6 +704,15 @@ export async function teamKampf(helden, monster, imDunkeln = false, ebene = null
                     await printSlow(`💥 Es greift sich selbst an und erleidet ${selbstSchaden} Schaden!`);
                     continue;
                 }
+                } else if (monsterStatus.subjugated > 0) {
+                    monsterStatus.subjugated--;
+                    await printSlow(`\n🧿 ${monster.name} steht unter eurer Kontrolle! Es nutzt seine Kraft, um sich selbst zu schwächen.`);
+                    const hilfsSchaden = Math.floor(monster.max_hp * 0.15); // Fügt sich 15% Max-HP Schaden zu
+                    monster.hp -= hilfsSchaden;
+                    monster.lastDmg = hilfsSchaden;
+                    updateUI(helden, monster, monsterStatus);
+                    await printSlow(`💥 Der innere Kampf fügt ${monster.name} <span class="effect-lifesteal">${hilfsSchaden} Schaden</span> zu!`);
+                    continue;
             }
 
             // Zielprüfung: Sicherstellen, dass noch jemand lebt
@@ -713,7 +792,7 @@ export async function teamKampf(helden, monster, imDunkeln = false, ebene = null
             const levelsGained = held.check_levelup();
             if (levelsGained > 0) {
                 await printSlow(`\n🌟 LEVEL UP für ${held.name}! Level ${held.level}!`, 'level-up-animation');
-                await Story.levelUpMenu(held, levelsGained);
+                await Story.levelUpMenu(held, helden, levelsGained);
             }
         }
         // Quest-Check nach dem Kampf (Kills tracken)

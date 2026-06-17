@@ -88,11 +88,15 @@ export function formatAbilityDesc(ab, held = null) {
 
     if (displayedDmg) parts.push(`💥 ${displayedDmg} ${t('stat_dmg')}`);
     if (ab.element) parts.push(`[${ab.element}]`);
+    if (ab.mp_kosten) parts.push(`🔮 ${ab.mp_kosten} MP`);
     if (ab.heilung) parts.push(`💚 ${ab.heilung} ${t('hp')}`);
     if (ab.atk_buff) parts.push(`⚔️ ${ab.atk_buff > 0 ? '+' : ''}${ab.atk_buff} ${t('atk')}`);
+    if (ab.mp_restoration_team) parts.push(`🔮 +${ab.mp_restoration_team} ${t('stat_mp')} (Team)`);
+    if (ab.ap_restoration_team) parts.push(`✨ +${ab.ap_restoration_team} ${t('ap')} (Team)`);
     if (ab.def_buff) parts.push(`🛡️ ${ab.def_buff > 0 ? '+' : ''}${ab.def_buff} ${t('rk')}`);
     if (ab.schlaf_dauer) parts.push(`💤 ${t('stat_sleep')} (${ab.schlaf_dauer} ${t('stat_rounds')})`);
     if (ab.verwirrt) parts.push(`🌀 ${t('stat_confused')} (${ab.verwirrt} ${t('stat_rounds')})`);
+    if (ab.subjugated) parts.push(`🧿 ${t('stat_subjugated')} (${ab.subjugated} ${t('stat_rounds')})`);
     if (ab.niederhalten) parts.push(`⛓️ ${t('stat_immobilized')} (${ab.niederhalten} ${t('stat_rounds')})`);
     if (ab.execute_threshold) parts.push(`💀 ${t('stat_kill')} < ${ab.execute_threshold}%`);
     if (ab.ap_regen) parts.push(`✨ +${ab.ap_regen} ${t('ap')}`);
@@ -114,6 +118,7 @@ export function formatItemDesc(item) {
     else if (item.typ === "Ruestung") parts.push(`🛡️ Rüstungsklasse: ${item.wert}`);
     else if (item.typ === "Schild") parts.push(`🛡️ Schildwert: +${item.wert}`);
     else if (item.typ === "Gegenstand" && item.wert > 0) parts.push(`❤️ Heilung: ${item.wert} HP`);
+    else if (item.typ === "Mana-Gegenstand" && item.wert > 0) parts.push(`🔮 Mana: ${item.wert} MP`);
     
     if (item.ladungen !== undefined) parts.push(`🔥 Ladungen: ${item.ladungen}`);
     
@@ -164,7 +169,8 @@ const rassenIcons = {
     "ork": "👹",
     "zwerg": "⚒️",
     "elf": "🧝",
-    "goblin": "🐸"
+    "goblin": "🐸",
+    "halbling": "🧝‍♂️"
 };
 
 const klassenIcons = {
@@ -179,6 +185,9 @@ const klassenIcons = {
     "paladin": "⚜️",
     "berserker": "🩸",
     "erzmagier": "🔮",
+    "beschwörer": "🧿",
+    "dämonologe": "👿",
+    "elementarist": "🌪️",
     "assassine": "🗡️"
 };
 
@@ -370,9 +379,16 @@ export function updateUI(helden, monster = null, monsterStatus = null, ebene = n
                 h.ausgeruestete_schild?.name
             ].filter(Boolean).join(", ") || "keine";
 
-            const hpPercent = Math.max(0, Math.min(100, (h.hp / h.max_hp) * 100));
-            const apPercent = Math.max(0, Math.min(100, (h.ap / h.max_ap) * 100));
-            const spPercent = Math.max(0, Math.min(100, (h.sp / h.max_sp) * 100));
+            // Werte für die Balken berechnen (Sicherheits-Checks gegen undefined/null)
+            const hpVal = h.hp || 0;
+            const apVal = h.ap || 0;
+            const mpVal = h.mp || 0;
+            const spVal = h.sp || 0;
+
+            const hpPercent = Math.max(0, Math.min(100, (hpVal / h.max_hp) * 100));
+            const apPercent = Math.max(0, Math.min(100, (apVal / h.max_ap) * 100));
+            const mpPercent = h.max_mp > 0 ? Math.max(0, Math.min(100, (mpVal / h.max_mp) * 100)) : 0;
+            const spPercent = Math.max(0, Math.min(100, (spVal / h.max_sp) * 100));
             const xpPercent = Math.max(0, Math.min(100, (h.xp / h.xp_needed) * 100));
 
             if (hpPercent < 20 && h.hp > 0 && h.hp !== null) {
@@ -388,10 +404,6 @@ export function updateUI(helden, monster = null, monsterStatus = null, ebene = n
                 if (hpPercent >= 20 || h.hp <= 0) card.classList.remove('critical-hp');
                 h.isCriticalHpSoundPlayed = false;
             }
-
-            const hpVal = h.hp || 0;
-            const apVal = h.ap || 0;
-            const spVal = h.sp || 0;
 
             const klasseLower = h.klasse.toLowerCase();
             const isCrafter = ["tueftler", "alchemist"].includes(klasseLower);
@@ -411,6 +423,15 @@ export function updateUI(helden, monster = null, monsterStatus = null, ebene = n
                     <div class="bar-container">
                         <small>✨ AP: ${apVal}/${h.max_ap}</small>
                         <div class="progress-bar"><div class="progress-fill ap-fill" style="width: ${apPercent}%"></div></div>
+                    </div>`;
+            }
+
+            let manaHtml = "";
+            if (h.max_mp > 0) {
+                manaHtml = `
+                    <div class="bar-container">
+                    <small>🔮 MP: ${Math.floor(mpVal)}/${h.max_mp}</small>
+                        <div class="progress-bar"><div class="progress-fill mp-fill" style="width: ${mpPercent}%"></div></div>
                     </div>`;
             }
 
@@ -436,12 +457,13 @@ export function updateUI(helden, monster = null, monsterStatus = null, ebene = n
                 ${playerStatusHtml}
                 💰 Gold: ${h.gold} | ⚔️ ATK: ${h.atk_bonus}<br>
                 <div class="bar-container">
-                    <small>❤️ HP: ${hpVal}/${h.max_hp}</small>
+                    <small>❤️ HP: ${Math.floor(hpVal)}/${h.max_hp}</small>
                     <div class="progress-bar"><div class="progress-fill hp-fill" style="width: ${hpPercent}%"></div></div>
                 </div>
                 ${resourceHtml}
+                ${manaHtml}
                 <div class="bar-container">
-                    <small>⚡ SP (Ultimate): ${spVal}/${h.max_sp}</small>
+                    <small>⚡ SP (Ultimate): ${Math.floor(spVal)}/${h.max_sp}</small>
                     <div class="progress-bar"><div class="progress-fill sp-fill" style="width: ${spPercent}%"></div></div>
                 </div>
                 <div class="bar-container">
@@ -491,6 +513,7 @@ export function updateUI(helden, monster = null, monsterStatus = null, ebene = n
         const effects = [];
         if (monsterStatus.schlaf > 0) effects.push(`<div class="status-badge badge-debuff" title="Schlaf: Monster setzt aus">💤 ${monsterStatus.schlaf}</div>`);
         if (monsterStatus.verwirrt > 0) effects.push(`<div class="status-badge badge-debuff" title="Verwirrt: Chance auf Selbstschaden">🌀 ${monsterStatus.verwirrt}</div>`);
+        if (monsterStatus.subjugated > 0) effects.push(`<div class="status-badge badge-debuff" title="Unterworfen: Monster kämpft für euch">🧿 ${monsterStatus.subjugated}</div>`);
         
         if (effects.length > 0) {
             statusHtml = `<div class="status-container">${effects.join("")}</div>`;

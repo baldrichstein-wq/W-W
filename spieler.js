@@ -19,6 +19,7 @@ export default class Spieler {
         this.totalDamageTaken = 0;
         this.damageSources = {};
         this.max_ap = 0; // Maximale Aktionspunkte
+        this.max_mp = 0; // Maximale Manapunkte
         this.sp = 0; // Spezialpunkte für Ultimates
         this.max_sp = GAME_BALANCE.STATS.MAX_SP;
         
@@ -27,7 +28,7 @@ export default class Spieler {
         this.grund_def = GAME_BALANCE.STATS.BASE_DEF;
         this.grund_hp = GAME_BALANCE.STATS.BASE_HP;
         this.grund_ap = GAME_BALANCE.STATS.BASE_AP;
-        this.grund_mp = 0;
+        this.grund_mp = GAME_BALANCE.STATS.BASE_MP;
         this.grund_sp = 0; // Stamina Points (nicht mehr verwendet, aber hier zur Vollständigkeit)
         this.grund_ini = 0;
         this.grund_atk_gesch = 0;
@@ -47,6 +48,7 @@ export default class Spieler {
         this.healing_output_bonus = 0; // Multiplikator für die ausgehende Heilung (z.B. 0.15 für +15%)
         this.damage_reduction_bonus = 0; // Flache Schadensreduktion pro Treffer
         this.hp_regen_bonus = 0; // Bonus HP-Regeneration pro Runde
+        this.trap_detection_bonus = 0; // Bonus auf Fallen-Entdeckung (Rassen-Passiv)
         this.completedQuests = []; // Verfolgt abgeschlossene Quests
         this.achievements = []; // Array für freigeschaltete Achievements
 
@@ -73,11 +75,15 @@ export default class Spieler {
         this.rasse_def = rb.def;
         this.rasse_ini = rb.ini;
         if (rb.gesch) this.rasse_gesch = rb.gesch;
+        if (rb.trap_detect) this.trap_detection_bonus = rb.trap_detect;
 
         const cb = GAME_BALANCE.CLASS_BONUSES[klasseLower] || { hp: 0, atk: 0, def: 0 };
         this.max_hp = this.grund_hp + this.rasse_hp + cb.hp;
         this.atk_bonus = this.grund_atk + this.rasse_atk + cb.atk;
         this.def_bonus = this.grund_def + this.rasse_def + cb.def;
+        this.max_mp = this.grund_mp + (rb.mp || 0) + (cb.mp || 0);
+        this.mp = this.max_mp;
+
         this.abilities = [...(STARTING_ABILITIES[klasseLower] || [])];
 
         if (klasseLower === "krieger") {
@@ -142,7 +148,14 @@ export default class Spieler {
             this.inventar.push(new Item("Fläschchen", "Material", 0));
             this.inventar.push(new Item("Fläschchen", "Material", 0));
             this.inventar.push(new Item("Bestienteile", "Material", 0));
-        } 
+        } else if (klasseLower === "beschwoerer" || klasseLower === "beschwörer") {
+            this.grund_int = 3;
+            this.ausgeruestete_ruestung = new Item("Ledergewand", "Ruestung", 11);
+            this.ausgeruestete_waffe = new Item("Beschwörerstab", "Waffe", 7);
+            this.inventar.push(new Item("Kristallsplitter", "Material", 0));
+            this.inventar.push(new Item("Bestienteile", "Material", 0));
+            this.inventar.push(new Item("Heiltrank", "Gegenstand", 10));
+        }
         else {
             this.inventar.push(new Item("Altes Brot", "Gegenstand", 1));
         }
@@ -153,6 +166,7 @@ export default class Spieler {
         this.grund_cha += this.rasse_cha;
         this.hp = this.max_hp;
         this.ap = this.max_ap;
+        this.mp = this.max_mp;
         this.verbrauchteMaterialien = [];
         this.activeQuests = [];
         this.tavernBanRooms = 0; // Verbleibende Räume für das Hausverbot
@@ -230,6 +244,7 @@ export default class Spieler {
         if (levelsGained > 0) {
             this.hp = this.max_hp;
             this.ap = this.max_ap;
+            this.mp = this.max_mp;
             return levelsGained; // Gibt die Anzahl der gewonnenen Level zurück
         }
         return 0;

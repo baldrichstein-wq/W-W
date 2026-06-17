@@ -3,7 +3,7 @@ import Monster from './monster.js';
 import * as Combat from './combat.js';
 import { question, randomRange, printSlow, wuerfelD20, updateUI, config, formatAbilityDesc, saveConfigToLocalStorage, t } from './utils.js';
 import * as Story from './story.js';
-import { RASSEN_LISTE, KLASSEN_LISTE, CLASS_INFO, STARTING_ABILITIES } from './config.js';
+import { RASSEN_LISTE, KLASSEN_LISTE, CLASS_INFO, STARTING_ABILITIES, GAME_SETTINGS } from './config.js';
 
 // --- META LOGIC ---
 function updateLanguageUI() {
@@ -43,6 +43,17 @@ function updateLanguageUI() {
 
     const playerCountLabel = document.querySelector('#player-count-setup label');
     if (playerCountLabel) playerCountLabel.textContent = t('player_count_label');
+
+    const difficultyLabel = document.querySelector('#difficulty-setup label');
+    if (difficultyLabel) difficultyLabel.textContent = t('difficulty_label');
+
+    const difficultySelect = document.getElementById('difficulty-select');
+    if (difficultySelect) {
+        const options = difficultySelect.options;
+        options[0].textContent = t('diff_easy');
+        options[1].textContent = t('diff_normal');
+        options[2].textContent = t('diff_hard');
+    }
 
     const confirmCharsBtn = document.getElementById('confirm-chars-btn');
     if (confirmCharsBtn) confirmCharsBtn.textContent = t('confirm_chars_btn');
@@ -289,6 +300,24 @@ function initCharCreator() {
     const countSelect = document.getElementById('player-count-select');
     const formsContainer = document.getElementById('player-forms-container');
     
+    const setupContainer = document.getElementById('player-count-setup');
+    if (setupContainer && !document.getElementById('difficulty-setup')) {
+        const diffDiv = document.createElement('div');
+        diffDiv.id = 'difficulty-setup';
+        diffDiv.style.marginTop = '15px';
+        diffDiv.style.borderTop = '1px solid var(--border-color)';
+        diffDiv.style.paddingTop = '10px';
+        diffDiv.innerHTML = `
+            <label for="difficulty-select" style="margin-right: 10px;">${t('difficulty_label')}</label>
+            <select id="difficulty-select" class="meta-btn">
+                <option value="easy">${t('diff_easy')}</option>
+                <option value="normal" selected>${t('diff_normal')}</option>
+                <option value="hard">${t('diff_hard')}</option>
+            </select>
+        `;
+        setupContainer.appendChild(diffDiv);
+    }
+
     for(let i=1; i<=4; i++) {
         let opt = document.createElement('option');
         opt.value = i;
@@ -477,7 +506,11 @@ async function spielStarten(helden) {
         let raetselMeisterErschienen = false;
         for (let raum = 1; raum <= raumAnzahl; raum++) {
             // Hausverbot-Ticker für jeden Helden verringern
-            helden.forEach(h => { if (h.tavernBanRooms > 0) h.tavernBanRooms--; });
+            helden.forEach(h => { 
+                if (h.tavernBanRooms > 0) h.tavernBanRooms--; 
+                // Passive MP Regeneration pro Raum (außerhalb des Kampfes)
+                if (h.max_mp > 0 && h.hp > 0) h.mp = Math.min(h.max_mp, h.mp + 2);
+            });
             updateUI(helden, null, null, ebene, raum, raumAnzahl);
             await printSlow(`\n--- Ebene ${ebene} | Raum ${raum}/${raumAnzahl} ---`);
 
@@ -668,8 +701,8 @@ async function spielStarten(helden) {
                         await Story.checkQuests(helden, { type: 'inventory' });
                     } else if (barde && wahl === 'l') {
                         const fähigkeit = barde.abilities.find(a => a.name === "Lied des Lichts");
-                        if (barde.ap >= fähigkeit.ap_kosten) {
-                            barde.ap -= fähigkeit.ap_kosten;
+                        if (barde.mp >= fähigkeit.mp_kosten) {
+                            barde.mp -= fähigkeit.mp_kosten;
                             if (!barde.bardenLichtDauer || barde.bardenLichtDauer <= 0) {
                                 helden.forEach(h => h.atk_bonus += (fähigkeit.licht_atk || 0));
                             }
@@ -964,6 +997,9 @@ document.addEventListener('DOMContentLoaded', () => {
     if (confirmCharsBtn) {
         confirmCharsBtn.addEventListener('click', () => {
             const helden = [];
+            const difficultySelect = document.getElementById('difficulty-select');
+            if (difficultySelect) GAME_SETTINGS.DIFFICULTY = difficultySelect.value;
+
             const count = parseInt(document.getElementById('player-count-select').value);
             
             for(let i=1; i<=count; i++) {

@@ -1,5 +1,5 @@
-export const RASSEN_LISTE = ["Mensch", "Ork", "Zwerg", "Elf", "Goblin"];
-export const KLASSEN_LISTE = ["Krieger", "Magier", "Schurke", "Heiler", "Verteidiger", "Tueftler", "Alchemist", "Barde"];
+export const RASSEN_LISTE = ["Mensch", "Ork", "Zwerg", "Elf", "Goblin", "Drachengeborene", "Halbling"];
+export const KLASSEN_LISTE = ["Krieger", "Magier", "Schurke", "Heiler", "Verteidiger", "Tueftler", "Alchemist", "Barde", "Beschwörer"];
 
 export const GAME_SETTINGS = {
     DIFFICULTY: "normal" // Mögliche Werte: "easy", "normal", "hard"
@@ -16,6 +16,7 @@ export const GAME_BALANCE = {
         BASE_ATK: 3,
         BASE_DEF: 5,
         BASE_AP: 30,
+        BASE_MP: 20,
         BASE_GOLD: 30,
         MAX_SP: 100
     },
@@ -24,17 +25,20 @@ export const GAME_BALANCE = {
         "goblin": { hp: 5,  atk: -1, def: 4, ini: 2  },
         "zwerg":  { hp: 15, atk: 2,  def: 5, ini: -2 },
         "mensch": { hp: 10, atk: 1,  def: 2, ini: 1  },
-        "elf":    { hp: 7,  atk: 1,  def: 1, ini: 3  }
+        "elf":    { hp: 7,  atk: 1,  def: 1, ini: 3  },
+        "drachengeborene": { hp: 18, atk: 4, def: 3, ini: -1 },
+        "halbling": { hp: 8, atk: -1, def: 2, ini: 4, gesch: 2, trap_detect: 5 }
     },
     CLASS_BONUSES: {
-        "krieger":     { hp: 10, atk: 3, def: 7 },
-        "magier":      { hp: 3,  atk: 4, def: 1 },
-        "schurke":     { hp: 2,  atk: 5, def: 0 },
-        "verteidiger": { hp: 15, atk: 0, def: 5 },
-        "heiler":      { hp: 4,  atk: 0, def: 1 },
-        "barde":       { hp: 5,  atk: 2, def: 1 },
-        "tueftler":    { hp: 8,  atk: 3, def: 3 },
-        "alchemist":   { hp: 8,  atk: 2, def: 3 }
+        "krieger":     { hp: 10, atk: 3, def: 7, mp: 0 },
+        "magier":      { hp: 3,  atk: 4, def: 1, mp: 40 },
+        "schurke":     { hp: 2,  atk: 5, def: 0, mp: 5 },
+        "verteidiger": { hp: 15, atk: 0, def: 5, mp: 0 },
+        "heiler":      { hp: 4,  atk: 0, def: 1, mp: 30 },
+        "barde":       { hp: 5,  atk: 2, def: 1, mp: 25 },
+        "tueftler":    { hp: 8,  atk: 3, def: 3, mp: 0 },
+        "alchemist":   { hp: 8,  atk: 2, def: 3, mp: 0 },
+        "beschwörer": { hp: 6,  atk: 2, def: 2, mp: 35 }
     },
     DIFFICULTY_SETTINGS: {
         "easy": {
@@ -69,7 +73,8 @@ export const CLASS_INFO = {
     "Verteidiger": { icon: "🛡️", desc: "Der Fels in der Brandung. Höchste Verteidigung und Schildfähigkeiten." },
     "Tueftler": { icon: "⚙️", desc: "Nutzt Materialien, um Gadgets und Geschütze zu bauen." },
     "Alchemist": { icon: "⚗️", desc: "Braut Tränke und Bomben für jede Situation." },
-    "Barde": { icon: "🎶", desc: "Stärkt Verbündete durch Lieder und schwächt Feinde mit Musik." }
+    "Barde": { icon: "🎶", desc: "Stärkt Verbündete durch Lieder und schwächt Feinde mit Musik." },
+    "Beschwörer": { icon: "🧿", desc: "Ruft Wesenheiten aus anderen Ebenen herbei, um für sich zu kämpfen." }
 };
 
 export const STARTING_ABILITIES = {
@@ -81,16 +86,16 @@ export const STARTING_ABILITIES = {
         { name: "Zorn des Ares", sp_kosten: 100, schaden: 60, atk_buff: 15, isUltimate: true, element: "Physisch" }
     ],
     "magier": [
-        { name: "Feuerball", ap_kosten: 20, schaden: 20 },
-        { name: "Windschnitt", ap_kosten: 12, schaden: 10 },
-        { name: "Erlösung", ap_kosten: 2, execute_threshold: 5 },
-        { name: "Blitzschlag", ap_kosten: 15, schaden: 15 },
+        { name: "Feuerball", mp_kosten: 15, schaden: 20 },
+        { name: "Windschnitt", mp_kosten: 8, schaden: 10 },
+        { name: "Erlösung", mp_kosten: 5, execute_threshold: 5 },
+        { name: "Blitzschlag", mp_kosten: 12, schaden: 15 },
         { name: "Armageddon", sp_kosten: 100, schaden: 80, niederhalten: 2, isUltimate: true, element: "Feuer" }
     ],
     "schurke": [
         { name: "Meucheln", ap_kosten: 12, schaden: 18 },
         { name: "Hinterhalt", ap_kosten: 6, schaden: 5 },
-        { name: "Tarnen", ap_kosten: 10, stealth_buff: 6 },
+        { name: "Tarnen", ap_kosten: 10, mp_kosten: 5, stealth_buff: 6 },
         { name: "Giftstoß", ap_kosten: 15, schaden: 10, verwirrt: 1 },
         { name: "Nachtschatten-Exitus", sp_kosten: 100, schaden: 70, verwirrt: 3, isUltimate: true, element: "Physisch" }
     ],
@@ -109,10 +114,10 @@ export const STARTING_ABILITIES = {
         { name: "Götterschild", sp_kosten: 100, def_buff: 15, heilung: 30, niederhalten: 1, isUltimate: true, element: "Heilig" }
     ],
     "barde": [
-        { name: "Inspirierendes Lied", ap_kosten: 10, heilung: 10, bonus_schaden: 5 },
-        { name: "Schlaflied", ap_kosten: 20, schlaf_dauer: 2 },
-        { name: "Songversuch", ap_kosten: 15, verwirrt: 3 },
-        { name: "Siegeslied", ap_kosten: 12, atk_buff: 3 },
+        { name: "Inspirierendes Lied", mp_kosten: 10, heilung: 10, bonus_schaden: 5 },
+        { name: "Schlaflied", mp_kosten: 20, schlaf_dauer: 2 },
+        { name: "Songversuch", mp_kosten: 15, verwirrt: 3 },
+        { name: "Siegeslied", mp_kosten: 12, atk_buff: 3 },
         { name: "Symphonie des Endes", sp_kosten: 100, schaden: 40, atk_buff: 10, schlaf_dauer: 2, isUltimate: true, element: "Schall" }
     ],
     "tueftler": [
@@ -128,6 +133,13 @@ export const STARTING_ABILITIES = {
         { name: "Heilflasche", ap_kosten: 0, material_kosten: "Heiltrank", heilung: 15, level: 1 },
         { name: "Rauchbombe", ap_kosten: 0, material_kosten: "Rauchbombe", verwirrt: 1, level: 1 },
         { name: "Stein der Weisen", sp_kosten: 100, schaden: 50, heilung: 50, verwirrt: 2, isUltimate: true, element: "Säure" }
+    ],
+    "beschwörer": [
+        { name: "Höllenhund rufen", mp_kosten: 15, schaden: 18, element: "Feuer" },
+        { name: "Geisterportal", mp_kosten: 10, schaden: 12, element: "Schatten" },
+        { name: "Astralbindung", mp_kosten: 8, def_buff: 4 },
+        { name: "Manasog", mp_kosten: 0, mp_restoration_team: 5 },
+        { name: "Avatar der Leere", sp_kosten: 100, schaden: 75, verwirrt: 2, isUltimate: true, element: "Energie" }
     ]
 };
 
@@ -154,7 +166,8 @@ export const SPECIALIZATIONS = {
     ],
     "barde": [
         { name: "Minnesänger", passiveBonus: { type: "buff_duration_bonus", value: 1 } },
-        { name: "Troubadour", passiveBonus: { type: "debuff_duration_bonus", value: 1 } }
+        { name: "Troubadour", passiveBonus: { type: "debuff_duration_bonus", value: 1 } },
+        { name: "Liedmeister", passiveBonus: { type: "mp_regen_modifier", value: 3 } }
     ],
     "tueftler": [
         { name: "Maschinist", passiveBonus: { type: "material_efficiency_bonus", value: 0.10 } },
@@ -163,6 +176,10 @@ export const SPECIALIZATIONS = {
     "alchemist": [
         { name: "Meister-Alchemist", passiveBonus: { type: "healing_output_bonus", value: 0.20 } },
         { name: "Mutator", passiveBonus: { type: "hp_regen_bonus", value: 5 } }
+    ],
+    "beschwörer": [
+        { name: "Dämonologe", passiveBonus: { type: "atk_bonus", value: 3 } },
+        { name: "Elementarist", passiveBonus: { type: "ap_regen_modifier", value: 2 } }
     ]
 };
 
@@ -172,6 +189,7 @@ export const SHOP_WAREN = {
     "3": { label: "Schuppenpanzer kaufen (25 Gold, RK 15)", cost: 25, type: "item", name: "Schuppenpanzer", kind: "Ruestung", val: 15, lore: "Rüstung aus gehärteten Metallschuppen." },
     "4": { label: "Gifttrank kaufen (5 Gold)", cost: 5, type: "item", name: "Gifttrank", kind: "Trank", val: 0, lore: "Riecht verdächtig nach bitteren Mandeln." },
     "11": { label: "Fackel kaufen (5 Gold)", cost: 5, type: "item", name: "Fackel", kind: "Werkzeug", val: 0, lore: "Erhellt dunkle Orte, brennt aber nach 5 Räumen ab." },
+    "12": { label: "Manatrank kaufen (25 Gold, +50 MP)", cost: 25, type: "mp", val: 50, name: "Manatrank", lore: "Ein saphirblaues Elixier, das die geistigen Reserven auffüllt." },
     // Tueftler Materialien
     "5": { label: "Mechanischeteile (1 Gold)", cost: 1, type: "item", name: "Mechanischeteile", kind: "Material", val: 0, lore: "Zahnräder und Federn für Tüftler." },
     "6": { label: "Maschinenoel (1 Gold)", cost: 1, type: "item", name: "Maschinenoel", kind: "Material", val: 0, lore: "Schmiermittel für reibungslose Abläufe." },

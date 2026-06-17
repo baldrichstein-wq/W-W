@@ -335,9 +335,10 @@ async function checkQuests(helden, context = {}) {
 
                 await printSlow(`💰 Belohnung: ${q.reward.gold} Gold und ${q.reward.xp} XP erhalten.`);
                 
-                if (h.check_levelup()) {
+                const levelsGained = h.check_levelup();
+                if (levelsGained > 0) {
                     await printSlow(`\n🌟 LEVEL UP für ${h.name}! Level ${h.level}!`, 'level-up-animation');
-                    await levelUpMenu(h);
+                    await levelUpMenu(h, levelsGained);
                 }
                 updateUI(helden);
             }
@@ -481,17 +482,17 @@ const KLASSEN_ABILITIES = {
         { name: "Waffengewalt", ap_kosten: 20, schaden: 10, element: "Physisch" }
     ],
     "magier": [
-        { name: "Meteor", ap_kosten: 40, schaden: 50, element: "Feuer" },
-        { name: "Frostnova", ap_kosten: 25, schlaf_dauer: 1, element: "Eis" },
-        { name: "Arkaner Fokus", ap_kosten: 10, atk_buff: 10 },
-        { name: "Mana-Schild", ap_kosten: 25, def_buff: 10 },
-        { name: "Eiszeit", ap_kosten: 35, schlaf_dauer: 2, element: "Eis" },
-        { name: "Kettenblitz", ap_kosten: 28, schaden: 30, element: "Blitz" },
-        { name: "Zeitstopp", ap_kosten: 45, schlaf_dauer: 2 },
-        { name: "Spiegelbild", ap_kosten: 20, def_buff: 8 },
-        { name: "Desintegration", ap_kosten: 35, execute_threshold: 15 },
-        { name: "Elementarsturm", ap_kosten: 50, schaden: 60, element: "Energie" },
-        { name: "Arkane Überladung", ap_kosten: 30, schaden: 15, element: "Energie" }
+        { name: "Meteor", mp_kosten: 35, schaden: 50, element: "Feuer" },
+        { name: "Frostnova", mp_kosten: 20, schlaf_dauer: 1, element: "Eis" },
+        { name: "Arkaner Fokus", mp_kosten: 10, atk_buff: 10 },
+        { name: "Mana-Schild", mp_kosten: 20, def_buff: 10 },
+        { name: "Eiszeit", mp_kosten: 30, schlaf_dauer: 2, element: "Eis" },
+        { name: "Kettenblitz", mp_kosten: 25, schaden: 30, element: "Blitz" },
+        { name: "Zeitstopp", mp_kosten: 50, schlaf_dauer: 2 },
+        { name: "Spiegelbild", mp_kosten: 15, def_buff: 8 },
+        { name: "Desintegration", mp_kosten: 40, execute_threshold: 15 },
+        { name: "Elementarsturm", mp_kosten: 60, schaden: 60, element: "Energie" },
+        { name: "Arkane Überladung", mp_kosten: 25, schaden: 15, element: "Energie" }
     ],
     "schurke": [
         { name: "Giftiger Dolch", ap_kosten: 15, schaden: 15, verwirrt: 1, element: "Gift" },
@@ -507,17 +508,17 @@ const KLASSEN_ABILITIES = {
         { name: "Präzisionsschlag", ap_kosten: 20, schaden: 12, element: "Physisch" }
     ],
     "heiler": [
-        { name: "Heiliger Regen", ap_kosten: 25, heilung: 30, element: "Heilig" },
-        { name: "Göttlicher Schutz", ap_kosten: 20, def_buff: 5 },
-        { name: "Reinigung", ap_kosten: 10, heilung: 15, element: "Heilig" },
-        { name: "Lebenslicht", ap_kosten: 40, heilung: 40, element: "Heilig" },
-        { name: "Göttlicher Zorn", ap_kosten: 25, schaden: 25, element: "Heilig" },
-        { name: "Segnung", ap_kosten: 20, atk_buff: 5, def_buff: 5 },
-        { name: "Zuflucht", ap_kosten: 30, heilung: 45 },
-        { name: "Bannung", ap_kosten: 18, schaden: 20, element: "Heilig" },
-        { name: "Märtyrer-Segen", ap_kosten: 15, heilung: 60, hp_kosten: 15 },
-        { name: "Licht-Avatar", ap_kosten: 40, atk_buff: 15, def_buff: 10 },
-        { name: "Heiliges Leuchten", ap_kosten: 15, licht: 5, licht_def: 2, abschrecken: 30 }
+        { name: "Heiliger Regen", mp_kosten: 20, heilung: 30, element: "Heilig" },
+        { name: "Göttlicher Schutz", mp_kosten: 15, def_buff: 5 },
+        { name: "Reinigung", mp_kosten: 8, heilung: 15, element: "Heilig" },
+        { name: "Lebenslicht", mp_kosten: 30, heilung: 40, element: "Heilig" },
+        { name: "Göttlicher Zorn", mp_kosten: 20, schaden: 25, element: "Heilig" },
+        { name: "Segnung", mp_kosten: 15, atk_buff: 5, def_buff: 5 },
+        { name: "Zuflucht", mp_kosten: 25, heilung: 45 },
+        { name: "Bannung", mp_kosten: 15, schaden: 20, element: "Heilig" },
+        { name: "Märtyrer-Segen", mp_kosten: 12, heilung: 60, hp_kosten: 15 },
+        { name: "Licht-Avatar", mp_kosten: 45, atk_buff: 15, def_buff: 10 },
+        { name: "Heiliges Leuchten", mp_kosten: 10, licht: 5, licht_def: 2, abschrecken: 30 }
     ],
     "verteidiger": [
         { name: "Bollwerk", ap_kosten: 25, def_buff: 10 },
@@ -532,17 +533,17 @@ const KLASSEN_ABILITIES = {
         { name: "Reflektionsschild", ap_kosten: 20, schaden: 15 }
     ],
     "barde": [
-        { name: "Hymne des Sieges", ap_kosten: 30, atk_buff: 15 },
-        { name: "Spottvers", ap_kosten: 15, schaden: 12, verwirrt: 1, element: "Schall" },
-        { name: "Lied der Ruhe", ap_kosten: 25, schlaf_dauer: 1, element: "Schall" },
-        { name: "Requiem", ap_kosten: 40, schaden: 30, verwirrt: 2, element: "Schall" },
-        { name: "Symphonie der Hoffnung", ap_kosten: 35, heilung: 20, atk_buff: 5 },
-        { name: "Dissonanz", ap_kosten: 18, schaden: 18, verwirrt: 1 },
-        { name: "Ballade der Stärke", ap_kosten: 15, atk_buff: 10 },
-        { name: "Tanz der Schwerter", ap_kosten: 25, schaden: 25 },
-        { name: "Echo der Ahnen", ap_kosten: 20, heilung: 20 },
-        { name: "Finale der Verdammnis", ap_kosten: 45, schaden: 55 },
-        { name: "Lied des Lichts", ap_kosten: 15, licht: 5, licht_atk: 2 }
+        { name: "Hymne des Sieges", mp_kosten: 25, atk_buff: 15 },
+        { name: "Spottvers", mp_kosten: 10, schaden: 12, verwirrt: 1, element: "Schall" },
+        { name: "Lied der Ruhe", mp_kosten: 20, schlaf_dauer: 1, element: "Schall" },
+        { name: "Requiem", mp_kosten: 35, schaden: 30, verwirrt: 2, element: "Schall" },
+        { name: "Symphonie der Hoffnung", mp_kosten: 30, heilung: 20, atk_buff: 5 },
+        { name: "Dissonanz", mp_kosten: 15, schaden: 18, verwirrt: 1 },
+        { name: "Ballade der Stärke", mp_kosten: 12, atk_buff: 10 },
+        { name: "Tanz der Schwerter", mp_kosten: 20, schaden: 25 },
+        { name: "Echo der Ahnen", mp_kosten: 18, heilung: 20 },
+        { name: "Finale der Verdammnis", mp_kosten: 50, schaden: 55 },
+        { name: "Lied des Lichts", mp_kosten: 12, licht: 5, licht_atk: 2 }
     ],
     "tueftler": [
         { name: "Tesla-Spule", ap_kosten: 0, material_kosten: "Batterie", schaden: 35, element: "Blitz" },
@@ -617,6 +618,10 @@ const KLASSEN_ABILITIES = {
         { name: "Spottlied", ap_kosten: 20, verwirrt: 2 },
         { name: "Reim-Attacke", ap_kosten: 15, schaden: 25, element: "Schall" }
     ],
+    "liedmeister": [
+        { name: "Refrain der Erneuerung", ap_kosten: 25, mp_restoration_team: 10 },
+        { name: "Harmonische Resonanz", ap_kosten: 30, schaden: 25, element: "Schall" }
+    ],
     "maschinist": [
         { name: "Belagerungsmodus", ap_kosten: 0, material_kosten: "Belagerungs-Kern", schaden: 70, element: "Physisch" },
         { name: "Drohnen-Schwarm", ap_kosten: 0, material_kosten: "Drohnen-Steuerung", schaden: 40, verwirrt: 2 }
@@ -632,6 +637,19 @@ const KLASSEN_ABILITIES = {
     "mutator": [
         { name: "Adrenalin-Serum", ap_kosten: 0, material_kosten: "Bestienteile", atk_buff: 15 },
         { name: "Regenerations-Mutagen", ap_kosten: 0, material_kosten: "Pflanzenteile", heilung: 50 }
+    ],
+    "beschwörer": [
+        { name: "Dämonen-Armee", mp_kosten: 40, schaden: 45, element: "Schatten" },
+        { name: "Leeren-Schild", mp_kosten: 20, def_buff: 12 }
+    ],
+    "dämonologe": [
+        { name: "Pakt mit dem Teufel", ap_kosten: 30, schaden: 60, hp_kosten: 15, element: "Feuer" },
+        { name: "Chaos-Invasion", ap_kosten: 45, schaden: 50, verwirrt: 2 },
+        { name: "Dämonische Übernahme", ap_kosten: 40, subjugated: 1, element: "Schatten" }
+    ],
+    "elementarist": [
+        { name: "Elementarsturm", ap_kosten: 40, schaden: 40, element: "Energie" },
+        { name: "Kristallfokus", ap_kosten: 20, mp_restoration_team: 15 }
     ]
 };
 
@@ -642,7 +660,11 @@ const SYNERGIE_ABILITIES = {
     "verteidiger+tueftler": { name: "Bollwerk-Upgrade", ap_kosten: 0, def_buff: 8 },
     "krieger+schurke": { name: "Blutiges Duo", ap_kosten: 20, schaden: 30, element: "Physisch" },
     "magier+barde": { name: "Sphärenklang", ap_kosten: 22, schaden: 20, schlaf_dauer: 1, element: "Schall" },
-    "verteidiger+heiler": { name: "Glaubensmauer", ap_kosten: 20, def_buff: 5, heilung: 15, element: "Heilig" }
+    "verteidiger+heiler": { name: "Glaubensmauer", ap_kosten: 20, def_buff: 5, heilung: 15, element: "Heilig" },
+    "liedmeister+erzmagier": { name: "Arkaner Refrain", ap_kosten: 0, mp_restoration_team: 15, ap_restoration_team: 15, element: "Energie" },
+    "beschwoerer+nekromant": { name: "Schattenbund", ap_kosten: 25, schaden: 35, heilung: 20, element: "Schatten" },
+    "dämonologe+nekromant": { name: "Höllenschlund-Riss", ap_kosten: 30, schaden: 50, element: "Schatten" },
+    "elementarist+nekromant": { name: "Spektraler Sturm", ap_kosten: 30, schaden: 40, verwirrt: 2, element: "Schatten" }
 };
 
 async function synergienPruefen(helden) {
@@ -764,7 +786,7 @@ async function secretEbeneIntro() {
     await printSlow("Vor euch schwebt der **Leeren-Wächter**, das wahre Ende dieses Dungeons.");
 }
 
-async function levelUpMenu(held, levelsGained = 1) {
+async function levelUpMenu(held, helden, levelsGained = 1) {
     let skillPunkte = GAME_BALANCE.XP.SKILL_POINTS_PER_LEVEL * levelsGained;
     await printSlow(`\n✨ --- LEVEL UP: ${held.name} (Level ${held.level}) ---`);
     if (levelsGained > 1) {
@@ -779,17 +801,20 @@ async function levelUpMenu(held, levelsGained = 1) {
         "4": { name: "Fokus", prop: "max_ap", gain: 5, label: "+5 Max AP" },
         "5": { name: "Geschicklichkeit", prop: "grund_gesch", gain: 1, label: "+1 GES" }, // Neues Attribut
         "6": { name: "Charisma", prop: "grund_cha", gain: 1, label: "+1 CHA" },
-        "7": { name: "Intelligenz", prop: "grund_int", gain: 1, label: "+1 INT" }
+        "7": { name: "Intelligenz", prop: "grund_int", gain: 1, label: "+1 INT" },
+        "8": { name: "Mana", prop: "max_mp", gain: 10, label: "+10 Max MP" }
     };
 
     while (skillPunkte > 0) {
         if (held.isKI) {
-            const keys = Object.keys(attribute);
+            // KI bevorzugt Mana nur, wenn sie auch MP besitzt
+            const keys = Object.keys(attribute).filter(k => k !== "8" || held.max_mp > 0);
             const wahl = keys[randomRange(0, keys.length - 1)];
             const attr = attribute[wahl];
             held[attr.prop] += attr.gain;
             if (attr.prop === "max_hp") held.hp += attr.gain;
             if (attr.prop === "max_ap") held.ap += attr.gain;
+            if (attr.prop === "max_mp") held.mp += attr.gain;
             skillPunkte--;
             await printSlow(`🤖 ${held.name} investiert in ${attr.name}.`);
         } else {
@@ -804,6 +829,7 @@ async function levelUpMenu(held, levelsGained = 1) {
                 held[attr.prop] += attr.gain;
                 if (attr.prop === "max_hp") held.hp += attr.gain;
                 if (attr.prop === "max_ap") held.ap += attr.gain;
+                if (attr.prop === "max_mp") held.mp += attr.gain;
                 skillPunkte--;
                 await printSlow(`✅ ${attr.name} gesteigert!`);
             } else {
@@ -895,11 +921,18 @@ async function levelUpMenu(held, levelsGained = 1) {
                     held.hp_regen_bonus += bonus.value;
                     await printSlow(`❤️ ${held.name} regeneriert nun zusätzlich ${bonus.value} HP pro Runde!`);
                     break;
+                case "mp_regen_modifier":
+                    held.mp_regen_modifier += bonus.value;
+                    await printSlow(`🔮 ${held.name} regeneriert nun zusätzlich ${bonus.value} MP pro Runde!`);
+                    break;
                 default:
                     await printSlow(`Ein unbekannter passiver Bonus wurde für ${held.name} angewendet.`);
             }
         }
     }
+
+    // Nach einer möglichen Spezialisierung prüfen wir erneut auf Synergien
+    await synergienPruefen(helden);
 
     // Achievement-Check für "Arkaner Meister"
     if (held.klasse.toLowerCase() === "magier" && held.grund_int >= 30 && !held.achievements.includes("Arkaner Meister")) {
@@ -976,8 +1009,14 @@ async function schatzFinden(helden) {
     
     await printSlow(`${aktiver.name} tritt vor und würfelt...`);
     const wurf = wuerfelD20();
-    await printSlow(`🎲 Wurf: ${wurf}`);
-    if (wurf >= 10) {
+    const gesamt = wurf + (aktiver.trap_detection_bonus || 0);
+    await printSlow(`🎲 Wurf: ${wurf}${aktiver.trap_detection_bonus > 0 ? ' (+' + aktiver.trap_detection_bonus + ' Halbling-Sinn)' : ''} = ${gesamt}`);
+
+    if (gesamt >= 10) {
+        if (wurf < 10 && gesamt >= 10) {
+            await printSlow(`✨ Dank der geschärften Sinne eines Halblings bemerkt ${aktiver.name} eine verborgene Druckplatte und umgeht sie geschickt!`);
+        }
+
         const itemPool = [
             { name: "Breitschwert", typ: "Waffe", wert: 10 },
             { name: "Ritterrüstung", typ: "Ruestung", wert: 16 },
@@ -1180,6 +1219,23 @@ async function shopBesuch(helden, istNachBoss = false) {
 async function tavernenBesuch(helden) {
     await printSlow("\n🍺 Ihr betretet die gemütliche Taverne 'Zum tanzenden JS-Bug'.");
 
+    // --- SPEZIELLES EVENT: Beschwörer & Nekromant ---
+    const summoner = helden.find(h => ["beschwoerer", "beschwörer"].includes(h.klasse.toLowerCase()) && h.hp > 0);
+    const necro = helden.find(h => h.klasse.toLowerCase() === "nekromant" && h.hp > 0);
+
+    if (summoner && necro) {
+        await printSlow(`\n🕯️ Eine unnatürliche Kälte breitet sich in der Schänke aus, als ${summoner.name} und ${necro.name} sich in eine dunkle Ecke zurückziehen.`);
+        await printSlow(`${summoner.name}: "Die Schleier zwischen den Welten sind hier dünn, Nekromant. Spürst du die Resonanz?"`);
+        await printSlow(`${necro.name}: "In der Tat. Die Echos der Verstorbenen in diesem Dungeon nähren unsere Macht."`);
+        await printSlow(`Die beiden kanalisieren gemeinsam die ätherische Energie der Umgebung.`);
+        
+        summoner.mp = Math.min(summoner.max_mp, summoner.mp + 20);
+        necro.mp = Math.min(necro.max_mp, necro.mp + 20);
+        
+        await printSlow(`✨ <span class="synergy-text">Dunkle Erkenntnis:</span> Beide Helden regenerieren <span class="hp-gain">20 MP</span> durch ihren Wissensaustausch.`);
+        updateUI(helden);
+    }
+
     for (const held of helden) {
         // Prüfung auf Hausverbot
         if (held.tavernBanRooms > 0) {
@@ -1188,7 +1244,8 @@ async function tavernenBesuch(helden) {
         }
 
         held.hp = Math.min(held.max_hp, held.hp + 10);
-        await printSlow(`🛌 ${held.name} ruht sich aus und regeneriert 10 HP.`);
+        if (held.max_mp > 0) held.mp = Math.min(held.max_mp, held.mp + 5);
+        await printSlow(`🛌 ${held.name} ruht sich aus und regeneriert HP sowie etwas MP.`);
 
         if (held.isKI) {
             // KI regeneriert automatisch, wenn AP unter 50% und genug Gold vorhanden ist
@@ -1198,6 +1255,13 @@ async function tavernenBesuch(helden) {
                 await printSlow(`🤖 ${held.name} (KI) kauft sich eine Erfrischung und regeneriert AP.`);
                 await checkQuests([held], { type: 'spend_gold', amount: 10 });
             }
+            // KI regeneriert Mana
+            if (held.mp < held.max_mp * 0.4 && held.gold >= 15) {
+                held.gold -= 15;
+                held.mp = held.max_mp;
+                await printSlow(`🤖 ${held.name} (KI) trinkt einen Manatrank.`);
+                await checkQuests([held], { type: 'spend_gold', amount: 15 });
+            }
         } else {
             let tavernenWahl = true;
             while(tavernenWahl) {
@@ -1206,6 +1270,7 @@ async function tavernenBesuch(helden) {
                 const lebendeHelden = helden.filter(h => h.hp > 0);
                 const kostenRunde = lebendeHelden.length * 10;
                 console.log(`2. Eine Runde für alle schmeißen (${kostenRunde} Gold, alle AP voll)`);
+                if (held.max_mp > 0) console.log("M. Blauer Enzian (15 Gold, MP voll)");
                 console.log("3. Einem Gast ein Bier spendieren für Gerüchte (5 Gold)");
                 console.log("4. Würfelspiel gegen den Wirt (Einsatz setzen)");
                 console.log("0. Taverne verlassen");
@@ -1230,6 +1295,17 @@ async function tavernenBesuch(helden) {
                         await checkQuests([held], { type: 'spend_gold', amount: kostenRunde });
                     } else {
                         await printSlow(`❌ Du hast nicht genug Gold, um eine Runde für alle zu schmeißen! Benötigt: ${kostenRunde} Gold.`);
+                    }
+                } else if (wahl.toLowerCase() === "m" && held.max_mp > 0) {
+                    if (held.mp >= held.max_mp) {
+                        await printSlow("❌ Dein Geist ist bereits kristallklar!");
+                    } else if (held.gold >= 15) {
+                        held.gold -= 15;
+                        held.mp = held.max_mp;
+                        await printSlow(`🔮 ${held.name} trinkt den Blauen Enzian. Die magische Energie kehrt zurück!`);
+                        await checkQuests([held], { type: 'spend_gold', amount: 15 });
+                    } else {
+                        await printSlow("❌ Nicht genug Gold für diesen edlen Tropfen!");
                     }
                 } else if (wahl === "3") {
                     if (held.gold >= 5) {
@@ -1333,7 +1409,7 @@ async function vorraeteNutzen(helden) {
             const hIdx = parseInt(heldWahl) - 1;
             if (hIdx >= 0 && hIdx < helden.length) {
                 const held = helden[hIdx];
-                const vorraete = held.inventar.filter(it => it.typ === "Gegenstand" && it.wert > 0);
+                const vorraete = held.inventar.filter(it => (it.typ === "Gegenstand" || it.typ === "Mana-Gegenstand") && it.wert > 0);
                 
                 if (vorraete.length === 0) {
                     await printSlow(`❌ ${held.name} hat keine Vorräte im Inventar.`);
@@ -1344,11 +1420,14 @@ async function vorraeteNutzen(helden) {
                 vorraete.forEach(it => {
                     const entry = grouped.find(g => g.name === it.name);
                     if (entry) entry.count++;
-                    else grouped.push({ name: it.name, val: it.wert, count: 1 });
+                    else grouped.push({ name: it.name, val: it.wert, count: 1, type: it.typ });
                 });
 
                 console.log(`\nVorräte von ${held.name}:`);
-                grouped.forEach((g, i) => console.log(`${i + 1}. ${g.count > 1 ? g.count + 'x ' : ''}${g.name} (+${g.val} HP)`));
+                grouped.forEach((g, i) => {
+                    const unit = g.type === "Mana-Gegenstand" ? "MP" : "HP";
+                    console.log(`${i + 1}. ${g.count > 1 ? g.count + 'x ' : ''}${g.name} (+${g.val} ${unit})`);
+                });
                 console.log("0. Zurück");
 
                 const itemWahl = await question("Was soll verzehrt werden? ");
@@ -1357,14 +1436,23 @@ async function vorraeteNutzen(helden) {
                 const iIdx = parseInt(itemWahl) - 1;
                 if (iIdx >= 0 && iIdx < grouped.length) {
                     const sel = grouped[iIdx];
-                    if (held.hp >= held.max_hp) {
-                        await printSlow(`❌ ${held.name} ist bereits bei voller Gesundheit!`);
-                        continue;
+                    if (sel.type === "Mana-Gegenstand") {
+                        if (held.mp >= held.max_mp) {
+                            await printSlow(`❌ ${held.name}s Mana ist bereits voll!`);
+                            continue;
+                        }
+                        held.mp = Math.min(held.max_mp, held.mp + sel.val);
+                    } else {
+                        if (held.hp >= held.max_hp) {
+                            await printSlow(`❌ ${held.name} ist bereits bei voller Gesundheit!`);
+                            continue;
+                        }
+                        held.hp = Math.min(held.max_hp, held.hp + sel.val);
                     }
-                    const invIdx = held.inventar.findIndex(it => it.name === sel.name && it.typ === "Gegenstand");
-                    held.hp = Math.min(held.max_hp, held.hp + sel.val);
+                    const invIdx = held.inventar.findIndex(it => it.name === sel.name && it.typ === sel.type);
                     held.inventar.splice(invIdx, 1);
-                    await printSlow(`🍴 ${held.name} verzehrt ${sel.name} und regeneriert <span class="hp-gain">${sel.val} HP</span>.`);
+                    const unit = sel.type === "Mana-Gegenstand" ? "MP" : "HP";
+                    await printSlow(`🍴 ${held.name} nutzt ${sel.name} und regeneriert <span class="hp-gain">${sel.val} ${unit}</span>.`);
                 }
             }
         }
@@ -1396,6 +1484,7 @@ async function feenBegegnung(helden) {
             const heilung = Math.floor(h.max_hp * 0.25);
             h.hp = Math.min(h.max_hp, h.hp + heilung);
             h.ap = Math.min(h.max_ap, h.ap + 10);
+            if (h.max_mp > 0) h.mp = Math.min(h.max_mp, h.mp + 15);
         }
     });
 
