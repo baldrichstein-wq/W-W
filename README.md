@@ -64,10 +64,20 @@ Sobald ein Held Stufe 15 erreicht, kann er eine Meisterschaft wählen:
 *   **Schurken-Spezial (Schummeln):** Charaktere wie Schurken oder Assassinen können versuchen, das Spiel mittels Geschicklichkeit zu manipulieren. 
 *   **Konsequenzen:** Ein misslungener Betrug führt zu empfindlichen Geldstrafen und einem zeitweiligen **Hausverbot**, das die lebenswichtige Regeneration in der Taverne blockiert.
 
-### 5. UI & Atmosphäre
+### 7. UI & Atmosphäre
 *   **3-Spalten-Layout:** Helden-Statuskarten links und rechts, die Story und das Geschehen im Zentrum.
 *   **Visuals:** Jede der 15 Ebenen hat ein eigenes Hintergrundbild, von den "strahlenden Kristallhöhlen" bis zur "majestätischen Burg".
 *   **Icons:** Rassen und Klassen werden durch Emojis dargestellt für maximale Übersichtlichkeit.
+
+## 🛠️ Technologien
+*   **Frontend:** HTML5, CSS3 (Flexbox/Grid), JavaScript (ES6+)
+*   **Backend:** Java (Server-Komponente für Persistenz und Logik)
+*   **Speicherung:** LocalStorage für Highscores und Spielstände
+
+## 🚀 Installation & Start
+1.  Klone das Repository: `git clone https://github.com/dein-username/W-W.git`
+2.  Öffne die `index.html` in einem modernen Webbrowser oder starte den Java-Server über deine IDE (z.B. IntelliJ oder Eclipse).
+3.  Wähle deinen Schwierigkeitsgrad und erstelle deine Gruppe!
 
 ## 🛠️ Letzte Änderungen (Patch-Notes)
 *   **Internationalisierung:** System für Sprachumschaltung (DE/EN) integriert.
@@ -84,8 +94,16 @@ Sobald ein Held Stufe 15 erreicht, kann er eine Meisterschaft wählen:
 *   **UI-Polishing:** Hinzufügen von Tooltips für Items und Fähigkeiten sowie einer Gold-Animation bei Belohnungen.
 *   **Stat-Fixes:** Korrektur der Skill-Logik und Integration von Geschicklichkeit in die Kampfberechnung.
 
+## 🗺️ Roadmap / Zukünftige Features
+*   **Multiplayer-Koop:** Gemeinsam mit Freunden durch den Dungeon ziehen.
+*   **Erweitertes Crafting:** Mehr Rezepte und seltene Materialien von Bossgegnern.
+*   **Cloud-Save:** Synchronisation der Spielstände zwischen Desktop und Handy.
+
 ## 🏆 Ruhmeshalle (Hall of Fame)
 Deine erfolgreichsten Helden werden lokal gespeichert und können über das Hauptmenü in der Rangliste eingesehen werden. Der stärkste Held deines letzten Laufs kehrt im nächsten Spiel als "Gefallener Champion" (Ebene 14 Boss) zurück!
+
+## ⚖️ Lizenz
+Dieses Projekt ist unter der [MIT-Lizenz](LICENSE.md) lizenziert. Weitere Informationen findest du in der Lizenzdatei.
 
 ---
 *Entwickelt für Abenteurer, die Tiefe in einfachen Systemen suchen.*
