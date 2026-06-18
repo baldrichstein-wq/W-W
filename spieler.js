@@ -48,7 +48,9 @@ export default class Spieler {
         this.healing_output_bonus = 0; // Multiplikator für die ausgehende Heilung (z.B. 0.15 für +15%)
         this.damage_reduction_bonus = 0; // Flache Schadensreduktion pro Treffer
         this.hp_regen_bonus = 0; // Bonus HP-Regeneration pro Runde
+        this.summon_damage_bonus = 0; // Bonus-Schaden für beschworene Kreaturen
         this.trap_detection_bonus = 0; // Bonus auf Fallen-Entdeckung (Rassen-Passiv)
+        this.temp_damage_reduction = 0; // Temporäre Schadensreduktion durch Fähigkeiten wie "Blocken"
         this.completedQuests = []; // Verfolgt abgeschlossene Quests
         this.achievements = []; // Array für freigeschaltete Achievements
 
@@ -78,7 +80,7 @@ export default class Spieler {
         if (rb.trap_detect) this.trap_detection_bonus = rb.trap_detect;
 
         const cb = GAME_BALANCE.CLASS_BONUSES[klasseLower] || { hp: 0, atk: 0, def: 0 };
-        this.max_hp = this.grund_hp + this.rasse_hp + cb.hp;
+        this.max_hp = this.grund_hp + this.rasse_hp + (cb.hp || 0);
         this.atk_bonus = this.grund_atk + this.rasse_atk + cb.atk;
         this.def_bonus = this.grund_def + this.rasse_def + cb.def;
         this.max_mp = this.grund_mp + (rb.mp || 0) + (cb.mp || 0);
@@ -147,10 +149,10 @@ export default class Spieler {
             this.inventar.push(new Item("Pflanzenteile", "Material", 0));
             this.inventar.push(new Item("Fläschchen", "Material", 0));
             this.inventar.push(new Item("Fläschchen", "Material", 0));
-            this.inventar.push(new Item("Bestienteile", "Material", 0));
+            this.inventar.push(new Item("Bestienteile", "Material", 0, null, "Bestandteil von Tieren."));
         } else if (klasseLower === "beschwoerer" || klasseLower === "beschwörer") {
             this.grund_int = 3;
-            this.ausgeruestete_ruestung = new Item("Ledergewand", "Ruestung", 11);
+            this.ausgeruestete_ruestung = new Item("Ledergewand", "Ruestung", 11, null, "Ein leichtes Gewand, das die Konzentration fördert.");
             this.ausgeruestete_waffe = new Item("Beschwörerstab", "Waffe", 7);
             this.inventar.push(new Item("Kristallsplitter", "Material", 0));
             this.inventar.push(new Item("Bestienteile", "Material", 0));
@@ -159,10 +161,9 @@ export default class Spieler {
         else {
             this.inventar.push(new Item("Altes Brot", "Gegenstand", 1));
         }
-        
+
         this.grund_gesch += this.rasse_gesch; // Add racial bonus to base dexterity
-        this.max_sp = GAME_BALANCE.STATS.MAX_SP;
-        this.max_ap = this.grund_ap + this.rasse_ap;
+        this.max_ap = this.grund_ap + (this.rasse_ap || 0) + (cb.ap || 0);
         this.grund_cha += this.rasse_cha;
         this.hp = this.max_hp;
         this.ap = this.max_ap;

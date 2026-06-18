@@ -184,38 +184,49 @@ export const SPECIALIZATIONS = {
 };
 
 export const SHOP_WAREN = {
-    "1": { label: "Heiltrank kaufen (5 Gold)", cost: 5, type: "traenke", name: "Heiltrank", lore: "Ein sprudelndes rotes Elixier, das Wunden schließt." },
-    "2": { label: "Stahlschwert kaufen (25 Gold, +8 Schaden)", cost: 25, type: "item", name: "Stahlschwert", kind: "Waffe", val: 8, lore: "Eine scharf geschliffene Klinge aus gutem Stahl." },
-    "3": { label: "Schuppenpanzer kaufen (25 Gold, RK 15)", cost: 25, type: "item", name: "Schuppenpanzer", kind: "Ruestung", val: 15, lore: "Rüstung aus gehärteten Metallschuppen." },
-    "4": { label: "Gifttrank kaufen (5 Gold)", cost: 5, type: "item", name: "Gifttrank", kind: "Trank", val: 0, lore: "Riecht verdächtig nach bitteren Mandeln." },
-    "11": { label: "Fackel kaufen (5 Gold)", cost: 5, type: "item", name: "Fackel", kind: "Werkzeug", val: 0, lore: "Erhellt dunkle Orte, brennt aber nach 5 Räumen ab." },
-    "12": { label: "Manatrank kaufen (25 Gold, +50 MP)", cost: 25, type: "mp", val: 50, name: "Manatrank", lore: "Ein saphirblaues Elixier, das die geistigen Reserven auffüllt." },
+    "1": { label: "Heiltrank kaufen (5 Gold)", cost: 5, type: "traenke", name: "Heiltrank", lore: "Ein sprudelndes rotes Elixier, das Wunden schließt.", category: "traenke" },
+    "2": { label: "Stahlschwert kaufen (25 Gold, +8 Schaden)", cost: 25, type: "item", name: "Stahlschwert", kind: "Waffe", val: 8, lore: "Eine scharf geschliffene Klinge aus gutem Stahl.", category: "waffen" },
+    "3": { label: "Schuppenpanzer kaufen (25 Gold, RK 15)", cost: 25, type: "item", name: "Schuppenpanzer", kind: "Ruestung", val: 15, lore: "Rüstung aus gehärteten Metallschuppen.", category: "ruestung" },
+    "4": { label: "Gifttrank kaufen (5 Gold)", cost: 5, type: "item", name: "Gifttrank", kind: "Trank", val: 0, lore: "Riecht verdächtig nach bitteren Mandeln.", category: "traenke" },
+    "11": { label: "Fackel kaufen (5 Gold)", cost: 5, type: "item", name: "Fackel", kind: "Werkzeug", val: 0, lore: "Erhellt dunkle Orte, brennt aber nach 5 Räumen ab.", ladungen: 5, category: "werkzeuge" },
+    "12": { label: "Manatrank kaufen (25 Gold, +50 MP)", cost: 25, type: "mp", val: 50, name: "Manatrank", lore: "Ein saphirblaues Elixier, das die geistigen Reserven auffüllt.", category: "traenke" },
+    "17": { label: "Ätherischer Kristall (40 Gold, +5 MP-Regen)", cost: 40, type: "item", name: "Ätherischer Kristall", kind: "Schild", val: 0, effekt: { typ: "mp_regen", wert: 5 }, lore: "Ein pulsierender Kristall, der die MP-Regeneration des Trägers massiv erhöht.", category: "artefakte" },
     // Tueftler Materialien
-    "5": { label: "Mechanischeteile (1 Gold)", cost: 1, type: "item", name: "Mechanischeteile", kind: "Material", val: 0, lore: "Zahnräder und Federn für Tüftler." },
-    "6": { label: "Maschinenoel (1 Gold)", cost: 1, type: "item", name: "Maschinenoel", kind: "Material", val: 0, lore: "Schmiermittel für reibungslose Abläufe." },
-    "7": { label: "Schrauben und Muttern (1 Gold)", cost: 1, type: "item", name: "Schrauben und Muttern", kind: "Material", val: 0, lore: "Hält alles zusammen." },
+    "5": { label: "Mechanischeteile (1 Gold)", cost: 1, type: "item", name: "Mechanischeteile", kind: "Material", val: 0, lore: "Zahnräder und Federn für Tüftler.", category: "materialien" },
+    "6": { label: "Maschinenoel (1 Gold)", cost: 1, type: "item", name: "Maschinenoel", kind: "Material", val: 0, lore: "Schmiermittel für reibungslose Abläufe.", category: "materialien" },
+    "7": { label: "Schrauben und Muttern (1 Gold)", cost: 1, type: "item", name: "Schrauben und Muttern", kind: "Material", val: 0, lore: "Hält alles zusammen.", category: "materialien" },
     // Alchemist Materialien
-    "8": { label: "Bestienteile (1 Gold)", cost: 1, type: "item", name: "Bestienteile", kind: "Material", val: 0, lore: "Zähne, Klauen und Horn." },
-    "9": { label: "Pflanzenteile (1 Gold)", cost: 1, type: "item", name: "Pflanzenteile", kind: "Material", val: 0, lore: "Getrocknete Kräuter und Wurzeln." },
-    "10": { label: "Fläschchen (1 Gold)", cost: 1, type: "item", name: "Fläschchen", kind: "Material", val: 0, lore: "Ein leeres Gefäß für Alchemie." },
+    "8": { label: "Bestienteile (1 Gold)", cost: 1, type: "item", name: "Bestienteile", kind: "Material", val: 0, lore: "Zähne, Klauen und Horn.", category: "materialien" },
+    "9": { label: "Pflanzenteile (1 Gold)", cost: 1, type: "item", name: "Pflanzenteile", kind: "Material", val: 0, lore: "Getrocknete Kräuter und Wurzeln.", category: "materialien" },
+    "10": { label: "Fläschchen (1 Gold)", cost: 1, type: "item", name: "Fläschchen", kind: "Material", val: 0, lore: "Ein leeres Gefäß für Alchemie.", category: "materialien" },
     // Waffen & Ausrüstung
-    "13": { label: "Dolch (6 Gold, + 3 Schaden)", cost: 6, type: "item", name: "Dolch", kind: "Waffe", val: 3, lore: "Klein, aber tödlich in den richtigen Händen." },
-    "14": { label: "Axt des Vernichters (20 Gold, + 8 Schaden)", cost: 20, type: "item", name: "Axt des Vernichters", kind: "Waffe", val: 8, lore: "Eine schwere Axt, die Rüstungen spaltet." },
-    "15": { label: "Feuriger Zauberstab T2 (10 Gold, + 8 Schaden)", cost: 10, type: "item", name: "Feuerstab T2", kind: "Waffe", val: 8, lore: "Strahlt eine konstante Wärme aus." },
-    "16": { label: "Blitzer (10 Gold, + 8 Schaden)", cost: 10, type: "item", name: "Blitzer", kind: "Waffe", val: 8, lore: "Ein Stab, der vor elektrischer Spannung knistert." },
+    "13": { label: "Dolch (6 Gold, + 3 Schaden)", cost: 6, type: "item", name: "Dolch", kind: "Waffe", val: 3, lore: "Klein, aber tödlich in den richtigen Händen.", category: "waffen" },
+    "14": { label: "Axt des Vernichters (20 Gold, + 8 Schaden)", cost: 20, type: "item", name: "Axt des Vernichters", kind: "Waffe", val: 8, lore: "Eine schwere Axt, die Rüstungen spaltet.", category: "waffen" },
+    "15": { label: "Feuriger Zauberstab T2 (10 Gold, + 8 Schaden)", cost: 10, type: "item", name: "Feuerstab T2", kind: "Waffe", val: 8, lore: "Strahlt eine konstante Wärme aus.", category: "waffen" },
+    "16": { label: "Blitzer (10 Gold, + 8 Schaden)", cost: 10, type: "item", name: "Blitzer", kind: "Waffe", val: 8, lore: "Ein Stab, der vor elektrischer Spannung knistert.", category: "waffen" },
     // Heiler & Barde
-    "18": { label: "Stab der Großen Heilung (12 Gold)", cost: 12, type: "item", name: "Heilerstab", kind: "Waffe", val: 2, lore: "Ein heiliges Relikt zur Linderung von Schmerz." },
-    "21": { label: "Drehleier (15 Gold)", cost: 15, type: "item", name: "Drehleier", kind: "Waffe", val: 0, lore: "Erzeugt einen melancholischen, stetigen Ton." },
-    "22": { label: "Laute der Schönheit (15 Gold)", cost: 15, type: "item", name: "Laute", kind: "Waffe", val: 0, lore: "Klingt so süß, dass sogar Orks innehalten." },
+    "18": { label: "Stab der Großen Heilung (12 Gold)", cost: 12, type: "item", name: "Heilerstab", kind: "Waffe", val: 2, lore: "Ein heiliges Relikt zur Linderung von Schmerz.", category: "waffen" },
+    "21": { label: "Drehleier (15 Gold)", cost: 15, type: "item", name: "Drehleier", kind: "Waffe", val: 0, lore: "Erzeugt einen melancholischen, stetigen Ton.", category: "waffen" },
+    "22": { label: "Laute der Schönheit (15 Gold)", cost: 15, type: "item", name: "Laute", kind: "Waffe", val: 0, lore: "Klingt so süß, dass sogar Orks innehalten.", category: "waffen" },
     // Nahrung (Direkte HP Heilung)
-    "26": { label: "Essensration (2 Gold, + 4 HP)", cost: 2, type: "hp", val: 4, name: "Essensration", lore: "Nahrhaft und haltbar." },
-    "27": { label: "Wasser (2 Gold, + 2 HP)", cost: 2, type: "hp", val: 2, name: "Wasser", lore: "Klar und erfrischend." },
-    "28": { label: "BockBier (3 Gold, + 3 HP)", cost: 3, type: "hp", val: 3, name: "BockBier", lore: "Dunkel und kräftig." },
-    "29": { label: "Radler des Elfen (2 Gold, + 1 HP)", cost: 2, type: "hp", val: 1, name: "Radler", lore: "Eine leichte Erfrischung." },
+    "26": { label: "Essensration (2 Gold, + 4 HP)", cost: 2, type: "hp", val: 4, name: "Essensration", lore: "Nahrhaft und haltbar.", category: "nahrung" },
+    "27": { label: "Wasser (2 Gold, + 2 HP)", cost: 2, type: "hp", val: 2, name: "Wasser", lore: "Klar und erfrischend.", category: "nahrung" },
+    "28": { label: "BockBier (3 Gold, + 3 HP)", cost: 3, type: "hp", val: 3, name: "BockBier", lore: "Dunkel und kräftig.", category: "nahrung" },
+    "29": { label: "Radler des Elfen (2 Gold, + 1 HP)", cost: 2, type: "hp", val: 1, name: "Radler", lore: "Eine leichte Erfrischung.", category: "nahrung" },
     // Verfluchte Items (Stark, aber kosten HP beim Kauf)
-    "35": { label: "Seelenfresser (15 Gold, -10 HP, +12 Schaden)", cost: 15, type: "item", name: "Seelenfresser", kind: "Waffe", val: 12, hpPenalty: 10, lore: "Die Klinge verlangt nach Blut. Dem deinen oder dem ihrer Feinde." },
-    "36": { label: "Dämonenpanzer (20 Gold, -15 HP, RK 18)", cost: 20, type: "item", name: "Dämonenpanzer", kind: "Ruestung", val: 18, hpPenalty: 15, lore: "Ein Flüstern geht von diesem dunklen Metall aus." },
-    "37": { label: "Höllenschild (15 Gold, -8 HP, RK +6)", cost: 15, type: "item", name: "Höllenschild", kind: "Schild", val: 6, hpPenalty: 8, lore: "Verteidigung hat ihren Preis." }
+    "35": { label: "Seelenfresser (15 Gold, -10 HP, +12 Schaden)", cost: 15, type: "item", name: "Seelenfresser", kind: "Waffe", val: 12, hpPenalty: 10, lore: "Die Klinge verlangt nach Blut. Dem deinen oder dem ihrer Feinde.", category: "waffen" },
+    "36": { label: "Dämonenpanzer (20 Gold, -15 HP, RK 18)", cost: 20, type: "item", name: "Dämonenpanzer", kind: "Ruestung", val: 18, hpPenalty: 15, lore: "Ein Flüstern geht von diesem dunklen Metall aus.", category: "ruestung" },
+    "37": { label: "Höllenschild (15 Gold, -8 HP, RK +6)", cost: 15, type: "item", name: "Höllenschild", kind: "Schild", val: 6, hpPenalty: 8, lore: "Verteidigung hat ihren Preis.", category: "ruestung" }
+};
+
+export const SHOP_CATEGORIES = {
+    "traenke": { label: "Tränke", icon: "🧪" },
+    "waffen": { label: "Waffen", icon: "⚔️" },
+    "ruestung": { label: "Rüstung & Schilde", icon: "🛡️" },
+    "materialien": { label: "Materialien", icon: "📦" },
+    "nahrung": { label: "Nahrung", icon: "🍎" },
+    "werkzeuge": { label: "Werkzeuge", icon: "🔨" },
+    "artefakte": { label: "Artefakte", icon: "✨" }
 };
 
 export const CRAFTING_REZEPTE = {
@@ -289,4 +300,15 @@ export const RARE_ARTIFACTS = [
     { name: "Schattenklinge", cost: 100, kind: "Waffe", val: 18, effekt: { typ: "lebensraub", wert: 0.15 }, lore: "Verschmilzt fast mit der Dunkelheit." },
     { name: "Gotteswall", cost: 120, kind: "Schild", val: 10, effekt: { typ: "ap_regen", wert: 3 }, lore: "Ein unbezwingbarer Schutz." },
     { name: "Amulett der Götter", cost: 150, kind: "Schmuck", val: 0, effekt: { typ: "ap_regen", wert: 10 }, lore: "Die pure Essenz göttlicher Kraft." }
+];
+
+export const QUEST_ITEM_POOL = [
+    { name: "Kleiner Heiltrank", typ: "Gegenstand", wert: 10 },
+    { name: "Einfacher Manatrank", typ: "Mana-Gegenstand", wert: 15 },
+    { name: "Eisenbarren", typ: "Material", wert: 5 },
+    { name: "Lederfetzen", typ: "Material", wert: 2 },
+    { name: "Bronzeschwert", typ: "Waffe", wert: 5 },
+    { name: "Leichte Lederrüstung", typ: "Ruestung", wert: 8 },
+    { name: "Holzschild", typ: "Schild", wert: 2 },
+    { name: "Goldmünze", typ: "Gegenstand", wert: 1 }
 ];

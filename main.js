@@ -9,10 +9,10 @@ import { RASSEN_LISTE, KLASSEN_LISTE, CLASS_INFO, STARTING_ABILITIES, GAME_SETTI
 function updateLanguageUI() {
     // Update Static UI Elements
     const startTitle = document.querySelector('.start-content h1');
-    if (startTitle) startTitle.textContent = t('title');
+    if (startTitle) startTitle.textContent = "Dungeons-Koop";
     
     const startSub = document.querySelector('.start-content p');
-    if (startSub && startSub.textContent.includes('RPG')) startSub.textContent = t('subtitle');
+    if (startSub && startSub.textContent.includes('RPG')) startSub.textContent = ""; // Keep subtitle empty
 
     const startLangLabel = document.getElementById('start-lang-label');
     if (startLangLabel) startLangLabel.textContent = t('language_label');
@@ -24,10 +24,10 @@ function updateLanguageUI() {
     if (startHofBtn) startHofBtn.textContent = t('hof_btn');
 
     const headerTitle = document.querySelector('header h1');
-    if (headerTitle) headerTitle.textContent = t('title');
+    if (headerTitle) headerTitle.textContent = "";
 
     const headerSub = document.querySelector('header p');
-    if (headerSub) headerSub.textContent = t('subtitle');
+    if (headerSub) headerSub.textContent = "";
 
     const hofBtn = document.getElementById('hof-btn');
     if (hofBtn) hofBtn.textContent = t('hof_btn');
@@ -423,11 +423,15 @@ async function spielStarten(helden) {
         const hasBarde = helden.some(h => h.klasse.toLowerCase() === "barde");
         if (hasBarde && !bardenLiedGespielt) console.log("5. Ein Lied am Feuer spielen (Barden-Buff)");
         
-        let promptMsg = "Was ist euer Plan? (1-3): ";
-        if (canCraft && (hasBarde && !bardenLiedGespielt)) promptMsg = "Was ist euer Plan? (1-5): ";
-        else if (canCraft || (hasBarde && !bardenLiedGespielt)) promptMsg = "Was ist euer Plan? (1-4): ";
+        const entranceOptions = [
+            { label: "🛒 Händler", value: "1", color: "neutral" },
+            { label: "⚔️ Dungeon betreten", value: "2", color: "attack" },
+            { label: "📜 Schwarze Tafel", value: "3", color: "utility" }
+        ];
+        if (canCraft) entranceOptions.push({ label: "🛠️ Handwerken", value: "4", color: "utility" });
+        if (hasBarde && !bardenLiedGespielt) entranceOptions.push({ label: "🎶 Bardenlied", value: "5", color: "special" });
 
-        const wahl = await question(promptMsg);
+        const wahl = await question("Wie bereitet ihr euch vor?", entranceOptions);
         if (wahl === "1") {
             await Story.shopBesuch(helden);
             await Story.checkQuests(helden, { type: 'inventory' });
@@ -501,7 +505,7 @@ async function spielStarten(helden) {
         
         // Die Labyrinthebene (7) generiert deutlich mehr Räume (15-25).
         // Der Endboss (15) hat nur einen Raum.
-        const raumAnzahl = (ebene === 14) ? 1 : (ebene === 15 ? randomRange(3, 5) : (ebene === 7 ? randomRange(15, 25) : randomRange(7, 15)));
+        const raumAnzahl = (ebene === 14) ? 1 : (ebene === 15 ? 1 : (ebene === 7 ? randomRange(15, 25) : randomRange(7, 15)));
 
         let raetselMeisterErschienen = false;
         for (let raum = 1; raum <= raumAnzahl; raum++) {
@@ -517,9 +521,10 @@ async function spielStarten(helden) {
             const brauchtFackel = [3, 7, 13].includes(ebene);
             let imDunkeln = brauchtFackel;
 
-            if (ebene === 15) { // Ebene 15 ist friedlich
+            if (ebene === 15 && raum === 1) { // Ebene 15 ist friedlich, Interaktion nur einmal pro Ebene
                 await Story.castleInteraction(helden);
-                continue; // Keine Monster, keine Schatzsuche, keine Rätselmeister
+            } else if (ebene === 15) {
+                continue; // Für Ebene 15 nur einmal die Interaktion ausführen, dann weiter zur nächsten Ebene
             }
 
             if (brauchtFackel) {

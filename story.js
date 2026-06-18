@@ -1,6 +1,6 @@
 import Item from './item.js';
 import { printSlow, question, wuerfelD20, randomRange, updateUI, formatAbilityDesc, triggerGoldAnimation } from './utils.js';
-import { SPECIALIZATIONS, GAME_BALANCE, SHOP_WAREN, CRAFTING_REZEPTE, BOSS_LOOT, RARE_ARTIFACTS } from './config.js';
+import { SPECIALIZATIONS, GAME_BALANCE, SHOP_WAREN, CRAFTING_REZEPTE, BOSS_LOOT, RARE_ARTIFACTS, SHOP_CATEGORIES, QUEST_ITEM_POOL } from './config.js';
 
 let schluesselGefunden = false;
  
@@ -116,16 +116,115 @@ const QUEST_POOL = [
     { id: 8, title: "Sumpf-Säuberung", desc: "Besiege 5 Kreaturen im modrigen Sumpf (Ebene 4).", goal: 5, reward: { gold: 50, xp: 40 } },
     { id: 9, title: "Materialbeschaffung", desc: "Sammle 3 Bestienteile für neue Rüstungen.", item: "Bestienteile", goal: 3, reward: { gold: 35, xp: 25 } },
     { id: 10, title: "Spendierhosen", desc: "Gib insgesamt 50 Gold in der Taverne aus.", goal: 50, reward: { gold: 25, xp: 40 } }
+    ,
+    { id: 11, title: "Der Ruf der Leere", desc: "Sammle 3 Kristallsplitter für die Rituale des Beschwörers.", item: "Kristallsplitter", goal: 3, reward: { gold: 60, xp: 45 } }
 ];
 
 const RAETSEL_MASTER_POOL = [
-    { q: "Ich habe Städte, aber keine Häuser. Ich habe Berge, aber keine Bäume. Ich habe Wasser, aber keine Fische. Was bin ich?", a: "landkarte" },
+    { q: "Ich habe Städte, aber keine Häuser; Berge, aber keine Bäume; und Wasser, aber keine Fische?", a: "landkarte" },
     { q: "Was wird nass, während es trocknet?", a: "handtuch" },
-    { q: "Je mehr man davon wegnimmt, desto größer wird es. Was ist das?", a: "loch" },
-    { q: "Was läuft, hat aber keine Beine?", a: "nase" },
-    { q: "Welcher Tag ist der längste in der Woche?", a: "donnerstag" },
-    { q: "Wer es macht, der sagt es nicht. Wer es nimmt, der kennt es nicht. Wer es kennt, der will es nicht. Was ist das?", a: "falschgeld" },
-    { q: "Was hat Augen, kann aber nichts sehen?", a: "kartoffel" }
+    { q: "Ich bin immer hungrig, ich muss immer gefüttert werden. Das Holz, das ich berühre, wird bald rot. Was bin ich?", a: "feuer" },
+    { q: "Ich habe einen Hals, aber keinen Kopf. Ich habe zwei Arme, aber keine Hände. Was bin ich?", a: "hemd" },
+    { q: "Was hat ein Auge, kann aber nicht sehen?", a: "nadel" },
+    { q: "Was hat einen Hals, aber keinen Kopf?", a: "flasche" },
+    { q: "Was hat viele Blätter, ist aber kein Baum?", a: "buch" },
+    { q: "Was ist immer vor dir, kann aber nicht gesehen werden?", a: "zukunft" },
+    { q: "Was ist das, was man fangen, aber nicht werfen kann?", a: "erkältung" },
+    { q: "Was ist das, was man essen kann, aber nicht schmecken kann?", a: "hunger" },
+    { q: "Was ist das, was man hat, wenn man es nicht teilt?", a: "geheimnis" },
+    { q: "Was ist das, was man bricht, wenn man es sagt?", a: "schweigen" },
+    { q: "Was ist das, was man verliert, wenn man es behält?", a: "information" },
+    { q: "Was ist das, was man gibt, wenn man es nimmt?", a: "versprechen" },
+    { q: "Was ist das, was man hat, wenn man es nicht braucht?", a: "problem" },
+    { q: "Was ist das, was man sucht, wenn man es findet?", a: "lösung" },
+    { q: "Was ist das, was man kauft, um es wegzuwerfen?", a: "mülleimer" },
+    { q: "Was ist das, was man füllt, um es zu leeren?", a: "eimer" },
+    { q: "Was ist das, was man schlägt, um es zu öffnen?", a: "ei" },
+    { q: "Was ist das, was man hat, wenn man es nicht will?", a: "pech" },
+    { q: "Was ist das, was man bekommt, wenn man es nicht verdient?", a: "strafe" },
+    { q: "Was ist das, was man gibt, um es zu bekommen?", a: "rat" },
+    { q: "Was ist das, was man hat, wenn man es nicht benutzt?", a: "wissen" },
+    { q: "Was ist das, was man bricht, wenn man es macht?", a: "gesetz" },
+    { q: "Was ist das, was man hat, wenn man es nicht sieht?", a: "schatten" },
+    { q: "Was ist das, was man hat, wenn man es nicht fühlt?", a: "schmerz" },
+    { q: "Was ist das, was man hat, wenn man es nicht hört?", a: "stille" },
+    { q: "Was ist das, was man hat, wenn man es nicht riecht?", a: "geruch" },
+    { q: "Was ist das, was man hat, wenn man es nicht schmeckt?", a: "geschmack" },
+    { q: "Was ist das, was man hat, wenn man es nicht berührt?", a: "gefühl" },
+    { q: "Was ist das, was man hat, wenn man es nicht denkt?", a: "gedanke" },
+    { q: "Was ist das, was man hat, wenn man es nicht spricht?", a: "wort" },
+    { q: "Was ist das, was man hat, wenn man es nicht schreibt?", a: "buchstabe" },
+    { q: "Was ist das, was man hat, wenn man es nicht liest?", a: "text" },
+    { q: "Was ist das, was man hat, wenn man es nicht zählt?", a: "zahl" },
+    { q: "Was ist das, was man hat, wenn man es nicht misst?", a: "größe" },
+    { q: "Was ist das, was man hat, wenn man es nicht wiegt?", a: "gewicht" },
+    { q: "Was ist das, was man hat, wenn man es nicht sieht?", a: "farbe" },
+    { q: "Was ist das, was man hat, wenn man es nicht hört?", a: "ton" },
+    { q: "Was ist das, was man hat, wenn man es nicht riecht?", a: "duft" },
+    { q: "Was ist das, was man hat, wenn man es nicht schmeckt?", a: "aroma" },
+    { q: "Was ist das, was man hat, wenn man es nicht berührt?", a: "textur" },
+    { q: "Was ist das, was man hat, wenn man es nicht denkt?", a: "idee" },
+    { q: "Was ist das, was man hat, wenn man es nicht spricht?", a: "sprache" },
+    { q: "Was ist das, was man hat, wenn man es nicht schreibt?", a: "schrift" },
+    { q: "Was ist das, was man hat, wenn man es nicht liest?", a: "geschichte" },
+    { q: "Was ist das, was man hat, wenn man es nicht zählt?", a: "menge" },
+    { q: "Was ist das, was man hat, wenn man es nicht misst?", a: "abstand" },
+    { q: "Was ist das, was man hat, wenn man es nicht wiegt?", a: "masse" },
+    { q: "Was ist das, was man hat, wenn man es nicht sieht?", a: "licht" },
+    { q: "Was ist das, was man hat, wenn man es nicht hört?", a: "geräusch" },
+    { q: "Was ist das, was man hat, wenn man es nicht riecht?", a: "gestank" },
+    { q: "Was ist das, was man hat, wenn man es nicht schmeckt?", a: "würze" },
+    { q: "Was ist das, was man hat, wenn man es nicht berührt?", a: "form" },
+    { q: "Was ist das, was man hat, wenn man es nicht denkt?", a: "problem" },
+    { q: "Was ist das, was man hat, wenn man es nicht spricht?", a: "geheimnis" },
+    { q: "Was ist das, was man hat, wenn man es nicht schreibt?", a: "nachricht" },
+    { q: "Was ist das, was man hat, wenn man es nicht liest?", a: "buch" },
+    { q: "Was ist das, was man hat, wenn man es nicht zählt?", a: "geld" },
+    { q: "Was ist das, was man hat, wenn man es nicht misst?", a: "zeit" },
+    { q: "Was ist das, was man hat, wenn man es nicht wiegt?", a: "luft" },
+    { q: "Was ist das, was man hat, wenn man es nicht sieht?", a: "dunkelheit" },
+    { q: "Was ist das, was man hat, wenn man es nicht hört?", a: "echo" },
+    { q: "Was ist das, was man hat, wenn man es nicht riecht?", a: "rauch" },
+    { q: "Was ist das, was man hat, wenn man es nicht schmeckt?", a: "wasser" },
+    { q: "Was ist das, was man hat, wenn man es nicht berührt?", a: "wind" },
+    { q: "Was ist das, was man hat, wenn man es nicht denkt?", a: "traum" },
+    { q: "Was ist das, was man hat, wenn man es nicht spricht?", a: "gedanke" },
+    { q: "Was ist das, was man hat, wenn man es nicht schreibt?", a: "idee" },
+    { q: "Was ist das, was man hat, wenn man es nicht liest?", a: "geschichte" },
+    { q: "Was ist das, was man hat, wenn man es nicht zählt?", a: "sterne" },
+    { q: "Was ist das, was man hat, wenn man es nicht misst?", a: "unendlichkeit" },
+    { q: "Was ist das, was man hat, wenn man es nicht wiegt?", a: "wolke" },
+    { q: "Was ist das, was man hat, wenn man es nicht sieht?", a: "geist" },
+    { q: "Was ist das, was man hat, wenn man es nicht hört?", a: "ruf" },
+    { q: "Was ist das, was man hat, wenn man es nicht riecht?", a: "nichts" },
+    { q: "Was ist das, was man hat, wenn man es nicht schmeckt?", a: "luft" },
+    { q: "Was ist das, was man hat, wenn man es nicht berührt?", a: "schatten" },
+    { q: "Was ist das, was man hat, wenn man es nicht denkt?", a: "gefühl" },
+    { q: "Was ist das, was man hat, wenn man es nicht spricht?", a: "emotion" },
+    { q: "Was ist das, was man hat, wenn man es nicht schreibt?", a: "erinnerung" },
+    { q: "Was ist das, was man hat, wenn man es nicht liest?", a: "zukunft" },
+    { q: "Was ist das, was man hat, wenn man es nicht zählt?", a: "sand" },
+    { q: "Was ist das, was man hat, wenn man es nicht misst?", a: "raum" },
+    { q: "Was ist das, was man hat, wenn man es nicht wiegt?", a: "zeit" },
+    { q: "Was ist das, was man hat, wenn man es nicht sieht?", a: "seele" },
+    { q: "Was ist das, was man hat, wenn man es nicht hört?", a: "herzschlag" },
+    { q: "Was ist das, was man hat, wenn man es nicht riecht?", a: "atem" },
+    { q: "Was ist das, was man hat, wenn man es nicht schmeckt?", a: "blut" },
+    { q: "Was ist das, was man hat, wenn man es nicht berührt?", a: "feuer" },
+    { q: "Was ist das, was man hat, wenn man es nicht denkt?", a: "instinkt" },
+    { q: "Was ist das, was man hat, wenn man es nicht spricht?", a: "intuition" },
+    { q: "Was ist das, was man hat, wenn man es nicht schreibt?", a: "wissen" },
+    { q: "Was ist das, was man hat, wenn man es nicht liest?", a: "geheimnis" },
+    { q: "Was ist das, was man hat, wenn man es nicht zählt?", a: "glück" },
+    { q: "Was ist das, was man hat, wenn man es nicht misst?", a: "liebe" },
+    { q: "Was ist das, was man hat, wenn man es nicht wiegt?", a: "hass" },
+    { q: "Was ist das, was man hat, wenn man es nicht sieht?", a: "angst" },
+    { q: "Was ist das, was man hat, wenn man es nicht hört?", a: "hoffnung" },
+    { q: "Was ist das, was man hat, wenn man es nicht riecht?", a: "mut" },
+    { q: "Was ist das, was man hat, wenn man es nicht schmeckt?", a: "trauer" },
+    { q: "Was ist das, was man hat, wenn man es nicht berührt?", a: "freude" },
+    { q: "Was ist das, was man hat, wenn man es nicht denkt?", a: "leben" },
+    { q: "Was ist das, was man hat, wenn man es nicht spricht?", a: "tod" }
 ];
 
 function materialNachKlasse(held) {
@@ -154,10 +253,13 @@ async function zerlegenMenue(held) {
         });
 
         console.log(`\n--- ♻️ ZERLEGEN: ${held.name} ---`);
-        groupedLoot.forEach((g, i) => console.log(`${i + 1}. ${g.count > 1 ? g.count + 'x ' : ''}${g.name} (${g.typ}, Wert: ${g.wert})`));
-        console.log("0. Zurück");
+        const zerlegenOptions = groupedLoot.map((g, i) => ({
+            label: `${g.count > 1 ? g.count + 'x ' : ''}${g.name} (${g.typ}, Wert: ${g.wert})`,
+            value: String(i + 1)
+        }));
+        zerlegenOptions.push({ label: "Zurück", value: "0", color: "back" });
 
-        const wahl = await question("Welches Item zerlegen? ");
+        const wahl = await question("Welches Item zerlegen?", zerlegenOptions);
         if (wahl === "0") {
             aktiv = false;
         } else {
@@ -204,17 +306,19 @@ async function schwarzeTafel(helden) {
     
     let amBrett = true;
     while (amBrett) {
-        console.log("\n--- 📜 DIE SCHWARZE TAFEL ---");
-        QUEST_POOL.forEach((q, i) => {
+        const questOptions = QUEST_POOL.map((q, i) => {
             const istAngenommen = helden.some(h => h.activeQuests.some(aq => aq.id === q.id));
             const istAbgeschlossen = helden.some(h => h.completedQuests.includes(q.id));
-            let status = istAbgeschlossen ? "[ABGESCHLOSSEN]" : (istAngenommen ? "[AKTIV]" : "");
-            console.log(`${i + 1}. ${q.title} ${status}`);
-            console.log(`   - ${q.desc} (Belohnung: ${q.reward.gold} Gold, ${q.reward.xp} XP)`);
+            const status = istAbgeschlossen ? "✅" : (istAngenommen ? "⏳" : "");
+            return {
+                label: `<span class="tooltip">${status} ${q.title}<span class="tooltiptext"><strong>${q.title}</strong><br>${q.desc}<br>🎁 ${q.reward.gold} Gold, ${q.reward.xp} XP</span></span>`,
+                value: String(i + 1),
+                color: istAbgeschlossen ? "neutral" : (istAngenommen ? "utility" : "special")
+            };
         });
-        console.log("0. Tafel verlassen");
+        questOptions.push({ label: "Tafel verlassen", value: "0", color: "back" });
 
-        const wahl = await question("\nWelchen Auftrag wollt ihr annehmen? ");
+        const wahl = await question("Auftrag wählen:", questOptions);
         if (wahl === "0") {
             amBrett = false;
         } else {
@@ -251,18 +355,8 @@ async function checkQuests(helden, context = {}) {
             const q = h.activeQuests[i];
             let done = false;
 
-            // Quest 1: Jagdfieber (10 Wald-Kills auf Ebene 1)
-            if (q.id === 1 && context.type === 'kill' && context.ebene === 1) {
-                q.progress = (q.progress || 0) + 1;
-                if (q.progress >= q.goal) {
-                    done = true;
-                } else {
-                    await printSlow(`📜 Quest-Fortschritt (${q.title}): ${q.progress}/${q.goal} Kills erreicht.`);
-                }
-            }
-            
-            // Sammel-Quests (ID 2, 4, 7, 9)
-            if (q.id === 2 || q.id === 4 || q.id === 7 || q.id === 9) {
+            // Sammel-Quests (ID 2, 4, 7, 9, 11)
+            if ([2, 4, 7, 9, 11].includes(q.id)) {
                 const teile = h.inventar.filter(it => it.name === q.item).length;
                 if (teile >= q.goal) {
                     let entfernt = 0;
@@ -320,6 +414,18 @@ async function checkQuests(helden, context = {}) {
             if (done) {
                 h.gold += q.reward.gold;
                 h.xp += q.reward.xp;
+
+                // Zufällige Item-Belohnungen vergeben
+                if (q.reward.items) {
+                    for (let k = 0; k < q.reward.items; k++) {
+                        const rData = QUEST_ITEM_POOL[randomRange(0, QUEST_ITEM_POOL.length - 1)];
+                        const newItem = new Item(rData.name, rData.typ, rData.wert, null, "Ein Geschenk für deine treuen Dienste.");
+                        h.inventar.push(newItem);
+                        await printSlow(`🎁 ${h.name} erhält zusätzlich: <span class="rare-item">${newItem.name}</span>!`);
+                        if (h.isKI) h.kiAutomatischAusruesten();
+                    }
+                }
+
                 h.completedQuests.push(q.id);
                 h.activeQuests.splice(i, 1);
                 await printSlow(`\n✅ <span class="hp-gain">AUFTRAG ERFÜLLT: ${q.title}!</span>`);
@@ -338,7 +444,7 @@ async function checkQuests(helden, context = {}) {
                 const levelsGained = h.check_levelup();
                 if (levelsGained > 0) {
                     await printSlow(`\n🌟 LEVEL UP für ${h.name}! Level ${h.level}!`, 'level-up-animation');
-                    await levelUpMenu(h, levelsGained);
+                    await levelUpMenu(h, helden, levelsGained);
                 }
                 updateUI(helden);
             }
@@ -387,12 +493,13 @@ async function craftingMenue(helden) {
                 continue;
             }
 
-            console.log(`\n--- 🛠️ WERK BANK: ${held.name} (${held.klasse}) | Intelligenz: ${held.grund_int} ---`);
-            console.log("1. Gegenstand herstellen");
-            console.log("2. Ausrüstung zerlegen (Salvage)");
-            console.log("0. Werkbank verlassen");
+            const bankOptions = [
+                { label: "🔨 Herstellen", value: "1", color: "attack" },
+                { label: "♻️ Zerlegen", value: "2", color: "utility" },
+                { label: "🚪 Verlassen", value: "0", color: "back" }
+            ];
 
-            const modus = await question("Wahl: ");
+            const modus = await question(`[${held.name}] Werkbank:`, bankOptions);
             if (modus === "0") {
                 amBasteln = false;
                 continue;
@@ -409,17 +516,21 @@ async function craftingMenue(helden) {
                 return acc;
             }, {});
 
-            rezepte.forEach((r, i) => {
+            const craftOptions = rezepte.map((r, i) => {
+                const canCraft = hatMaterialien(held, r.materialien);
                 const mats = Object.entries(r.materialien).map(([n, m]) => {
                     const besitz = inventarZaehler[n] || 0;
-                    const farbe = besitz >= m ? 'hp-gain' : 'effect-lifesteal';
-                    return `${m}x <span class="${farbe}">${n}</span> (Du hast: ${besitz})`;
-                }).join(", ");
-                console.log(`${i + 1}. ${r.name} herstellen - Kosten: ${mats}`);
+                    return `${m}x ${n} (${besitz}/${m})`;
+                }).join("<br>");
+                return {
+                    label: `<span class="tooltip">${r.name}<span class="tooltiptext"><strong>${r.name}</strong><br>Kosten:<br>${mats}</span></span>`,
+                    value: String(i + 1),
+                    color: canCraft ? "special" : "neutral"
+                };
             });
-            console.log("0. Werkbank verlassen");
+            craftOptions.push({ label: "Zurück", value: "0", color: "back" });
 
-            const wahl = await question("Was möchtest du herstellen? ");
+            const wahl = await question("Was herstellen?", craftOptions);
             if (wahl === "0") {
                 amBasteln = false;
             } else {
@@ -435,7 +546,7 @@ async function craftingMenue(helden) {
                     const anz = parseInt(anzInput);
                     
                     if (!isNaN(anz) && anz > 0 && anz <= maxHerstellbar) {
-                        const dc = 10 + (held.crafting_success_bonus || 0); // DC wird durch Bonus reduziert
+                        const dc = 10 - (held.crafting_success_bonus || 0); // DC wird durch Bonus reduziert
                         let erfolge = 0;
                         let patzer = 0;
                         for (let i = 0; i < anz; i++) {
@@ -664,7 +775,9 @@ const SYNERGIE_ABILITIES = {
     "liedmeister+erzmagier": { name: "Arkaner Refrain", ap_kosten: 0, mp_restoration_team: 15, ap_restoration_team: 15, element: "Energie" },
     "beschwoerer+nekromant": { name: "Schattenbund", ap_kosten: 25, schaden: 35, heilung: 20, element: "Schatten" },
     "dämonologe+nekromant": { name: "Höllenschlund-Riss", ap_kosten: 30, schaden: 50, element: "Schatten" },
-    "elementarist+nekromant": { name: "Spektraler Sturm", ap_kosten: 30, schaden: 40, verwirrt: 2, element: "Schatten" }
+    "elementarist+nekromant": { name: "Spektraler Sturm", ap_kosten: 30, schaden: 40, verwirrt: 2, element: "Schatten" },
+    "beschwoerer+barde": { name: "Ätherische Serenade", ap_kosten: 25, mp_restoration_team: 10, schaden: 20, element: "Ätherisch" },
+    "barde+beschwoerer": { name: "Ätherische Serenade", ap_kosten: 25, mp_restoration_team: 10, schaden: 20, element: "Ätherisch" }
 };
 
 async function synergienPruefen(helden) {
@@ -697,12 +810,32 @@ async function raetselMeisterBegegnung(helden) {
     const r = RAETSEL_MASTER_POOL[randomRange(0, RAETSEL_MASTER_POOL.length - 1)];
     await printSlow("\n🎭 <span class='rare-item'>Ein mysteriöser Rätselmeister erscheint aus dem Schatten!</span>");
     await printSlow("'Seid gegrüßt, Wanderer. Löst mein Rätsel und werdet belohnt. Scheitert ihr, wird es schmerzhaft...'");
-    await printSlow(`\n"<span class="synergy-text">${r.q}</span>"`);
+    await printSlow(`\n"<span class="synergy-text">${r.q.charAt(0).toUpperCase() + r.q.slice(1)}</span>"`);
     
-    const antwort = await question("Deine Antwort: ");
-    const spielerAntwort = antwort.toLowerCase().trim().replace(/\.$/, "");
+    // Erstelle eine Liste aller möglichen Antworten aus dem Pool
+    const alleAntworten = [...new Set(RAETSEL_MASTER_POOL.map(item => item.a))];
+    const korrekteAntwort = r.a;
 
-    if (spielerAntwort === r.a.toLowerCase()) {
+    // Filtere alle anderen Antworten, die nicht die korrekte sind
+    const falscheAntworten = alleAntworten.filter(antwort => antwort !== korrekteAntwort);
+
+    // Mische die falschen Antworten und wähle 2 davon aus
+    const gemischteFalscheAntworten = falscheAntworten.sort(() => Math.random() - 0.5);
+    const ausgewaehlteFalscheAntworten = gemischteFalscheAntworten.slice(0, 2);
+
+    // Kombiniere die korrekte Antwort mit den 2 falschen Antworten und mische sie
+    let optionenFuerRatsel = [korrekteAntwort, ...ausgewaehlteFalscheAntworten].sort(() => Math.random() - 0.5);
+
+    const riddleOptions = optionenFuerRatsel.map((opt, i) => ({ // Added color for riddle options
+        label: opt.charAt(0).toUpperCase() + opt.slice(1),
+        value: String(i + 1),
+        color: "neutral"
+    }));
+
+    const wahl = await question("Löse das Rätsel:", riddleOptions);
+    const wahlIdx = parseInt(wahl) - 1;
+
+    if (wahlIdx >= 0 && wahlIdx < optionenFuerRatsel.length && optionenFuerRatsel[wahlIdx] === r.a) {
         await printSlow(`\n✨ <span class="hp-gain">'Hervorragend! Ihr seid weiser als ihr ausseht.'</span>`);
         const goldPlus = randomRange(40, 80);
         const xpPlus = randomRange(25, 50);
@@ -714,7 +847,7 @@ async function raetselMeisterBegegnung(helden) {
             const levelsGained = h.check_levelup();
             if (levelsGained > 0) {
                 await printSlow(`\n🌟 LEVEL UP für ${h.name}! Level ${h.level}!`, 'level-up-animation');
-                await levelUpMenu(h, levelsGained);
+                await levelUpMenu(h, helden, levelsGained);
             }
         }
         triggerGoldAnimation();
@@ -756,20 +889,34 @@ async function bossLootGeben(helden) {
 }
 
 async function raetselPhase() {
-    const raetselPool = [
-        { q: "Was hat Städte, aber keine Häuser; Berge, aber keine Bäume; und Wasser, aber keine Fische?", a: "landkarte" },
-        { q: "Ich bin immer hungrig, ich muss immer gefüttert werden. Das Holz, das ich berühre, wird bald rot. Was bin ich?", a: "feuer" },
-        { q: "Ich habe einen Hals, aber keinen Kopf. Ich habe zwei Arme, aber keine Hände. Was bin ich?", a: "hemd" },
-        { q: "Was wird nass, während es trocknet?", a: "handtuch" }
-    ];
-
-    const r = raetselPool[randomRange(0, raetselPool.length - 1)];
+    const r = RAETSEL_MASTER_POOL[randomRange(0, RAETSEL_MASTER_POOL.length - 1)];
     await printSlow("\n🔮 Eine spektrale Stimme hallt durch den Raum:");
-    await printSlow(`"<span class="synergy-text">${r.q}</span>"`);
+    await printSlow(`"<span class="synergy-text">${r.q.charAt(0).toUpperCase() + r.q.slice(1)}</span>"`);
     
-    const antwort = await question("Deine Antwort: ");
-    // Wir nutzen trim() und entfernen einen evtl. Punkt am Ende der Antwort
-    if (antwort.toLowerCase().trim().replace(/\.$/, "") === r.a) {
+    // Erstelle eine Liste aller möglichen Antworten aus dem Pool
+    const alleAntworten = [...new Set(RAETSEL_MASTER_POOL.map(item => item.a))];
+    const korrekteAntwort = r.a;
+
+    // Filtere alle anderen Antworten, die nicht die korrekte sind
+    const falscheAntworten = alleAntworten.filter(antwort => antwort !== korrekteAntwort);
+
+    // Mische die falschen Antworten und wähle 2 davon aus
+    const gemischteFalscheAntworten = falscheAntworten.sort(() => Math.random() - 0.5);
+    const ausgewaehlteFalscheAntworten = gemischteFalscheAntworten.slice(0, 2);
+
+    // Kombiniere die korrekte Antwort mit den 2 falschen Antworten und mische sie
+    let optionenFuerRatsel = [korrekteAntwort, ...ausgewaehlteFalscheAntworten].sort(() => Math.random() - 0.5);
+
+    const riddleOptions = optionenFuerRatsel.map((opt, i) => ({ // Added color for riddle options
+        label: opt.charAt(0).toUpperCase() + opt.slice(1),
+        value: String(i + 1),
+        color: "neutral"
+    }));
+
+    const wahl = await question("Wähle die Nummer der richtigen Antwort: ", riddleOptions);
+    const wahlIdx = parseInt(wahl) - 1;
+
+    if (wahlIdx >= 0 && wahlIdx < optionenFuerRatsel.length && optionenFuerRatsel[wahlIdx] === r.a) {
         await printSlow(`\n✨ <span class="hp-gain">"Richtig... tretet ein in das Reich, das jenseits der Zeit liegt."</span>`);
         return true;
     } else {
@@ -795,14 +942,14 @@ async function levelUpMenu(held, helden, levelsGained = 1) {
     await printSlow(`Ihr erhaltet <span class="rare-item">${skillPunkte} Skill-Punkte</span> zum freien Verteilen auf eure Attribute!`);
 
     const attribute = {
-        "1": { name: "Konstitution", prop: "max_hp", gain: 5, label: "+5 Max HP" },
-        "2": { name: "Stärke", prop: "atk_bonus", gain: 1, label: "+1 ATK" },
-        "3": { name: "Verteidigung", prop: "def_bonus", gain: 1, label: "+1 RK" },
-        "4": { name: "Fokus", prop: "max_ap", gain: 5, label: "+5 Max AP" },
-        "5": { name: "Geschicklichkeit", prop: "grund_gesch", gain: 1, label: "+1 GES" }, // Neues Attribut
-        "6": { name: "Charisma", prop: "grund_cha", gain: 1, label: "+1 CHA" },
-        "7": { name: "Intelligenz", prop: "grund_int", gain: 1, label: "+1 INT" },
-        "8": { name: "Mana", prop: "max_mp", gain: 10, label: "+10 Max MP" }
+        "1": { name: "Konstitution", prop: "max_hp", gain: 5, label: "+5 Max HP", color: "heal" },
+        "2": { name: "Stärke", prop: "atk_bonus", gain: 1, label: "+1 ATK", color: "attack" },
+        "3": { name: "Verteidigung", prop: "def_bonus", gain: 1, label: "+1 RK", color: "utility" },
+        "4": { name: "Fokus", prop: "max_ap", gain: 5, label: "+5 Max AP", color: "special" },
+        "5": { name: "Geschicklichkeit", prop: "grund_gesch", gain: 1, label: "+1 GES", color: "utility" }, // Neues Attribut
+        "6": { name: "Charisma", prop: "grund_cha", gain: 1, label: "+1 CHA", color: "neutral" },
+        "7": { name: "Intelligenz", prop: "grund_int", gain: 1, label: "+1 INT", color: "special" },
+        "8": { name: "Mana", prop: "max_mp", gain: 10, label: "+10 Max MP", color: "special" }
     };
 
     while (skillPunkte > 0) {
@@ -819,11 +966,13 @@ async function levelUpMenu(held, helden, levelsGained = 1) {
             await printSlow(`🤖 ${held.name} investiert in ${attr.name}.`);
         } else {
             console.log(`\nVerfügbare Punkte: ${skillPunkte}`);
-            Object.entries(attribute).forEach(([key, attr]) => {
-                console.log(`${key}. ${attr.name} (${attr.label} | Aktuell: ${held[attr.prop]})`);
-            });
-
-            const wahl = await question("Was möchtest du steigern? ");
+            const levelOptions = Object.entries(attribute).map(([key, attr]) => ({
+                label: `${attr.name} (${held[attr.prop]})`, // Display current value
+                value: key,
+                color: attr.color // Use predefined color
+            }));
+            
+            const wahl = await question(`[${held.name}] Attribut wählen (${skillPunkte} Pkt.):`, levelOptions);
             const attr = attribute[wahl];
             if (attr) {
                 held[attr.prop] += attr.gain;
@@ -847,8 +996,11 @@ async function levelUpMenu(held, helden, levelsGained = 1) {
         await printSlow(`\n🌟 <span class="rare-item">${held.name}</span> hat eine neue Stufe der Meisterschaft erreicht!`);
         await printSlow(`Wählt einen Pfad, um eure Kräfte zu spezialisieren:`);
 
-        optionen.forEach((opt, i) => console.log(`${i + 1}. ${opt.name}`));
-
+        const specializationOptions = optionen.map((opt, i) => ({
+            label: opt.name,
+            value: String(i + 1),
+            color: "special" // Specializations are special
+        }));
         let wahlIdx = -1;
         if (held.isKI) {
             wahlIdx = randomRange(0, optionen.length - 1);
@@ -858,7 +1010,7 @@ async function levelUpMenu(held, helden, levelsGained = 1) {
             if (isNaN(wahlIdx) || wahlIdx < 0 || wahlIdx >= optionen.length) wahlIdx = 0;
         }
 
-        const chosenSpecialization = optionen[wahlIdx];
+        const chosenSpecialization = optionen[wahlIdx]; // Use the chosen index
         const neueKlasse = chosenSpecialization.name;
         held.klasse = neueKlasse;
         await printSlow(`✨ Unglaublich! ${held.name} ist nun ein <span class="rare-item">${neueKlasse}</span>!`);
@@ -964,20 +1116,26 @@ async function faehigkeitWaehlen(spieler) {
         spieler.abilities.push(gewaehlt);
         await printSlow(`🤖 ${spieler.name} lernt: ${gewaehlt.name}!`);
     } else {
-        auswahl.forEach((a, i) => {
+        const abilityOptions = auswahl.map((a, i) => {
             let info = "";
-            let warning = "";
-            if (a.isUltimate) info = `(ULTIMATE - SP: ${a.sp_kosten})`;
-            else if (a.material_kosten) {
-                const count = spieler.inventar.filter(it => it.name === a.material_kosten).length;
-                info = `(Benötigt: ${a.material_kosten})`;
-                if (count === 0) warning = ' <span class="effect-lifesteal">[Kein Vorrat]</span>';
-            }
-            else info = `(AP: ${a.ap_kosten})`;
+            if (a.isUltimate) info = `(ULT)`;
+            else if (a.material_kosten) info = `(${a.material_kosten})`;
+            else info = `(${a.ap_kosten || a.mp_kosten} ${a.ap_kosten ? 'AP' : 'MP'})`;
             const desc = formatAbilityDesc(a, spieler);
-            console.log(`${i + 1}. <span class="tooltip">${a.name}<span class="tooltiptext"><strong>${a.name}</strong><br>${desc}</span></span> ${info}${warning}`);
+            return {
+                label: `<span class="tooltip">${a.name}<span class="tooltiptext"><strong>${a.name}</strong><br>${desc}</span></span> ${info}`,
+                value: String(i + 1),
+                color: (a.isUltimate ? "special" :
+                        a.heilung || a.belebt ? "heal" :
+                        a.schaden ? "attack" :
+                        a.atk_buff || a.def_buff || a.stealth_buff ? "utility" :
+                        a.schlaf_dauer || a.verwirrt || a.subjugated || a.niederhalten ? "debuff" :
+                        a.mp_restoration_team || a.ap_restoration_team || a.execute_threshold || a.licht ? "special" :
+                        a.material_kosten ? "utility" :
+                        "neutral")
+            };
         });
-        const wahl = await question("Wähle eine Fähigkeit (1-2): ");
+        const wahl = await question("Wähle eine Fähigkeit (1-2): ", abilityOptions);
         const idx = parseInt(wahl) - 1;
         const gewaehlt = (idx >= 0 && idx < auswahl.length) ? auswahl[idx] : auswahl[0];
 
@@ -996,15 +1154,9 @@ async function faehigkeitWaehlen(spieler) {
 async function schatzFinden(helden) {
     await printSlow("\n--- RAUM 1: Die Kammer der Prüfungen ---");
     await printSlow("Ihr findet eine schwere Eisentruhe. Wer von euch versucht, sie zu knacken?");
-    helden.forEach((h, i) => console.log(`${i + 1}. ${h.name}`));
-    
-    let index;
-    while (true) {
-        const wahl = await question(`Wahl (1-${helden.length}): `);
-        index = parseInt(wahl) - 1;
-        if (!isNaN(index) && index >= 0 && index < helden.length) break;
-        console.log("Ungültige Wahl.");
-    }
+    const targetOptions = helden.map((h, i) => ({ label: h.name, value: String(i + 1) }));
+    const wahl = await question("Wer versucht die Truhe zu knacken?", targetOptions);
+    const index = parseInt(wahl) - 1;
     const aktiver = helden[index];
     
     await printSlow(`${aktiver.name} tritt vor und würfelt...`);
@@ -1017,25 +1169,6 @@ async function schatzFinden(helden) {
             await printSlow(`✨ Dank der geschärften Sinne eines Halblings bemerkt ${aktiver.name} eine verborgene Druckplatte und umgeht sie geschickt!`);
         }
 
-        const itemPool = [
-            { name: "Breitschwert", typ: "Waffe", wert: 10 },
-            { name: "Ritterrüstung", typ: "Ruestung", wert: 16 },
-            { name: "Lederhelm", typ: "Ruestung", wert: 3 },
-            { name: "Bronzeschwert", typ: "Waffe", wert: 5 },
-            { name: "Kleiner Schild", typ: "Schild", wert: 1 },
-            { name: "Magierrobe", typ: "Ruestung", wert: 2 },
-            { name: "Kurzbogen", typ: "Waffe", wert: 4 },
-            { name: "Dolch des Assassinen", typ: "Waffe", wert: 6 },
-            { name: "Eisenstiefel", typ: "Ruestung", wert: 4 },
-            { name: "Kampfhammer", typ: "Waffe", wert: 7 },
-            { name: "Schuppenpanzer", typ: "Ruestung", wert: 10 },
-            { name: "Großer Schild", typ: "Schild", wert: 3 },
-            { name: "Langschwert", typ: "Waffe", wert: 8 },
-            { name: "Plattenhandschuhe", typ: "Ruestung", wert: 5 },
-            { name: "Kriegsaxt", typ: "Waffe", wert: 9 },
-            { name: "Mithrilkette", typ: "Ruestung", wert: 12 }
-        ];
-
         let goldFund = randomRange(1, 50);
         if (aktiver.hatBardenBuff) goldFund = Math.floor(goldFund * 1.1);
         aktiver.gold += goldFund;
@@ -1043,7 +1176,7 @@ async function schatzFinden(helden) {
         await printSlow(`💎 Erfolg! ${aktiver.name} öffnet die Truhe und findet ${goldFund} Gold!`);
 
         for (const h of helden) {
-            const randomData = itemPool[randomRange(0, itemPool.length - 1)];
+            const randomData = QUEST_ITEM_POOL[randomRange(0, QUEST_ITEM_POOL.length - 1)];
             const loot = new Item(randomData.name, randomData.typ, randomData.wert, null, "In einer alten Truhe gefunden.");
             h.inventar.push(loot);
             await printSlow(`🎁 ${h.name} erhält: <span class="rare-item">${loot.name}</span> (${loot.typ}: ${loot.wert})`);
@@ -1078,7 +1211,9 @@ async function shopBesuch(helden, istNachBoss = false) {
     }
 
     for (const held of helden) {
-        let shopping = true;
+        let shopping = true; // Steuert den gesamten Shop-Besuch
+        let currentCategory = null; // Hält die aktuell ausgewählte Kategorie
+
         while (shopping) {
             // Charisma-Bonus berechnen (5% pro Punkt)
             const charismaRabatt = 1 - (held.grund_cha * 0.05);
@@ -1086,82 +1221,148 @@ async function shopBesuch(helden, istNachBoss = false) {
             const buyDiscount = Math.max(0.4, charismaRabatt * bossRabatt);
             const sellBonus = Math.min(1.0, 0.5 + (held.grund_cha * 0.05));
 
-            console.log(`\n--- 🛒 SHOP: ${held.name} (Gold: ${held.gold} | Charisma: ${held.grund_cha}) ---`);
-            if (istNachBoss) console.log("✨ <span class=\"hp-gain\">Aktion: 20% Sieger-Rabatt aktiv!</span>");
-            
-            Object.keys(SHOP_WAREN).forEach(id => {
-                const ware = SHOP_WAREN[id];
-                const finalCost = Math.max(1, Math.ceil(ware.cost * buyDiscount));
-                console.log(`${id}. ${ware.label} -> DEIN PREIS: ${finalCost} Gold`);
-            });
-            if (seltenesArtefakt) {
-                const finalCost = Math.max(1, Math.ceil(seltenesArtefakt.cost * buyDiscount));
-                console.log(`50. <span class="rare-item">UNIKAT: ${seltenesArtefakt.name}</span> (${seltenesArtefakt.kind}: ${seltenesArtefakt.val}) -> PREIS: ${finalCost} Gold`);
+            let shopOptions = [];
+            let questionText = `[${held.name}] Gold: ${held.gold} | Shop:`;
+
+            // Erste Ebene: Kategorien auswählen
+            if (!currentCategory) {
+                questionText = `[${held.name}] Gold: ${held.gold} | Wähle eine Kategorie:`;
+                for (const catKey in SHOP_CATEGORIES) {
+                    const category = SHOP_CATEGORIES[catKey];
+                    shopOptions.push({ label: `${category.icon} ${category.label}`, value: catKey, color: "neutral" });
+                }
+                shopOptions.push({ label: "💰 VERKAUFEN", value: "31", color: "utility" });
+                shopOptions.push({ label: "🚪 Verlassen", value: "0", color: "back" });
+            } else {
+                // Zweite Ebene: Items innerhalb der Kategorie anzeigen
+                questionText = `[${held.name}] Gold: ${held.gold} | ${SHOP_CATEGORIES[currentCategory].icon} ${SHOP_CATEGORIES[currentCategory].label}:`;
+                
+                const itemsInCategory = Object.entries(SHOP_WAREN).filter(([, ware]) => ware.category === currentCategory);
+
+                itemsInCategory.forEach(([id, ware]) => {
+                    const finalCost = Math.max(1, Math.ceil(ware.cost * buyDiscount));
+                    let color = "neutral";
+                    if (ware.type === "traenke" || ware.type === "hp" || ware.type === "mp") color = "heal";
+                    if (ware.kind === "Waffe") color = "attack";
+                    if (ware.kind === "Ruestung" || ware.kind === "Schild") color = "utility";
+                    shopOptions.push({ 
+                        label: `<span class="tooltip">${ware.label}<span class="tooltiptext"><strong>${ware.label}</strong><br>${ware.lore || 'Ein nützlicher Gegenstand.'}<br>💰 Preis: ${finalCost} Gold</span></span>`, 
+                        value: id, 
+                        color: color 
+                    });
+                });
+
+                // Seltenes Artefakt nur in der Artefakte-Kategorie anzeigen
+                if (seltenesArtefakt && currentCategory === "artefakte") {
+                    const finalCost = Math.max(1, Math.ceil(seltenesArtefakt.cost * buyDiscount));
+                    shopOptions.push({ label: `<span class="tooltip rare-item">${seltenesArtefakt.name}<span class="tooltiptext"><strong>${seltenesArtefakt.name}</strong><br>${seltenesArtefakt.lore || 'Ein mächtiges Unikat.'}<br>💰 Preis: ${finalCost} Gold</span></span>`, value: "50", color: "special" });
+                }
+                shopOptions.push({ label: "🔙 Zurück zu Kategorien", value: "back_to_categories", color: "back" });
+                shopOptions.push({ label: "💰 VERKAUFEN", value: "31", color: "utility" });
+                shopOptions.push({ label: "🚪 Verlassen", value: "0", color: "back" });
             }
-            console.log("31. EIGENE ITEMS VERKAUFEN");
-            console.log("0. Shop verlassen");
-            
-            const wahl = await question("Deine Wahl: ");
+
+            const wahl = await question(questionText, shopOptions);
             
             if (wahl === "0" || wahl === "30") {
                 shopping = false;
+            } else if (wahl === "back_to_categories") {
+                currentCategory = null; // Zurück zur Kategorienansicht
+            } else if (SHOP_CATEGORIES[wahl]) { // Eine Kategorie wurde ausgewählt
+                currentCategory = wahl;
             } else if (wahl === "31") {
                 // --- VERKAUFS-MODUS ---
-                if (held.inventar.length === 0 && held.traenke === 0) {
-                    await printSlow("❌ Du hast nichts zum Verkaufen!");
-                    continue;
-                }
-
-                console.log("\n--- Dein Inventar zum Verkauf ---");
-                const potionSellPrice = Math.max(1, Math.floor(5 * sellBonus)); // 5 ist Basiswert
-                if (held.traenke > 0) console.log(`T. Heiltränke (${held.traenke}x) - Wert: ${potionSellPrice} Gold/Stk`);
-                
-                // Gruppiertes Inventar für die Anzeige
-                const groupedInv = [];
-                held.inventar.forEach(item => {
-                    const entry = groupedInv.find(g => g.name === item.name);
-                    if (entry) entry.count++;
-                    else groupedInv.push({ name: item.name, count: 1, wert: item.wert });
-                });
-
-                groupedInv.forEach((g, i) => {
-                    const verkaufsPreis = Math.max(1, Math.floor(g.wert * sellBonus));
-                    console.log(`${i + 1}. ${g.count > 1 ? g.count + 'x ' : ''}${g.name} - Wert: ${verkaufsPreis} Gold`);
-                });
-                console.log("B. Zurück zum Kauf-Menü");
-
-                const verkaufWahl = await question("Was möchtest du verkaufen? (Nr/T/B): ");
-                if (verkaufWahl.toLowerCase() === "b") continue;
-
-                if (verkaufWahl.toLowerCase() === "t" && held.traenke > 0) {
-                    const anz = parseInt(await question(`Wie viele Heiltränke verkaufen? (Max ${held.traenke}): `));
-                    if (!isNaN(anz) && anz > 0 && anz <= held.traenke) {
-                        held.traenke -= anz;
-                        held.gold += anz * potionSellPrice;
-                        await printSlow(`💰 Du verkaufst ${anz} Tränke für ${anz * potionSellPrice} Gold.`);
+                let selling = true;
+                while (selling) {
+                    if (held.inventar.length === 0 && held.traenke === 0) {
+                        await printSlow("❌ Du hast nichts mehr zum Verkaufen!");
+                        selling = false;
+                        continue;
                     }
-                } else {
-                    const idx = parseInt(verkaufWahl) - 1;
-                    if (!isNaN(idx) && idx >= 0 && idx < groupedInv.length) {
-                        const selected = groupedInv[idx];
-                        const preis = Math.max(1, Math.floor(selected.wert * sellBonus));
-                        
-                        const anz = parseInt(await question(`Wie viele ${selected.name} verkaufen? (Max ${selected.count}): `));
-                        if (!isNaN(anz) && anz > 0 && anz <= selected.count) {
-                            let geloescht = 0;
-                            // Von hinten löschen um Indizes während des Durchlaufs stabil zu halten
-                            for (let i = held.inventar.length - 1; i >= 0 && geloescht < anz; i--) {
-                                if (held.inventar[i].name === selected.name) {
-                                    held.inventar.splice(i, 1);
-                                    geloescht++;
+
+                    // Mapping-Helper um Kategorien für Inventar-Items zu finden
+                    const getCategory = (item) => {
+                        const ware = Object.values(SHOP_WAREN).find(w => w.name === item.name);
+                        if (ware) return ware.category;
+                        if (item.typ === "Waffe") return "waffen";
+                        if (item.typ === "Ruestung" || item.typ === "Schild") return "ruestung";
+                        if (item.typ === "Material") return "materialien";
+                        return "traenke";
+                    };
+
+                    const sellCatOptions = [];
+                    const catsWithItems = new Set();
+                    if (held.traenke > 0) catsWithItems.add("traenke");
+                    held.inventar.forEach(it => catsWithItems.add(getCategory(it)));
+
+                    for (const catKey of catsWithItems) {
+                        const cat = SHOP_CATEGORIES[catKey];
+                        if (cat) sellCatOptions.push({ label: `${cat.icon} ${cat.label}`, value: catKey, color: "neutral" });
+                    }
+                    sellCatOptions.push({ label: "🔙 Zurück zum Shop", value: "back", color: "back" });
+
+                    const catWahl = await question(`[${held.name}] Welche Kategorie möchtest du verkaufen?`, sellCatOptions);
+                    if (catWahl === "back") {
+                        selling = false;
+                        continue;
+                    }
+
+                    const sellOptions = [];
+                    const potionSellPrice = Math.max(1, Math.floor(5 * sellBonus));
+                    
+                    if (catWahl === "traenke" && held.traenke > 0) {
+                        sellOptions.push({ label: `🧪 Tränke (${held.traenke}x) -> ${potionSellPrice}G`, value: "t", color: "heal" });
+                    }
+
+                    const groupedInv = [];
+                    held.inventar.filter(it => getCategory(it) === catWahl).forEach(item => {
+                        const entry = groupedInv.find(g => g.name === item.name);
+                        if (entry) entry.count++;
+                        else {
+                            const ware = Object.values(SHOP_WAREN).find(w => w.name === item.name);
+                            const basePrice = ware ? ware.cost : (item.wert * 2 || 2);
+                            groupedInv.push({ name: item.name, count: 1, basePrice: basePrice });
+                        }
+                    });
+
+                    groupedInv.forEach((g, i) => {
+                        const preis = Math.max(1, Math.floor(g.basePrice * sellBonus));
+                        sellOptions.push({ label: `${g.count > 1 ? g.count + 'x ' : ''}${g.name} -> ${preis}G`, value: String(i + 1) });
+                    });
+                    sellOptions.push({ label: "🔙 Andere Kategorie", value: "back", color: "back" });
+
+                    const itemWahl = await question(`[${held.name}] Was aus ${SHOP_CATEGORIES[catWahl].label} verkaufen?`, sellOptions);
+                    if (itemWahl === "back") continue;
+
+                    if (itemWahl === "t") {
+                        const anz = parseInt(await question(`Wie viele Heiltränke verkaufen? (Max ${held.traenke}): `));
+                        if (!isNaN(anz) && anz > 0 && anz <= held.traenke) {
+                            held.traenke -= anz;
+                            held.gold += anz * potionSellPrice;
+                            await printSlow(`💰 Du verkaufst ${anz} Tränke für ${anz * potionSellPrice} Gold.`);
+                        }
+                    } else {
+                        const idx = parseInt(itemWahl) - 1;
+                        if (!isNaN(idx) && idx >= 0 && idx < groupedInv.length) {
+                            const sel = groupedInv[idx];
+                            const preis = Math.max(1, Math.floor(sel.basePrice * sellBonus));
+                            const anzInput = await question(`Wie viele ${sel.name} verkaufen? (Max ${sel.count}): `);
+                            const anz = parseInt(anzInput);
+                            if (!isNaN(anz) && anz > 0 && anz <= sel.count) {
+                                let geloescht = 0;
+                                for (let i = held.inventar.length - 1; i >= 0 && geloescht < anz; i--) {
+                                    if (held.inventar[i].name === sel.name) {
+                                        held.inventar.splice(i, 1);
+                                        geloescht++;
+                                    }
                                 }
+                                held.gold += geloescht * preis;
+                                await printSlow(`💰 Du verkaufst ${geloescht}x ${sel.name} für ${geloescht * preis} Gold.`);
                             }
-                            held.gold += geloescht * preis;
-                            await printSlow(`💰 Du verkaufst ${geloescht}x ${selected.name} für ${geloescht * preis} Gold.`);
                         }
                     }
                 }
-            } else if (wahl === "50" && seltenesArtefakt) {
+            } else if (wahl === "50" && seltenesArtefakt && currentCategory === "artefakte") { // Kauf des seltenen Artefakts
                 const finalCost = Math.max(1, Math.ceil(seltenesArtefakt.cost * buyDiscount));
                 if (held.gold >= finalCost) {
                     held.gold -= finalCost;
@@ -1172,7 +1373,7 @@ async function shopBesuch(helden, istNachBoss = false) {
                 } else {
                     await printSlow("❌ Nicht genug Gold für dieses wertvolle Stück!");
                 }
-            } else if (SHOP_WAREN[wahl]) {
+            } else if (SHOP_WAREN[wahl] && SHOP_WAREN[wahl].category === currentCategory) { // Kauf eines regulären Items
                 // --- KAUF-MODUS ---
                 const ware = SHOP_WAREN[wahl];
                 const finalCost = Math.max(1, Math.ceil(ware.cost * buyDiscount));
@@ -1199,6 +1400,9 @@ async function shopBesuch(helden, istNachBoss = false) {
                             }
                         } else if (ware.type === "hp") {
                             held.inventar.push(new Item(ware.name, "Gegenstand", ware.val, null, ware.lore || null));
+                        }
+                        else if (ware.type === "mp") { // Manatrank
+                            held.inventar.push(new Item(ware.name, "Mana-Gegenstand", ware.val, null, ware.lore || null));
                         }
                     }
 
@@ -1265,17 +1469,19 @@ async function tavernenBesuch(helden) {
         } else {
             let tavernenWahl = true;
             while(tavernenWahl) {
-                console.log(`\n--- 🍺 TAVERNE: ${held.name} (Gold: ${held.gold} | AP: ${held.ap}/${held.max_ap}) ---`);
-                console.log("1. Ein Starkbier für dich (10 Gold, AP voll)");
                 const lebendeHelden = helden.filter(h => h.hp > 0);
                 const kostenRunde = lebendeHelden.length * 10;
-                console.log(`2. Eine Runde für alle schmeißen (${kostenRunde} Gold, alle AP voll)`);
-                if (held.max_mp > 0) console.log("M. Blauer Enzian (15 Gold, MP voll)");
-                console.log("3. Einem Gast ein Bier spendieren für Gerüchte (5 Gold)");
-                console.log("4. Würfelspiel gegen den Wirt (Einsatz setzen)");
-                console.log("0. Taverne verlassen");
 
-                const wahl = await question("Deine Wahl: ");
+                const tavernOptions = [
+                    { label: "🍺 Starkbier (10G)", value: "1", color: "heal" },
+                    { label: `🍻 Runde schmeißen (${kostenRunde}G)`, value: "2", color: "heal" }
+                ];
+                if (held.max_mp > 0) tavernOptions.push({ label: "Blauer Enzian (15 Gold, MP voll)", value: "m", color: "special" });
+                tavernOptions.push({ label: "Einem Gast ein Bier spendieren für Gerüchte (5 Gold)", value: "3", color: "utility" });
+                tavernOptions.push({ label: "Würfelspiel gegen den Wirt (Einsatz setzen)", value: "4", color: "neutral" });
+                tavernOptions.push({ label: "Taverne verlassen", value: "0", color: "back" });
+
+                const wahl = await question(`[${held.name}] Gold: ${held.gold} | Taverne:`, tavernOptions);
                 if (wahl === "1") {
                     if (held.ap >= held.max_ap) {
                         await printSlow("❌ Du bist bereits voller Energie!");
@@ -1396,13 +1602,13 @@ async function vorraeteNutzen(helden) {
     let amEssen = true;
     while (amEssen) {
         updateUI(helden);
-        console.log("\n--- 🍎 VORRÄTE VERBRAUCHEN ---");
-        helden.forEach((h, i) => {
-            console.log(`${i + 1}. ${h.name} (HP: ${h.hp}/${h.max_hp})`);
-        });
-        console.log("0. Zurück");
+        const playerOptions = helden.map((h, i) => ({
+            label: `${h.name} (${h.hp}/${h.max_hp} HP)`,
+            value: String(i + 1)
+        }));
+        playerOptions.push({ label: "Zurück", value: "0", color: "back" });
 
-        const heldWahl = await question("Welcher Held soll etwas essen? ");
+        const heldWahl = await question("Held wählen:", playerOptions);
         if (heldWahl === "0") {
             amEssen = false;
         } else {
@@ -1423,14 +1629,13 @@ async function vorraeteNutzen(helden) {
                     else grouped.push({ name: it.name, val: it.wert, count: 1, type: it.typ });
                 });
 
-                console.log(`\nVorräte von ${held.name}:`);
-                grouped.forEach((g, i) => {
-                    const unit = g.type === "Mana-Gegenstand" ? "MP" : "HP";
-                    console.log(`${i + 1}. ${g.count > 1 ? g.count + 'x ' : ''}${g.name} (+${g.val} ${unit})`);
-                });
-                console.log("0. Zurück");
+                const foodOptions = grouped.map((g, i) => ({
+                    label: `${g.count > 1 ? g.count + 'x ' : ''}${g.name} (+${g.val} ${g.type === "Mana-Gegenstand" ? 'MP' : 'HP'})`,
+                    value: String(i + 1)
+                }));
+                foodOptions.push({ label: "Zurück", value: "0", color: "back" });
 
-                const itemWahl = await question("Was soll verzehrt werden? ");
+                const itemWahl = await question(`[${held.name}] Was essen?`, foodOptions);
                 if (itemWahl === "0") continue;
 
                 const iIdx = parseInt(itemWahl) - 1;
@@ -1498,7 +1703,13 @@ async function feenBegegnung(helden) {
         while (tauschen && h.gold >= 10) {
             updateUI(helden);
             console.log(`\n--- 🧚 FEE: ${h.name} (Gold: ${h.gold} | XP: ${h.xp}/${h.xp_needed}) ---`);
-            const antwort = await question("Möchtest du Gold gegen XP tauschen? (10 Gold = 15 XP). Gib die Anzahl der Tausche ein (0 für Ende): ");
+            const tradeOptions = [ // Added color for trade options
+                { label: "1x Tauschen (10 Gold = 15 XP)", value: "1", color: "utility" },
+                { label: "5x Tauschen (50 Gold = 75 XP)", value: "5", color: "utility" },
+                { label: "10x Tauschen (100 Gold = 150 XP)", value: "10", color: "utility" },
+                { label: "Ende", value: "0", color: "back" }
+            ];
+            const antwort = await question("Möchtest du Gold gegen XP tauschen? (10 Gold = 15 XP)", tradeOptions);
             const anzahl = parseInt(antwort);
 
             if (!isNaN(anzahl) && anzahl > 0) {
@@ -1511,8 +1722,8 @@ async function feenBegegnung(helden) {
                     const levelsGained = h.check_levelup();
                     if (levelsGained > 0) {
                         await printSlow(`\n🌟 LEVEL UP für ${h.name}! Level ${h.level}!`, 'level-up-animation');
-                        await levelUpMenu(h, levelsGained);
-                    }
+                        await levelUpMenu(h, helden, levelsGained);
+                    } // Removed duplicate closing brace
                 } else {
                     await printSlow("❌ Du hast nicht genug Gold für so viel Wissen.");
                 }
@@ -1532,12 +1743,13 @@ async function castleInteraction(helden) {
 
     let interacting = true;
     while (interacting) {
-        await printSlow("\n--- IM THRONSAAL DER BURG ---");
-        console.log("1. Mit König Theron sprechen");
-        console.log("2. Die Burg erkunden (Shop/Taverne)");
-        console.log("0. Das Spiel beenden (Siegerehrung)");
+        const castleOptions = [
+            { label: "👑 König Theron", value: "1", color: "neutral" },
+            { label: "🏰 Burg erkunden", value: "2", color: "utility" },
+            { label: "🚪 Beenden", value: "0", color: "back" }
+        ];
 
-        const wahl = await question("Was möchtet ihr tun? ");
+        const wahl = await question("Thronsaal - Was wollt ihr tun?", castleOptions);
 
         if (wahl === "1") {
             await printSlow("\n👑 König Theron: 'Seid gegrüßt, Helden! Eure Taten sind legendär.'");

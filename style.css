@@ -159,6 +159,57 @@ input[type="range"] {
     color: var(--bg-color);
 }
 
+/* New button color classes */
+.btn-attack {
+    background-color: #b22222; /* Red */
+    border-color: #ff4444;
+    color: var(--text-color);
+}
+.btn-attack:hover {
+    background-color: #ff4444;
+    color: var(--bg-color);
+}
+
+.btn-heal {
+    background-color: #2ecc71; /* Green */
+    border-color: #58d68d;
+    color: var(--text-color);
+}
+.btn-heal:hover {
+    background-color: #58d68d;
+    color: var(--bg-color);
+}
+
+.btn-utility {
+    background-color: #3498db; /* Blue */
+    border-color: #5dade2;
+    color: var(--text-color);
+}
+.btn-utility:hover {
+    background-color: #5dade2;
+    color: var(--bg-color);
+}
+
+.btn-special {
+    background-color: #8e44ad; /* Purple */
+    border-color: #9b59b6;
+    color: var(--text-color);
+}
+.btn-special:hover {
+    background-color: #9b59b6;
+    color: var(--bg-color);
+}
+
+.btn-back {
+    background-color: #7f8c8d; /* Grey */
+    border-color: #95a5a6;
+    color: var(--text-color);
+}
+.btn-back:hover {
+    background-color: #95a5a6;
+    color: var(--bg-color);
+}
+
 header {
     text-align: center;
     margin-bottom: 20px;
@@ -175,10 +226,10 @@ header h1 {
 #game-container {
     display: grid;
     grid-template-columns: 260px 1fr 260px;
-    grid-template-rows: 1fr auto;
+    grid-template-rows: auto 1fr auto;
     gap: 20px;
     width: 100%;
-    max-width: 1000px;
+    max-width: 1200px;
     flex: 1;
     min-height: 0; /* Erlaubt es den Grid-Items, kleiner als ihr Inhalt zu sein */
     margin-bottom: 20px;
@@ -186,22 +237,29 @@ header h1 {
 
 #stats-panel {
     grid-column: 1;
-    grid-row: 1 / 3;
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-    overflow-y: auto; /* Erlaubt Scrollen, falls viele Spieler/Items vorhanden sind */
-    padding-right: 5px;
-}
-
-#right-panel {
-    grid-column: 3;
-    grid-row: 1 / 3;
+    grid-row: 1 / 4;
     display: flex;
     flex-direction: column;
     gap: 15px;
     overflow-y: auto;
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE/Edge */
 }
+
+#stats-panel::-webkit-scrollbar { display: none; } /* Chrome/Safari */
+
+#right-panel {
+    grid-column: 3;
+    grid-row: 1 / 4;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    overflow-y: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+#right-panel::-webkit-scrollbar { display: none; }
 
 .player-card {
     background-color: var(--panel-bg);
@@ -227,7 +285,7 @@ header h1 {
 
 #log-panel {
     grid-column: 2;
-    grid-row: 1;
+    grid-row: 1; /* Standard-Desktop: Story oben */
     background-color: var(--panel-bg);
     border: 3px double var(--accent-color);
     border-radius: 8px;
@@ -250,7 +308,7 @@ header h1 {
 
 #control-panel {
     grid-column: 2;
-    grid-row: 2;
+    grid-row: 3;
     background-color: var(--panel-bg);
     border: 3px double var(--accent-color);
     border-radius: 8px;
@@ -259,6 +317,15 @@ header h1 {
     flex-direction: column;
     gap: 10px;
     box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+}
+
+#dungeon-progress-ui {
+    grid-column: 2;
+    grid-row: 1;
+}
+
+#log-panel {
+    grid-row: 2; /* Log rückt eine Zeile nach unten */
 }
 
 #input-query {
@@ -730,50 +797,106 @@ header h1 {
     gap: 10px;
 }
 
-/* Mobile Optimierung für Hochformat (Smartphones) */
-@media (max-width: 768px) {
+#choice-buttons {
+    display: grid; /* Buttons im Kampf/Menü als Raster anzeigen */
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); /* Responsive columns for larger screens */
+    gap: 8px;
+    margin-top: 12px;
+    justify-items: center; /* Center items within their grid cells */
+}
+
+/* Tablet Optimierung (Schmalere Bildschirme) */
+@media (max-width: 1150px) {
+    #game-container {
+        grid-template-columns: 220px 1fr 220px;
+        gap: 15px;
+    }
+}
+
+/* Smartphone & Tablet (Hochformat) Optimierung */
+@media (max-width: 900px) {
     body {
-        padding: 10px;
+        padding: 5px;
+        overflow-y: auto; /* Scrollen auf der Seite erlauben */
+        height: auto;
+        background-attachment: scroll; /* Performance-Verbesserung für Mobilgeräte */
     }
 
     header h1 {
-        font-size: 1.5rem;
+        font-size: 1.3rem;
     }
 
     #game-container {
-        grid-template-columns: 1fr; /* Stapelt die Elemente untereinander */
-        grid-template-rows: auto auto 1fr auto;
+        display: flex;
+        flex-direction: column;
         height: auto;
         gap: 15px;
+        max-width: 100%;
     }
 
-    #stats-panel {
-        grid-column: 1;
-        grid-row: 1;
-        flex-direction: row; /* Spieler-Karten nebeneinander statt untereinander */
+    #stats-panel, #right-panel {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        width: 100%;
+        order: 1;
+        overflow-y: visible;
         gap: 10px;
+        padding: 0;
     }
 
     #right-panel {
-        grid-column: 1;
-        grid-row: 2;
-        flex-direction: row;
-        gap: 10px;
+        order: 2;
     }
 
-    .player-card {
-        padding: 8px;
-        flex: 1;
+    #dungeon-progress-ui {
+        order: 3;
     }
 
     #log-panel {
-        grid-column: 1;
-        grid-row: 3;
-        min-height: 300px; /* Platz für den Textverlauf */
+        order: 4;
+        min-height: 400px;
+        max-height: 60vh;
+        padding-top: 10px;
     }
 
     #control-panel {
-        grid-column: 1;
-        grid-row: 4;
+        order: 5;
+        position: sticky;
+        bottom: 5px;
+        z-index: 1000;
+        box-shadow: 0 -5px 15px rgba(0,0,0,0.5);
+    }
+
+    .player-card {
+        padding: 10px;
+    }
+
+    #user-input {
+        font-size: 16px; /* Verhindert Auto-Zoom auf Mobilgeräten */
+    }
+
+    .meta-btn {
+        padding: 12px 15px; /* Größere Touch-Fläche */
+    }
+
+    #choice-buttons {
+        display: grid !important; /* Buttons im Kampf/Menü als Raster anzeigen */
+        grid-template-columns: 1fr 1fr;
+        width: 100%;
+    }
+
+    .modal-content {
+        width: 95%;
+        margin: 10% auto;
+        padding: 15px;
+    }
+
+    .char-form-row {
+        padding: 10px 5px;
+    }
+
+    .class-preview, .class-abilities {
+        max-width: 100%;
+        font-size: 0.8em;
     }
 }

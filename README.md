@@ -10,7 +10,7 @@ W-W ist ein textbasiertes Rollenspiel mit grafischen Elementen, in dem du eine G
 *   **Freie Attributsverteilung:** Pro Levelaufstieg erhält jeder Held **5 Skill-Punkte**.
 *   **Vielseitige Statuswerte:** Skaliere Konstitution (HP), Stärke (ATK), Verteidigung (RK), Fokus (AP), Geschicklichkeit (Krit-Chance), Charisma (Shop-Rabatte) und Intelligenz (Crafting-Erfolg).
 *   **Multi-Level-Support:** Erhältst du genug XP für mehrere Level gleichzeitig, kannst du alle Punkte in einem Rutsch verteilen.
-*   **Sprachunterstützung:** Das Spiel bietet volle Lokalisierung in **Deutsch und Englisch**.
+*   **Sprachunterstützung:** Das Spiel bietet volle Lokalisierung in **Deutsch, Englisch und Französisch**.
 
 ### 2. Team-Management & KI
 *   **Flexible Gruppengröße:** Spiele mit 1 bis 4 Helden.
@@ -41,10 +41,13 @@ Sobald ein Held Stufe 15 erreicht, kann er eine Meisterschaft wählen:
 | | Ritter | +3 Rüstungsklasse (RK) |
 | **Barde** | Minnesänger | +1 Runde Dauer für eigene Buffs |
 | | Troubadour | +1 Runde Dauer für verursachte Debuffs |
+| | Liedmeister | +3 MP-Regeneration pro Runde |
 | **Tüftler** | Maschinist | 10% Chance, Materialien beim Crafting zu behalten |
 | | Erfinder | Erleichtertes Handwerken (-2 DC beim Crafting) |
 | **Alchemist** | Meister-Alchemist | +20% Heilungseffektivität (Tränke/Salben) |
 | | Mutator | +5 HP-Regeneration pro Runde |
+| **Beschwörer** | Dämonologe | +3 Angriff (ATK) |
+| | Elementarist | +2 AP-Regeneration pro Runde |
 
 ### 4. Quest- & Belohnungssystem
 *   **Die Schwarze Tafel:** Nimm Aufträge wie "Jagdfieber", "Der Alchemist" oder die legendäre Suche nach dem "Goldenen Siegelring" an.
@@ -68,6 +71,8 @@ Sobald ein Held Stufe 15 erreicht, kann er eine Meisterschaft wählen:
 *   **3-Spalten-Layout:** Helden-Statuskarten links und rechts, die Story und das Geschehen im Zentrum.
 *   **Visuals:** Jede der 15 Ebenen hat ein eigenes Hintergrundbild, von den "strahlenden Kristallhöhlen" bis zur "majestätischen Burg".
 *   **Icons:** Rassen und Klassen werden durch Emojis dargestellt für maximale Übersichtlichkeit.
+*   **Einstellungen:** Individualisiere dein Erlebnis mit Schiebereglern für **Helligkeit, Text-Geschwindigkeit und Lautstärke**.
+*   **Rassen-Vielfalt:** Wähle aus verschiedenen Völkern wie Menschen, Orks, Zwergen, Elfen, Goblins, **Drachengeborenen** oder **Halblingen** (mit speziellen Boni für Fallenentdeckung).
 
 ## 🛠️ Technologien
 *   **Frontend:** HTML5, CSS3 (Flexbox/Grid), JavaScript (ES6+)
@@ -80,7 +85,10 @@ Sobald ein Held Stufe 15 erreicht, kann er eine Meisterschaft wählen:
 3.  Wähle deinen Schwierigkeitsgrad und erstelle deine Gruppe!
 
 ## 🛠️ Letzte Änderungen (Patch-Notes)
-*   **Internationalisierung:** System für Sprachumschaltung (DE/EN) integriert.
+*   **Internationalisierung:** Unterstützung für **Französisch (FR)** hinzugefügt.
+*   **Settings-Menü:** Neue Optionen für Helligkeit, Lautstärke und Textgeschwindigkeit.
+*   **Neue Klasse:** Der **Beschwörer** (Summoner) ergänzt das Team.
+*   **Klassen-Interaktionen:** Spezielle Tavernen-Events für bestimmte Kombinationen (z.B. Beschwörer & Nekromant).
 *   **KI-Partner:** Solo-Spieler erhalten nun einen KI-Gefährten mit eigener Logik.
 *   **Schwierigkeits-System:** Globale Modifikatoren für HP, ATK und Loot implementiert.
 *   **Schummel-System:** Schurken können nun beim Würfeln schummeln (skaliert mit Geschicklichkeit).

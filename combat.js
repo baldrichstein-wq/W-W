@@ -110,13 +110,15 @@ async function spielerZug(spieler, monster_name, monster_hp, helden) {
     }
 
     while (true) {
-        console.log(`\n🎮 [ZUG VON ${spieler.name.toUpperCase()}] HP: ${spieler.hp}/${spieler.max_hp} | AP: ${spieler.ap}/${spieler.max_ap} | MP: ${spieler.mp}/${spieler.max_mp}`);
-        console.log("1. Angreifen");
-        console.log("2. Heiltrank nutzen");
-        console.log("3. Ausrüstung wechseln");
-        if (helden.length > 1) console.log("4. Verbündeten heilen");
-        console.log("5. Fähigkeit einsetzen");
-        const wahl = await question(`Was tust du? (1-5): `);
+        const combatOptions = [ // Added color property to options
+            { label: "⚔️ Angreifen", value: "1", color: "attack" },
+            { label: "🧪 Heiltrank", value: "2", color: "heal" },
+            { label: "🛡️ Ausrüstung", value: "3", color: "utility" }
+        ];
+        if (helden.length > 1) combatOptions.push({ label: "💚 Team-Heilung", value: "4", color: "heal" });
+        combatOptions.push({ label: "✨ Fähigkeit", value: "5", color: "special" });
+
+        const wahl = await question(`[${spieler.name.toUpperCase()}] Wähle deine Aktion:`, combatOptions);
         
         if (wahl === "1") {
             const wurf = wuerfelD20();
@@ -185,26 +187,27 @@ async function spielerZug(spieler, monster_name, monster_hp, helden) {
                 await printSlow("❌ Du hast noch keine besonderen Fähigkeiten gelernt.");
                 continue;
             }
-            console.log("\n--- Verfügbare Fähigkeiten ---");
-            spieler.abilities.forEach((ab, i) => {
+            const abOptions = spieler.abilities.map((ab, i) => {
                 let info = "";
-                if (ab.isUltimate) {
-                    info = `(ULTIMATE - SP: ${ab.sp_kosten})`;
-                } else if (ab.material_kosten) {
-                    const count = spieler.inventar.filter(it => it.name === ab.material_kosten).length;
-                    const warn = count === 0 ? ' <span class="effect-lifesteal">[FEHLT]</span>' : '';
-                    info = `(Vorrat: ${count}x ${ab.material_kosten})${warn}`;
-                } else if (ab.mp_kosten && ab.ap_kosten) {
-                    info = `(MP: ${ab.mp_kosten}, AP: ${ab.ap_kosten})`;
-                } else if (ab.mp_kosten) {
-                    info = `(MP: ${ab.mp_kosten})`;
-                } else {
-                    info = `(AP: ${ab.ap_kosten})`;
-                }
+                if (ab.isUltimate) info = `(ULT)`;
+                else if (ab.material_kosten) info = `(${ab.material_kosten})`;
+                else info = `(${ab.ap_kosten || ab.mp_kosten} ${ab.ap_kosten ? 'AP' : 'MP'})`;
                 const desc = formatAbilityDesc(ab, spieler);
-                console.log(`${i + 1}. <span class="tooltip">${ab.name}<span class="tooltiptext"><strong>${ab.name}</strong><br>${desc}</span></span> ${info}`);
+                return {
+                    label: `<span class="tooltip">${ab.name}<span class="tooltiptext"><strong>${ab.name}</strong><br>${desc}</span></span> ${info}`,
+                    value: String(i + 1),
+                    color: (ab.isUltimate ? "special" :
+                            ab.heilung || ab.belebt ? "heal" :
+                            ab.schaden ? "attack" :
+                            ab.atk_buff || ab.def_buff || ab.stealth_buff ? "utility" :
+                            ab.schlaf_dauer || ab.verwirrt || ab.subjugated || ab.niederhalten ? "debuff" :
+                            ab.mp_restoration_team || ab.ap_restoration_team || ab.execute_threshold || ab.licht ? "special" :
+                            ab.material_kosten ? "utility" :
+                            "neutral")
+                };
             });
-            const ab_wahl = await question("Wahl (0 für zurück): ");
+            abOptions.push({ label: "🔙 Zurück", value: "0", color: "back" });
+            const ab_wahl = await question("Welche Fähigkeit soll gewirkt werden?", abOptions);
             const idx = parseInt(ab_wahl) - 1;
 
             if (!isNaN(idx) && idx >= 0 && idx < spieler.abilities.length) {
@@ -270,21 +273,22 @@ async function spielerZug(spieler, monster_name, monster_hp, helden) {
             }
 
             if (istHeilerOderAlchemist || spieler.traenke > 0) {
-                console.log("\nWen möchtest du heilen?");
-                verbuendete.forEach((h, i) => console.log(`${i + 1}. ${h.name} (${h.hp}/${h.max_hp} HP)`));
-                const ziel_wahl = await question("Wahl: ");
+                const targetOptions = verbuendete.map((h, i) => ({
+                    label: `${h.name} (${h.hp}/${h.max_hp} HP)`,
+                    value: String(i + 1)
+                }));
+                const ziel_wahl = await question("Ziel wählen:", targetOptions);
                 const idx = parseInt(ziel_wahl) - 1;
-                
-                if (!isNaN(idx) && idx >= 0 && idx < verbuendete.length) {
-                    const ziel = verbuendete[idx];
+                if (!isNaN(idx) && idx >= 0 && idx < verbuendete.length) { // Check if a valid target was chosen
+                    const ziel = verbuendete[idx]; // Get the target hero
 
-                    let heilMethode = "";
-                    if (istHeilerOderAlchemist) {
-                        heilMethode = spieler.klasse.toLowerCase() === "heiler" ? "seine Heilmagie" : "ein selbstgemischtes Elixier";
-                    } else {
-                        spieler.traenke -= 1;
-                        heilMethode = "einen Heiltrank";
-                    }
+                    let heilMethode = ""; // Initialize healing method string
+                    if (istHeilerOderAlchemist) { // If the player is a Healer or Alchemist
+                        heilMethode = spieler.klasse.toLowerCase() === "heiler" ? "seine Heilmagie" : "ein selbstgemischtes Elixier"; // Set method based on class
+                    } else if (spieler.traenke > 0) { // If not a Healer/Alchemist, but has potions
+                        spieler.traenke -= 1; // Consume a potion
+                        heilMethode = "einen Heiltrank"; // Set method to potion
+                    } else { await printSlow("Du hast keine Heilmittel, um Verbündete zu heilen!"); continue; } // If no healing method, inform and continue
 
                     const heilung = randomRange(10, 20);
                     ziel.hp = Math.min(ziel.max_hp, ziel.hp + heilung);
@@ -391,7 +395,10 @@ export async function teamKampf(helden, monster, imDunkeln = false, ebene = null
 
             // MP Regeneration
             if (held.max_mp > 0) {
-                const mpRegen = 3 + Math.floor(held.grund_int / 2) + (held.mp_regen_modifier || 0);
+                let mpRegen = 3 + Math.floor(held.grund_int / 2) + (held.mp_regen_modifier || 0);
+                ausruestung.forEach(item => {
+                    if (item?.effekt?.typ === "mp_regen") mpRegen += item.effekt.wert;
+                });
                 held.mp = Math.min(held.max_mp, held.mp + mpRegen);
                 console.log(`<span class="mp-fill">🔮 ${held.name} regeneriert ${mpRegen} MP.</span>`);
             }
@@ -758,6 +765,14 @@ export async function teamKampf(helden, monster, imDunkeln = false, ebene = null
                         if (m_isCrit) {
                             schaden *= 2;
                             await printSlow(`<span class="log-critical">💀 KRITISCHER GEGNER-TREFFER! 💀</span>`);
+                        }
+
+                        // Apply temporary damage reduction from abilities like "Blocken"
+                        if (ziel.temp_damage_reduction > 0) {
+                            const reducedSchaden = Math.max(0, schaden - ziel.temp_damage_reduction);
+                            await printSlow(`🛡️ ${ziel.name}s Block reduziert den Schaden von ${schaden} auf <span class="hp-gain">${reducedSchaden}</span>!`);
+                            schaden = reducedSchaden;
+                            ziel.temp_damage_reduction = 0; // Reset after use
                         }
                         ziel.hp = Math.max(0, ziel.hp - schaden);
                         ziel.totalDamageTaken += schaden;

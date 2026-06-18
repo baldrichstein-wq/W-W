@@ -124,39 +124,74 @@ export function formatItemDesc(item) {
     
     if (item.effekt) {
         if (item.effekt.typ === "ap_regen") parts.push(`✨ AP-Regen: +${item.effekt.wert}`);
+        if (item.effekt.typ === "mp_regen") parts.push(`🔮 MP-Regen: +${item.effekt.wert}`);
         if (item.effekt.typ === "lebensraub") parts.push(`🩸 Lebensraub: ${Math.round(item.effekt.wert * 100)}%`);
     }
     const loreText = item.lore || "Ein nützlicher Gegenstand für Abenteurer.";
     return `<div style="border-bottom: 1px solid rgba(212,175,55,0.3); padding-bottom: 5px; margin-bottom: 5px;">${parts.length > 0 ? parts.join("<br>") : item.typ}</div><i style="color: #aab7b8;">"${loreText}"</i>`;
 }
 
-export function question(text) {
+export function question(text, options = null) {
     const inputQuery = document.getElementById('input-query');
     const userInput = document.getElementById('user-input');
     const submitBtn = document.getElementById('submit-btn');
+    const inputArea = document.querySelector('.input-area') || inputQuery.parentNode;
 
     return new Promise((resolve) => {
         inputQuery.textContent = text;
-        userInput.disabled = false;
-        submitBtn.disabled = false;
-        userInput.value = '';
-        userInput.focus();
+        // Vorhandene Buttons aus vorherigen Abfragen entfernen
+        const existingButtons = document.getElementById('choice-buttons');
+        if (existingButtons) existingButtons.remove();
 
-        const handleInput = () => {
-            const val = userInput.value;
-            userInput.disabled = true;
-            submitBtn.disabled = true;
-            submitBtn.removeEventListener('click', handleInput);
-            userInput.removeEventListener('keypress', handleKey);
-            resolve(val);
-        };
+        if (options && options.length > 0) {
+            userInput.style.display = 'none';
+            submitBtn.style.display = 'none';
+            
+            const buttonContainer = document.createElement('div');
+            buttonContainer.id = 'choice-buttons';
+            
+            inputArea.appendChild(buttonContainer);
 
-        const handleKey = (e) => {
-            if (e.key === 'Enter') handleInput();
-        };
+            options.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.className = 'meta-btn';
+                const label = typeof opt === 'object' ? opt.label : opt;
+                const value = typeof opt === 'object' ? opt.value : opt;
+                const colorClass = typeof opt === 'object' && opt.color ? `btn-${opt.color}` : 'btn-neutral';
+                btn.classList.add(colorClass);
+                btn.innerHTML = label;
+                btn.onclick = () => {
+                    buttonContainer.remove();
+                    userInput.style.display = 'block';
+                    submitBtn.style.display = 'block';
+                    resolve(String(value));
+                };
+                buttonContainer.appendChild(btn);
+            });
+        } else {
+            userInput.style.display = 'block';
+            submitBtn.style.display = 'block';
+            userInput.disabled = false;
+            submitBtn.disabled = false;
+            userInput.value = '';
+            userInput.focus();
+            
+            const handleInput = () => {
+                const val = userInput.value;
+                userInput.disabled = true;
+                submitBtn.disabled = true;
+                submitBtn.removeEventListener('click', handleInput);
+                userInput.removeEventListener('keypress', handleKey);
+                resolve(val);
+            };
 
-        submitBtn.addEventListener('click', handleInput);
-        userInput.addEventListener('keypress', handleKey);
+            const handleKey = (e) => {
+                if (e.key === 'Enter') handleInput();
+            };
+
+            submitBtn.addEventListener('click', handleInput);
+            userInput.addEventListener('keypress', handleKey);
+        }
     });
 }
 
@@ -258,16 +293,33 @@ export function updateUI(helden, monster = null, monsterStatus = null, ebene = n
         lastMax = raumAnzahl;
     }
 
-    // Dungeon-Fortschritt im UI anzeigen (wird oben im Stats-Panel eingefügt)
-    const statsPanel = document.getElementById('stats-panel');
+    // Dungeon-Fortschritt im UI anzeigen (wird über dem Story-Fenster eingefügt)
+    const gameContainer = document.getElementById('game-container');
+    const logPanel = document.getElementById('log-panel');
     let progressDiv = document.getElementById('dungeon-progress-ui');
-    if (!progressDiv && statsPanel) {
+    let stateIndicator = document.getElementById('log-state-indicator');
+    if (!stateIndicator && logPanel) {
+        stateIndicator = document.createElement('div');
+        stateIndicator.id = 'log-state-indicator';
+        logPanel.prepend(stateIndicator); // Prepend to be at the top
+    }
+
+    if (stateIndicator) {
+        if (monster && monster.hp > 0) { // Monster exists and is alive
+            stateIndicator.innerHTML = '⚔️'; // Combat icon
+            stateIndicator.title = 'Kampf im Gange';
+            stateIndicator.className = 'log-indicator-combat';
+            stateIndicator.style.display = 'block';
+        } else {
+            stateIndicator.innerHTML = '📖'; // Story icon
+            stateIndicator.title = 'Geschichte wird erzählt';
+            stateIndicator.className = 'log-indicator-story';
+        }
         progressDiv = document.createElement('div');
         progressDiv.id = 'dungeon-progress-ui';
         progressDiv.className = 'player-card';
-        progressDiv.style.marginBottom = '15px';
         progressDiv.style.textAlign = 'center';
-        statsPanel.prepend(progressDiv);
+        gameContainer.insertBefore(progressDiv, logPanel);
     }
     if (progressDiv) {
         const currentR = parseInt(lastRaum);
@@ -282,12 +334,6 @@ export function updateUI(helden, monster = null, monsterStatus = null, ebene = n
         
         const isComplete = progressPercent === 100;
         const completeClass = isComplete ? 'progress-complete' : '';
-
-        // Calculate total completed quests
-        let totalCompletedQuests = 0;
-        helden.forEach(h => {
-            totalCompletedQuests += h.completedQuests.length;
-        });
 
         // Pippin UI Anzeige
         let jesterHtml = "";
