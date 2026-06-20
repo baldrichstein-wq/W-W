@@ -48,7 +48,7 @@ loadConfigFromLocalStorage();
 
 export function t(key) {
     const lang = config.language || 'de';
-    return translations[lang]?.[key] || translations['de']?.[key] || key;
+    return translations[lang]?.[key] || translations.de?.[key] || key;
 }
 
 export async function printSlow(text, className = null) {

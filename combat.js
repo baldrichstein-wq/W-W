@@ -524,7 +524,6 @@ export async function teamKampf(helden, monster, imDunkeln = false, ebene = null
                     const durationProp = isBarde ? "bardenLichtDauer" : "heilerLichtDauer";
                     const bonusProp = isBarde ? "atk_bonus" : "def_bonus";
                     const bonusVal = isBarde ? ability.licht_atk : ability.licht_def;
-                    const emoji = isBarde ? "🎯" : "🛡️";
                     const statName = isBarde ? "ATK" : "RK";
 
                     if (!held[durationProp] || held[durationProp] <= 0) {

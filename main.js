@@ -1,7 +1,7 @@
 import Spieler from './spieler.js';
 import Monster from './monster.js'; 
 import * as Combat from './combat.js';
-import { question, randomRange, printSlow, wuerfelD20, updateUI, config, formatAbilityDesc, saveConfigToLocalStorage, t } from './utils.js';
+import { question, randomRange, printSlow, updateUI, config, formatAbilityDesc, saveConfigToLocalStorage, t } from './utils.js';
 import * as Story from './story.js';
 import { RASSEN_LISTE, KLASSEN_LISTE, CLASS_INFO, STARTING_ABILITIES, GAME_SETTINGS } from './config.js';
 

@@ -3,12 +3,12 @@ import { printSlow, question, wuerfelD20, randomRange, updateUI, formatAbilityDe
 import { SPECIALIZATIONS, GAME_BALANCE, SHOP_WAREN, CRAFTING_REZEPTE, BOSS_LOOT, RARE_ARTIFACTS, SHOP_CATEGORIES, QUEST_ITEM_POOL } from './config.js';
 
 let schluesselGefunden = false;
- 
+
 let hofnarr = {
-    name: "Pippin der Lustige", 
-    hp: 60, 
-    max_hp: 60, 
-    active: false, 
+    name: "Pippin der Lustige",
+    hp: 60,
+    max_hp: 60,
+    active: false,
     completed: false,
     duoConfusions: 0 // Zähler für das Comedy-Duo Achievement
 };
@@ -229,8 +229,8 @@ const RAETSEL_MASTER_POOL = [
 
 function materialNachKlasse(held) {
     const isTueftler = held.klasse.toLowerCase() === "tueftler";
-    const pool = isTueftler 
-        ? ["Mechanischeteile", "Maschinenoel", "Schrauben und Muttern"] 
+    const pool = isTueftler
+        ? ["Mechanischeteile", "Maschinenoel", "Schrauben und Muttern"]
         : ["Bestienteile", "Pflanzenteile", "Fläschchen"];
     return pool[randomRange(0, pool.length - 1)];
 }
@@ -303,7 +303,7 @@ async function zerlegenMenue(held) {
 
 async function schwarzeTafel(helden) {
     await printSlow("\n📜 Ihr tretet an die verwitterte Schwarze Tafel am Eingang heran. Mehrere Aushänge flattern im Wind.");
-    
+
     let amBrett = true;
     while (amBrett) {
         const questOptions = QUEST_POOL.map((q, i) => {
@@ -327,13 +327,13 @@ async function schwarzeTafel(helden) {
                 const q = QUEST_POOL[idx];
                 const bereitsAngenommen = helden.some(h => h.activeQuests.some(aq => aq.id === q.id));
                 const bereitsAbgeschlossen = helden.some(h => h.completedQuests.includes(q.id));
-                
+
                 if (bereitsAbgeschlossen) {
                     await printSlow("❌ Diesen Auftrag habt ihr bereits erledigt.");
                 } else if (bereitsAngenommen) {
                     await printSlow("❌ Diesen Auftrag verfolgt ihr bereits.");
                 } else {
-                    helden.forEach(h => h.activeQuests.push({...q, progress: 0}));
+                    helden.forEach(h => h.activeQuests.push({ ...q, progress: 0 }));
                     if (q.id === 6) {
                         hofnarr.active = true;
                         hofnarr.hp = hofnarr.max_hp;
@@ -430,7 +430,7 @@ async function checkQuests(helden, context = {}) {
                 h.activeQuests.splice(i, 1);
                 await printSlow(`\n✅ <span class="hp-gain">AUFTRAG ERFÜLLT: ${q.title}!</span>`);
                 triggerGoldAnimation();
-                
+
                 // Quest-Benachrichtigung im UI aufblinken lassen
                 const progressUi = document.getElementById('dungeon-progress-ui');
                 if (progressUi) {
@@ -440,7 +440,7 @@ async function checkQuests(helden, context = {}) {
                 }
 
                 await printSlow(`💰 Belohnung: ${q.reward.gold} Gold und ${q.reward.xp} XP erhalten.`);
-                
+
                 const levelsGained = h.check_levelup();
                 if (levelsGained > 0) {
                     await printSlow(`\n🌟 LEVEL UP für ${h.name}! Level ${h.level}!`, 'level-up-animation');
@@ -467,7 +467,7 @@ async function craftingMenue(helden) {
                     if (it.typ === "Waffe" && (!held.ausgeruestete_waffe || it.wert <= held.ausgeruestete_waffe.wert)) schlechter = true;
                     if (it.typ === "Ruestung" && (!held.ausgeruestete_ruestung || it.wert <= held.ausgeruestete_ruestung.wert)) schlechter = true;
                     if (it.typ === "Schild" && (!held.ausgeruestete_schild || it.wert <= held.ausgeruestete_schild.wert)) schlechter = true;
-                    
+
                     if (schlechter) {
                         held.inventar.splice(held.inventar.indexOf(it), 1);
                         const mat = materialNachKlasse(held);
@@ -544,7 +544,7 @@ async function craftingMenue(helden) {
 
                     const anzInput = await question(`Wie viele ${rezept.name} herstellen? (Max ${maxHerstellbar}, 0 zum Abbrechen): `);
                     const anz = parseInt(anzInput);
-                    
+
                     if (!isNaN(anz) && anz > 0 && anz <= maxHerstellbar) {
                         const dc = 10 - (held.crafting_success_bonus || 0); // DC wird durch Bonus reduziert
                         let erfolge = 0;
@@ -558,7 +558,7 @@ async function craftingMenue(helden) {
                             if (materialsConsumed) {
                                 verbraucheMaterialien(held, rezept.materialien);
                             }
-                            
+
                             const wurf = wuerfelD20();
                             if (wurf + held.grund_int >= dc) {
                                 held.inventar.push(new Item(rezept.name, "Spezial", 0, null, "Ein handgefertigtes Werkzeug."));
@@ -788,7 +788,7 @@ async function synergienPruefen(helden) {
         for (let j = i + 1; j < helden.length; j++) {
             const k1 = helden[i].klasse.toLowerCase();
             const k2 = helden[j].klasse.toLowerCase();
-            
+
             // Prüfe beide Richtungen (z.B. Krieger+Heiler und Heiler+Krieger)
             const kombinationen = [`${k1}+${k2}`, `${k2}+${k1}`];
             const synergiename = kombinationen.find(k => SYNERGIE_ABILITIES[k]);
@@ -797,10 +797,10 @@ async function synergienPruefen(helden) {
                 const fähigkeit = SYNERGIE_ABILITIES[synergiename];
                 await printSlow(`\n<span class="synergy-text">🔗 SYNERGIE ENTDECKT!</span> ${helden[i].name} & ${helden[j].name} bilden ein eingespieltes Team.`);
                 await printSlow(`✨ Beide erlernen die mächtige Team-Fähigkeit: <span class="rare-item">${fähigkeit.name}</span>!`);
-                
+
                 // Die Fähigkeit wird beiden Spielern hinzugefügt
-                if (!helden[i].abilities.some(a => a.name === fähigkeit.name)) helden[i].abilities.push({...fähigkeit});
-                if (!helden[j].abilities.some(a => a.name === fähigkeit.name)) helden[j].abilities.push({...fähigkeit});
+                if (!helden[i].abilities.some(a => a.name === fähigkeit.name)) helden[i].abilities.push({ ...fähigkeit });
+                if (!helden[j].abilities.some(a => a.name === fähigkeit.name)) helden[j].abilities.push({ ...fähigkeit });
             }
         }
     }
@@ -811,7 +811,7 @@ async function raetselMeisterBegegnung(helden) {
     await printSlow("\n🎭 <span class='rare-item'>Ein mysteriöser Rätselmeister erscheint aus dem Schatten!</span>");
     await printSlow("'Seid gegrüßt, Wanderer. Löst mein Rätsel und werdet belohnt. Scheitert ihr, wird es schmerzhaft...'");
     await printSlow(`\n"<span class="synergy-text">${r.q.charAt(0).toUpperCase() + r.q.slice(1)}</span>"`);
-    
+
     // Erstelle eine Liste aller möglichen Antworten aus dem Pool
     const alleAntworten = [...new Set(RAETSEL_MASTER_POOL.map(item => item.a))];
     const korrekteAntwort = r.a;
@@ -839,7 +839,7 @@ async function raetselMeisterBegegnung(helden) {
         await printSlow(`\n✨ <span class="hp-gain">'Hervorragend! Ihr seid weiser als ihr ausseht.'</span>`);
         const goldPlus = randomRange(40, 80);
         const xpPlus = randomRange(25, 50);
-        
+
         for (const h of helden) {
             h.gold += goldPlus;
             h.xp += xpPlus;
@@ -892,7 +892,7 @@ async function raetselPhase() {
     const r = RAETSEL_MASTER_POOL[randomRange(0, RAETSEL_MASTER_POOL.length - 1)];
     await printSlow("\n🔮 Eine spektrale Stimme hallt durch den Raum:");
     await printSlow(`"<span class="synergy-text">${r.q.charAt(0).toUpperCase() + r.q.slice(1)}</span>"`);
-    
+
     // Erstelle eine Liste aller möglichen Antworten aus dem Pool
     const alleAntworten = [...new Set(RAETSEL_MASTER_POOL.map(item => item.a))];
     const korrekteAntwort = r.a;
@@ -971,7 +971,7 @@ async function levelUpMenu(held, helden, levelsGained = 1) {
                 value: key,
                 color: attr.color // Use predefined color
             }));
-            
+
             const wahl = await question(`[${held.name}] Attribut wählen (${skillPunkte} Pkt.):`, levelOptions);
             const attr = attribute[wahl];
             if (attr) {
@@ -1005,7 +1005,7 @@ async function levelUpMenu(held, helden, levelsGained = 1) {
         if (held.isKI) {
             wahlIdx = randomRange(0, optionen.length - 1);
         } else {
-            const wahl = await question(`Eure Wahl (1-${optionen.length}): `);
+            const wahl = await question(`Eure Wahl (1-${optionen.length}): `, specializationOptions);
             wahlIdx = parseInt(wahl) - 1;
             if (isNaN(wahlIdx) || wahlIdx < 0 || wahlIdx >= optionen.length) wahlIdx = 0;
         }
@@ -1103,10 +1103,10 @@ async function faehigkeitWaehlen(spieler) {
     if (verfuegbar.length === 0) return;
 
     await printSlow(`\n🎓 ${spieler.name} kann eine neue Fähigkeit lernen!`);
-    
+
     const auswahl = [];
     const tempPool = [...verfuegbar];
-    for(let i=0; i < 2 && tempPool.length > 0; i++) {
+    for (let i = 0; i < 2 && tempPool.length > 0; i++) {
         const idx = randomRange(0, tempPool.length - 1);
         auswahl.push(tempPool.splice(idx, 1)[0]);
     }
@@ -1126,13 +1126,13 @@ async function faehigkeitWaehlen(spieler) {
                 label: `<span class="tooltip">${a.name}<span class="tooltiptext"><strong>${a.name}</strong><br>${desc}</span></span> ${info}`,
                 value: String(i + 1),
                 color: (a.isUltimate ? "special" :
-                        a.heilung || a.belebt ? "heal" :
+                    a.heilung || a.belebt ? "heal" :
                         a.schaden ? "attack" :
-                        a.atk_buff || a.def_buff || a.stealth_buff ? "utility" :
-                        a.schlaf_dauer || a.verwirrt || a.subjugated || a.niederhalten ? "debuff" :
-                        a.mp_restoration_team || a.ap_restoration_team || a.execute_threshold || a.licht ? "special" :
-                        a.material_kosten ? "utility" :
-                        "neutral")
+                            a.atk_buff || a.def_buff || a.stealth_buff ? "utility" :
+                                a.schlaf_dauer || a.verwirrt || a.subjugated || a.niederhalten ? "debuff" :
+                                    a.mp_restoration_team || a.ap_restoration_team || a.execute_threshold || a.licht ? "special" :
+                                        a.material_kosten ? "utility" :
+                                            "neutral")
             };
         });
         const wahl = await question("Wähle eine Fähigkeit (1-2): ", abilityOptions);
@@ -1158,7 +1158,7 @@ async function schatzFinden(helden) {
     const wahl = await question("Wer versucht die Truhe zu knacken?", targetOptions);
     const index = parseInt(wahl) - 1;
     const aktiver = helden[index];
-    
+
     await printSlow(`${aktiver.name} tritt vor und würfelt...`);
     const wurf = wuerfelD20();
     const gesamt = wurf + (aktiver.trap_detection_bonus || 0);
@@ -1180,7 +1180,7 @@ async function schatzFinden(helden) {
             const loot = new Item(randomData.name, randomData.typ, randomData.wert, null, "In einer alten Truhe gefunden.");
             h.inventar.push(loot);
             await printSlow(`🎁 ${h.name} erhält: <span class="rare-item">${loot.name}</span> (${loot.typ}: ${loot.wert})`);
-            
+
             if (h.isKI) {
                 h.kiAutomatischAusruesten();
             }
@@ -1201,7 +1201,7 @@ async function shopBesuch(helden, istNachBoss = false) {
         await printSlow("\n🏆 <span class=\"rare-item\">DER SIEGER-BONUS:</span> Der Händler ist beeindruckt von eurem Sieg und bietet euch Sonderkonditionen!");
     }
     await printSlow("\n🏪 Ihr findet einen reisenden Händler im Dungeon.");
-    
+
     // Glückswurf für seltene Artefakte (einmal pro Shop-Besuch)
     let seltenesArtefakt = null;
     const gluecksWurf = wuerfelD20();
@@ -1236,7 +1236,7 @@ async function shopBesuch(helden, istNachBoss = false) {
             } else {
                 // Zweite Ebene: Items innerhalb der Kategorie anzeigen
                 questionText = `[${held.name}] Gold: ${held.gold} | ${SHOP_CATEGORIES[currentCategory].icon} ${SHOP_CATEGORIES[currentCategory].label}:`;
-                
+
                 const itemsInCategory = Object.entries(SHOP_WAREN).filter(([, ware]) => ware.category === currentCategory);
 
                 itemsInCategory.forEach(([id, ware]) => {
@@ -1245,10 +1245,10 @@ async function shopBesuch(helden, istNachBoss = false) {
                     if (ware.type === "traenke" || ware.type === "hp" || ware.type === "mp") color = "heal";
                     if (ware.kind === "Waffe") color = "attack";
                     if (ware.kind === "Ruestung" || ware.kind === "Schild") color = "utility";
-                    shopOptions.push({ 
-                        label: `<span class="tooltip">${ware.label}<span class="tooltiptext"><strong>${ware.label}</strong><br>${ware.lore || 'Ein nützlicher Gegenstand.'}<br>💰 Preis: ${finalCost} Gold</span></span>`, 
-                        value: id, 
-                        color: color 
+                    shopOptions.push({
+                        label: `<span class="tooltip">${ware.label}<span class="tooltiptext"><strong>${ware.label}</strong><br>${ware.lore || 'Ein nützlicher Gegenstand.'}<br>💰 Preis: ${finalCost} Gold</span></span>`,
+                        value: id,
+                        color: color
                     });
                 });
 
@@ -1263,7 +1263,7 @@ async function shopBesuch(helden, istNachBoss = false) {
             }
 
             const wahl = await question(questionText, shopOptions);
-            
+
             if (wahl === "0" || wahl === "30") {
                 shopping = false;
             } else if (wahl === "back_to_categories") {
@@ -1309,7 +1309,7 @@ async function shopBesuch(helden, istNachBoss = false) {
 
                     const sellOptions = [];
                     const potionSellPrice = Math.max(1, Math.floor(5 * sellBonus));
-                    
+
                     if (catWahl === "traenke" && held.traenke > 0) {
                         sellOptions.push({ label: `🧪 Tränke (${held.traenke}x) -> ${potionSellPrice}G`, value: "t", color: "heal" });
                     }
@@ -1378,7 +1378,7 @@ async function shopBesuch(helden, istNachBoss = false) {
                 const ware = SHOP_WAREN[wahl];
                 const finalCost = Math.max(1, Math.ceil(ware.cost * buyDiscount));
                 const maxKaufbar = Math.floor(held.gold / finalCost);
-                
+
                 if (maxKaufbar <= 0) {
                     await printSlow("❌ Nicht genug Gold!");
                     continue;
@@ -1432,10 +1432,10 @@ async function tavernenBesuch(helden) {
         await printSlow(`${summoner.name}: "Die Schleier zwischen den Welten sind hier dünn, Nekromant. Spürst du die Resonanz?"`);
         await printSlow(`${necro.name}: "In der Tat. Die Echos der Verstorbenen in diesem Dungeon nähren unsere Macht."`);
         await printSlow(`Die beiden kanalisieren gemeinsam die ätherische Energie der Umgebung.`);
-        
+
         summoner.mp = Math.min(summoner.max_mp, summoner.mp + 20);
         necro.mp = Math.min(necro.max_mp, necro.mp + 20);
-        
+
         await printSlow(`✨ <span class="synergy-text">Dunkle Erkenntnis:</span> Beide Helden regenerieren <span class="hp-gain">20 MP</span> durch ihren Wissensaustausch.`);
         updateUI(helden);
     }
@@ -1468,7 +1468,7 @@ async function tavernenBesuch(helden) {
             }
         } else {
             let tavernenWahl = true;
-            while(tavernenWahl) {
+            while (tavernenWahl) {
                 const lebendeHelden = helden.filter(h => h.hp > 0);
                 const kostenRunde = lebendeHelden.length * 10;
 
@@ -1537,11 +1537,11 @@ async function tavernenBesuch(helden) {
                             if (schummelWahl.toLowerCase().trim() === "ja") {
                                 schummelVersuch = true;
                                 await printSlow(`🤫 ${held.name} lässt unauffällig einen gezinkten Würfel aus dem Ärmel gleiten...`);
-                                
+
                                 // Der Schwierigkeitsgrad (DC) steigt mit dem Einsatz
                                 const dc = 12 + Math.floor(einsatz / 15);
                                 const check = wuerfelD20() + held.grund_gesch;
-                                
+
                                 if (check >= dc) {
                                     await printSlow("✨ Ein perfektes Ablenkungsmanöver! Der Wirt bemerkt den Betrug nicht.");
                                 } else {
@@ -1555,7 +1555,7 @@ async function tavernenBesuch(helden) {
                             const strafe = einsatz * 2;
                             held.gold -= Math.min(held.gold, strafe);
                             await printSlow(`💀 "Hier wird nicht beschissen!" brüllt der Wirt. Er nimmt dir ${strafe} Gold als "Strafe" ab.`);
-                            
+
                             // 30% Chance auf Verbannung aus der Taverne
                             if (Math.random() < 0.3) {
                                 held.tavernBanRooms = 3;
@@ -1564,7 +1564,7 @@ async function tavernenBesuch(helden) {
                             }
                         } else {
                             await printSlow(`🎲 Du legst ${einsatz} Gold auf den Tresen. Der Wirt schüttelt grinsend seinen Becher...`);
-                            
+
                             // Wenn erfolgreich geschummelt wurde, ist der Wurf garantiert hoch (16-20)
                             let deinWurf = schummelVersuch ? randomRange(16, 20) : wuerfelD20();
                             const wirtWurf = wuerfelD20();
@@ -1598,7 +1598,7 @@ async function tavernenBesuch(helden) {
 
 async function vorraeteNutzen(helden) {
     await printSlow("\n🎒 Die Gruppe öffnet ihre Rucksäcke, um sich zu stärken.");
-    
+
     let amEssen = true;
     while (amEssen) {
         updateUI(helden);
@@ -1616,7 +1616,7 @@ async function vorraeteNutzen(helden) {
             if (hIdx >= 0 && hIdx < helden.length) {
                 const held = helden[hIdx];
                 const vorraete = held.inventar.filter(it => (it.typ === "Gegenstand" || it.typ === "Mana-Gegenstand") && it.wert > 0);
-                
+
                 if (vorraete.length === 0) {
                     await printSlow(`❌ ${held.name} hat keine Vorräte im Inventar.`);
                     continue;
@@ -1718,7 +1718,7 @@ async function feenBegegnung(helden) {
                     h.gold -= gesamtKosten;
                     h.xp += anzahl * 15;
                     await printSlow(`✨ Die Fee flüstert ${h.name} Wissen zu. <span class='rare-item'>+${anzahl * 15} XP!</span>`);
-                    
+
                     const levelsGained = h.check_levelup();
                     if (levelsGained > 0) {
                         await printSlow(`\n🌟 LEVEL UP für ${h.name}! Level ${h.level}!`, 'level-up-animation');
@@ -1753,7 +1753,7 @@ async function castleInteraction(helden) {
 
         if (wahl === "1") {
             await printSlow("\n👑 König Theron: 'Seid gegrüßt, Helden! Eure Taten sind legendär.'");
-            
+
             // Quest "Ein komischer Kauz" abgeben
             const jesterQuestActive = helden[0].activeQuests.some(q => q.id === 6);
             const jesterQuestCompleted = helden[0].completedQuests.includes(6);
@@ -1761,7 +1761,7 @@ async function castleInteraction(helden) {
             if (jesterQuestActive && hofnarr.active && hofnarr.hp > 0 && !jesterQuestCompleted) {
                 await printSlow(`\n🤡 ${hofnarr.name} springt vor den König: "Eure Majestät! Ich bin zurück! Und diese Helden haben mich sicher hierher gebracht!"`);
                 await printSlow("👑 König Theron: 'Ah, mein lieber Pippin! Ich hatte die Hoffnung schon fast aufgegeben. Ihr habt meine Erwartungen übertroffen, tapfere Helden!'");
-                
+
                 // Trigger quest completion for all heroes
                 for (const h of helden) {
                     const questToComplete = h.activeQuests.find(q => q.id === 6);
@@ -1784,17 +1784,17 @@ async function castleInteraction(helden) {
             // Finales Spielende mit Rangliste
             console.log("\n" + "★".repeat(50));
             await printSlow("🏆 SIEG! Der Thron des Dungeons wurde erobert!");
-            
+
             // Ranking erstellen
-            const sieger = [...helden].sort((a, b) => 
+            const sieger = [...helden].sort((a, b) =>
                 (b.totalDamageDealt - b.totalDamageTaken) - (a.totalDamageDealt - a.totalDamageTaken)
             );
-            
+
             await printSlow("\n👑 DAS SIEGERTREPPCHEN 👑");
             for (let i = 0; i < sieger.length; i++) {
                 const h = sieger[i];
                 const medal = i === 0 ? "🥇" : (i === 1 ? "🥈" : "🥉");
-                await printSlow(`${medal} Platz ${i+1}: <span class="rare-item">${h.name}</span> (Level ${h.level})`);
+                await printSlow(`${medal} Platz ${i + 1}: <span class="rare-item">${h.name}</span> (Level ${h.level})`);
                 await printSlow(`   ⚔️ Schaden Ausgeteilt: ${h.totalDamageDealt} | 🩸 Schaden Erlitten: ${h.totalDamageTaken}`);
                 let maxSource = "Keine";
                 let maxDmg = 0;
@@ -1808,13 +1808,13 @@ async function castleInteraction(helden) {
             const champion = sieger[0];
             localStorage.setItem('dungeon_champion', JSON.stringify({ name: champion.name, level: champion.level, klasse: champion.klasse }));
             const history = JSON.parse(localStorage.getItem('dungeon_history')) || [];
-            history.push({ 
-                name: champion.name, 
-                level: champion.level, 
-                klasse: champion.klasse, 
-                xp: champion.xp, 
+            history.push({
+                name: champion.name,
+                level: champion.level,
+                klasse: champion.klasse,
+                xp: champion.xp,
                 dmg: champion.totalDamageDealt,
-                datum: new Date().toLocaleDateString() 
+                datum: new Date().toLocaleDateString()
             });
             localStorage.setItem('dungeon_history', JSON.stringify(history));
             await printSlow(`\n⚠️ Eine dunkle Macht ergreift Besitz von ${champion.name}... Er wird als nächster Wächter zurückkehren.`);
@@ -1822,7 +1822,7 @@ async function castleInteraction(helden) {
             const namen = helden.length > 1 ? helden.slice(0, -1).map(h => h.name).join(", ") + " und " + helden[helden.length - 1].name : helden[0].name;
             await printSlow(`${namen} werden als Retter des Reiches in die Geschichte eingehen!`);
             console.log("★".repeat(50));
-            
+
             const endWahl = await question("\nWas möchtet ihr tun?\n1. Ein neues Abenteuer beginnen\n2. Das Spiel beenden\nWahl: ");
             if (endWahl === "1") {
                 location.reload();
